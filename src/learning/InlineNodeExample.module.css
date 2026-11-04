@@ -1,0 +1,115 @@
+.example {
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 32px 0;
+  background: var(--panel);
+  color: var(--text);
+}
+.example > header {
+  padding: 20px 22px 8px;
+}
+.example > header > span {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 650;
+}
+.example h3 {
+  font-size: 21px;
+  line-height: 1.5;
+  margin: 8px 0 12px;
+}
+.example p {
+  padding-inline: 22px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.example > header p {
+  padding: 0;
+}
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.example button,
+.example select {
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page);
+  color: var(--text);
+}
+.example button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.canvas {
+  height: 600px;
+  width: 100%;
+  background: var(--page);
+  border-bottom: 1px solid var(--border);
+}
+.canvas[data-expanded='true'] {
+  height: 840px;
+}
+.trace {
+  border-left: 3px solid var(--accent);
+  margin: 16px 22px;
+  padding: 10px 14px !important;
+  background: var(--page);
+}
+.trace strong {
+  display: block;
+  color: var(--accent);
+}
+.practice {
+  padding-top: 14px;
+}
+.connectionForm {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 22px 18px;
+}
+.connectionForm label {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 150px;
+  font-size: 12px;
+}
+.connectionForm select {
+  width: 100%;
+  min-width: 0;
+}
+.example footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px 22px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.example footer a {
+  color: var(--accent);
+}
+@media (max-width: 600px) {
+  .example > header {
+    padding-inline: 14px;
+  }
+  .tools,
+  .connectionForm {
+    padding-inline: 14px;
+  }
+  .example footer {
+    padding-inline: 14px;
+  }
+}

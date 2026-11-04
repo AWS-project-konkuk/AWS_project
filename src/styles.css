@@ -1,0 +1,142 @@
+@import './theme.css';
+@font-face {
+  font-family: 'Pretendard';
+  font-style: normal;
+  font-weight: 45 920;
+  font-display: swap;
+  src: url('/fonts/PretendardVariable.woff2') format('woff2');
+}
+:root {
+  font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+  color: var(--c-e3e9f4);
+  background: var(--c-090e17);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --green: var(--c-6753e9);
+  --ink: var(--c-e3e9f4);
+  --muted: var(--c-94a3b8);
+  --line: var(--c-233044);
+  --surface: var(--c-111927);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.recovery {
+  max-width: 520px;
+  margin: 15vh auto;
+  padding: 32px;
+  background: white;
+  border: 1px solid var(--c-dce3db);
+  border-radius: 12px;
+}
+.recovery h1 {
+  font-size: 22px;
+}
+.recovery p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--c-718369);
+}
+.recovery button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  background: var(--c-245d4b);
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--c-568d6c);
+  outline-offset: 3px;
+}
+button {
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+a {
+  color: inherit;
+}
+::selection {
+  background: var(--c-d5e8cf);
+}
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--c-d3dbd3);
+  border-radius: 9px;
+}
+.react-flow__node {
+  font-family: inherit;
+}
+.react-flow__handle {
+  z-index: 5;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 2px solid var(--c-96aea2);
+}
+.react-flow__handle:hover {
+  background: var(--c-245d4b);
+}
+.react-flow__controls {
+  border: 1px solid var(--c-dfe5de);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px var(--c-233e3408);
+}
+.react-flow__controls-button {
+  border: 0;
+  border-bottom: 1px solid var(--c-e8ede8);
+  width: 29px;
+  height: 29px;
+  color: var(--c-607269);
+}
+.react-flow__minimap {
+  width: 120px;
+  height: 75px;
+  border: 1px solid var(--c-e3e8e2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__attribution {
+  font-size: 9px;
+  background: transparent;
+  color: var(--c-89988c);
+}
+.react-flow__attribution a {
+  color: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
