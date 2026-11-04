@@ -4,7 +4,16 @@ import tseslint from 'typescript-eslint';
 import hooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'test-results', 'playwright-report'] },
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'test-results',
+      'playwright-report',
+      '.hallmark',
+      '.impeccable',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -475,7 +475,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
             </ReactFlow>
           </ReactFlowProvider>
           <span className={styles.canvasHint}>
-            노드 선택: 역할·입출력 확인 · 출력 점 → 입력 점 연결 · 전체 보기로 흐름 조망
+            노드를 선택해 역할과 입출력을 확인하세요. 출력 점에서 입력 점으로 연결합니다.
           </span>
         </div>
         <div
@@ -558,10 +558,10 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
               <section className={styles.inspector} data-testid="weekly-inspector">
                 {inspect ? (
                   <>
-                    <span className={styles.eyebrow}>
-                      {inspect.lane} · {selectedStage ? '관찰한 실행 결과' : '노드 역할'}
-                    </span>
                     <h3>{inspect.title}</h3>
+                    <span className={styles.eyebrow}>
+                      {inspect.lane}, {selectedStage ? '관찰한 실행 결과' : '노드 역할'}
+                    </span>
                     <p>{inspect.purpose}</p>
                     {selectedStage ? (
                       <>
@@ -570,7 +570,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
                         </p>
                         {selectedStage.fix && (
                           <p>
-                            <strong>수정 방향</strong> · {selectedStage.fix}
+                            <strong>수정 방향</strong>: {selectedStage.fix}
                           </p>
                         )}
                         <h4>실제로 받은 입력</h4>
@@ -633,14 +633,14 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
           )}
           {tab === 'settings' && (
             <section className={styles.settings}>
-              <h3>실행 조건{inspect ? ` · ${inspect.title} 선택 중` : ''}</h3>
+              <h3>실행 조건{inspect ? ` (${inspect.title} 선택 중)` : ''}</h3>
               {inspect?.fields?.length ? (
                 <p>
                   이 노드와 관련된 설정:{' '}
                   {spec.fields
                     .filter((f) => inspect.fields!.includes(f.id))
                     .map((f) => f.label)
-                    .join(' · ')}
+                    .join(', ')}
                 </p>
               ) : null}
               <Fields
@@ -671,7 +671,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
                       .flatMap((n) =>
                         n.outputs.map((p) => (
                           <option key={`${n.id}.${p.id}`} value={`${n.id}.${p.id}`}>
-                            {n.title} · {p.label} ({p.material})
+                            {n.title}, {p.label} ({p.material})
                           </option>
                         )),
                       )}
@@ -691,7 +691,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
                       .flatMap((n) =>
                         n.inputs.map((p) => (
                           <option key={`${n.id}.${p.id}`} value={`${n.id}.${p.id}`}>
-                            {n.title} · {p.label} ({p.material})
+                            {n.title}, {p.label} ({p.material})
                           </option>
                         )),
                       )}
@@ -711,9 +711,9 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
               {lab.edges.map((e) => (
                 <div className={styles.edgeRow} data-selected={e.id === selectedEdge} key={e.id}>
                   <span>
-                    {spec.nodes.find((n) => n.id === e.source)?.title} ·{' '}
+                    {spec.nodes.find((n) => n.id === e.source)?.title},{' '}
                     {portName(spec, e.source, e.sourceHandle ?? '', 'out')?.label ?? '없어진 포트'}{' '}
-                    → {spec.nodes.find((n) => n.id === e.target)?.title} ·{' '}
+                    → {spec.nodes.find((n) => n.id === e.target)?.title},{' '}
                     {portName(spec, e.target, e.targetHandle ?? '', 'in')?.label ?? '없어진 포트'}
                   </span>
                   <button

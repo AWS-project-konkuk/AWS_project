@@ -10,6 +10,7 @@ import {
   type Connection,
 } from '@xyflow/react';
 import { useReducedMotion } from 'motion/react';
+import { ArrowRight } from 'lucide-react';
 import type { NodeExampleSpec } from '../curriculum/nodeExamples';
 import { WorkflowNode, type BoardNode } from '../weekly/WorkflowNode';
 import { TransferEdge, type TransferFlowEdge } from '../weekly/TransferEdge';
@@ -188,8 +189,8 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
       data-testid={`inline-node-${lessonId}`}
     >
       <header>
-        <span>본문 노드 학습 · {spec.kind}</span>
         <h3>{spec.title}</h3>
+        <span>본문 노드 학습, {spec.kind}</span>
         <p>{spec.prompt}</p>
       </header>
       <div className={styles.tools}>
@@ -323,7 +324,10 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
       {feedback && <p role="status">{feedback}</p>}
       <footer>
         <span>작은 예제로 관계를 익힌 뒤 종합 실습에서 여러 조건을 함께 판단합니다.</span>
-        <a href={`#/learn/${spec.nextLesson}`}>관련 종합 실습으로 →</a>
+        <a href={`#/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">
+          관련 종합 실습으로
+          <ArrowRight size={16} aria-hidden="true" />
+        </a>
       </footer>
     </section>
   );

@@ -26,8 +26,8 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
       <CourseSidebar lesson={lesson} open={sidebarOpen} onClose={closeSidebar} />
       <div className={styles.main}>
         <div className={styles.toolbar}>
-          <TourGuide workflow={Boolean(lesson.workflow)} prepare={() => setView('split')} />
           <button
+            type="button"
             className={styles.sidebarToggle}
             aria-label={sidebarOpen ? '강의 목차 접기' : '강의 목차 열기'}
             aria-expanded={sidebarOpen}
@@ -46,17 +46,30 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
           </div>
           {lesson.workflow && (
             <div className={styles.viewControls} role="group" aria-label="학습 화면 보기">
-              <button aria-pressed={view === 'split'} onClick={() => changeView('split')}>
+              <button
+                type="button"
+                aria-pressed={view === 'split'}
+                onClick={() => changeView('split')}
+              >
                 설명과 실습
               </button>
-              <button aria-pressed={view === 'reading'} onClick={() => changeView('reading')}>
+              <button
+                type="button"
+                aria-pressed={view === 'reading'}
+                onClick={() => changeView('reading')}
+              >
                 학습 영역 확장
               </button>
-              <button aria-pressed={view === 'practice'} onClick={() => changeView('practice')}>
+              <button
+                type="button"
+                aria-pressed={view === 'practice'}
+                onClick={() => changeView('practice')}
+              >
                 실습 영역 확장
               </button>
             </div>
           )}
+          <TourGuide workflow={Boolean(lesson.workflow)} prepare={() => setView('split')} />
         </div>
         <div
           className={styles.content}
@@ -89,7 +102,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
                 <ArrowRight size={15} />
               </a>
             ) : (
-              <button disabled>
+              <button type="button" disabled>
                 다음 강의
                 <ArrowRight size={15} />
               </button>

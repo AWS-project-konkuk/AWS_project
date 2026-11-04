@@ -1,252 +1,255 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · redesign: full · nav: course shell · signature: learning workflow · states: kept · posture: restrained · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, semantic contrast unifies the legacy workflow controls */
 .panel {
-  border: 1px solid #dce3db;
+  border: 1px solid var(--compat-dce3db);
   border-radius: 12px;
   overflow: hidden;
-  background: #fff;
+  background: var(--compat-fff);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 .course {
-  padding: 24px 23px 22px;
-  background: #f0f3e9;
-  border-bottom: 1px solid #e0e7d9;
+  padding: var(--space-lg) var(--space-lg) var(--space-lg);
+  background: var(--compat-f0f3e9);
+  border-bottom: 1px solid var(--compat-e0e7d9);
 }
 .eyebrow {
-  font-size: 9px;
-  letter-spacing: 1.4px;
-  color: #7e8d6d;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--compat-7e8d6d);
   font-weight: 650;
 }
 .course h2 {
+  text-wrap: balance;
   font-size: 19px;
   line-height: 1.5;
-  margin: 11px 0 8px;
+  margin: var(--space-sm) 0 var(--space-xs);
   font-weight: 650;
   letter-spacing: -0.9px;
 }
 .course > p {
   margin: 0;
-  color: #7c8977;
-  font-size: 11px;
+  color: var(--compat-7c8977);
+  font-size: 12px;
   line-height: 1.9;
 }
 .progressLabel {
   display: flex;
   justify-content: space-between;
-  margin-top: 21px;
-  font-size: 9px;
-  color: #829077;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--compat-829077);
 }
 .progressLabel strong {
-  color: #58704b;
-  font-size: 10px;
+  color: var(--compat-58704b);
+  font-size: 12px;
   font-weight: 600;
 }
 .progress {
   height: 4px;
-  background: #dce4d5;
-  margin-top: 9px;
+  background: var(--compat-dce4d5);
+  margin-top: var(--space-xs);
   border-radius: 5px;
   overflow: hidden;
 }
 .progress i {
   display: block;
   height: 100%;
-  background: #6f9164;
+  background: var(--compat-6f9164);
   border-radius: 5px;
-  transition: width 0.25s;
+  transition: none;
 }
 .lessonBody {
   overflow-y: auto;
   flex: 1;
-  padding: 21px 20px;
+  padding: 20px 20px;
 }
 .sectionTitle {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
+  gap: var(--space-xs);
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-sm);
 }
 .sectionTitle > span {
   margin-left: auto;
-  font-size: 9px;
-  color: #9aa397;
+  font-size: 12px;
+  color: var(--compat-9aa397);
   font-weight: 400;
 }
 .stageNav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2xs);
 }
 .stageNav button {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 8px 10px;
-  gap: 9px;
-  background: #fff;
+  padding: var(--space-xs) var(--space-sm);
+  gap: var(--space-xs);
+  background: var(--compat-fff);
   border: 1px solid transparent;
   border-radius: 6px;
-  color: #7b887d;
-  font-size: 11px;
+  color: var(--compat-7b887d);
+  font-size: 12px;
   text-align: left;
 }
 .stageNav button:hover {
-  background: #f5f7f2;
+  background: var(--compat-f5f7f2);
 }
 .stageNav button.active {
-  color: #36583d;
-  background: #f0f4eb;
-  border-color: #dde7d7;
+  color: var(--compat-36583d);
+  background: var(--compat-f0f4eb);
+  border-color: var(--compat-dde7d7);
   font-weight: 600;
 }
 .stageNav button > svg {
   margin-left: auto;
   transform: rotate(-90deg);
-  color: #a1aa9d;
+  color: var(--compat-a1aa9d);
 }
 .stageNav button.active > svg {
   transform: none;
-  color: #6d8a5c;
+  color: var(--compat-6d8a5c);
 }
 .number {
   display: grid;
   place-items: center;
   height: 21px;
   width: 24px;
-  font-size: 9px;
-  color: #91a086;
+  font-size: 12px;
+  color: var(--compat-91a086);
   font-weight: 500;
 }
 .active .number,
 .number.read {
-  background: #dce7d3;
+  background: var(--compat-dce7d3);
   border-radius: 5px;
-  color: #547543;
+  color: var(--compat-547543);
 }
 .explanation {
-  margin-top: 18px;
+  margin-top: 20px;
   border-top: 1px solid var(--line);
   padding-top: 20px;
 }
 .articleTitle {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: center;
-  color: #536f5a;
+  color: var(--compat-536f5a);
   font-size: 13px;
 }
 .explanation > p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 2;
-  color: #7d897d;
-  margin: 12px 0 9px;
+  color: var(--compat-7d897d);
+  margin: var(--space-sm) 0 var(--space-xs);
   word-break: keep-all;
 }
 .explanation a {
   display: inline-flex;
-  gap: 5px;
+  gap: var(--space-2xs);
   align-items: center;
-  color: #65865f;
-  font-size: 10px;
+  color: var(--compat-65865f);
+  font-size: 12px;
   text-underline-offset: 3px;
 }
 .question {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: flex-start;
-  margin-top: 17px;
-  background: #faf8f0;
-  border: 1px solid #efe8d4;
+  margin-top: var(--space-md);
+  background: var(--compat-faf8f0);
+  border: 1px solid var(--compat-efe8d4);
   border-radius: 7px;
-  padding: 11px;
-  color: #9a8855;
+  padding: var(--space-sm);
+  color: var(--compat-9a8855);
 }
 .question svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 .question p {
   margin: 0;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.9;
   word-break: keep-all;
 }
 .readButton {
-  margin-top: 13px;
+  margin-top: var(--space-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-xs);
   width: 100%;
-  padding: 9px;
-  font-size: 10px;
-  color: #728969;
-  border: 1px solid #dfe7d9;
-  background: #fff;
+  padding: var(--space-xs);
+  font-size: 12px;
+  color: var(--compat-728969);
+  border: 1px solid var(--compat-dfe7d9);
+  background: var(--compat-fff);
   border-radius: 6px;
 }
 .readButton:hover {
-  background: #edf3e7;
+  background: var(--compat-edf3e7);
 }
 .mission {
-  margin-top: 23px;
+  margin-top: var(--space-lg);
   border-top: 1px solid var(--line);
   padding-top: 20px;
 }
 .mission > span {
-  font-size: 9px;
-  color: #8e9b86;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  color: var(--compat-8e9b86);
+  letter-spacing: 0;
 }
 .mission h3 {
   font-size: 16px;
   line-height: 1.65;
   font-weight: 550;
-  margin: 8px 0;
+  margin: var(--space-xs) 0;
   letter-spacing: -0.5px;
 }
 .mission p {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.9;
-  color: #879282;
+  color: var(--compat-879282);
 }
 .mission > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #e4e9df;
-  padding: 8px 12px;
+  border: 1px solid var(--compat-e4e9df);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: 7px;
-  background: #fbfcf9;
-  font-size: 10px;
-  color: #869180;
+  background: var(--compat-fbfcf9);
+  font-size: 12px;
+  color: var(--compat-869180);
 }
 .mission strong {
   font-size: 18px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: #5b7752;
+  color: var(--compat-5b7752);
 }
 .bottomNote {
   border-top: 1px solid var(--line);
-  padding: 12px;
+  padding: var(--space-sm);
   text-align: center;
-  color: #9aa392;
-  font-size: 9px;
-  background: #fbfcf9;
+  color: var(--compat-9aa392);
+  font-size: 12px;
+  background: var(--compat-fbfcf9);
 }
 .quiz {
   margin-top: 20px;
-  font-size: 10px;
-  color: #718369;
+  font-size: 12px;
+  color: var(--compat-718369);
 }
 .quiz summary {
   cursor: pointer;
-  padding: 8px 0;
+  padding: var(--space-xs) 0;
   line-height: 1.8;
 }
 .quiz > summary {
@@ -254,26 +257,26 @@
 }
 .quiz summary span {
   float: right;
-  font-size: 9px;
-  color: #94a18b;
+  font-size: 12px;
+  color: var(--compat-94a18b);
 }
 .quiz details {
   border-top: 1px solid var(--line);
-  margin-top: 5px;
+  margin-top: var(--space-2xs);
 }
 .quiz p {
   line-height: 1.9;
-  color: #879280;
+  color: var(--compat-879280);
 }
 @media (max-width: 1250px) {
   .course {
-    padding: 21px 18px;
+    padding: 20px 20px;
   }
   .course h2 {
     font-size: 17px;
   }
   .lessonBody {
-    padding: 19px 16px;
+    padding: 20px var(--space-md);
   }
 }
 @media (max-width: 700px) {
@@ -281,7 +284,7 @@
     max-height: 380px;
   }
   .course {
-    padding: 17px;
+    padding: var(--space-md);
   }
   .course > p {
     display: none;
@@ -290,6 +293,6 @@
     margin-bottom: 0;
   }
   .progressLabel {
-    margin-top: 8px;
+    margin-top: var(--space-xs);
   }
 }

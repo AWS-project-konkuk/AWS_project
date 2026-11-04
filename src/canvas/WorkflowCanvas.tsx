@@ -185,12 +185,12 @@ export function WorkflowCanvas({ onExample }: { onExample: () => void }) {
                 <StageIcon kind="serving" size={27} />
               </span>
             </div>
-            <span className={styles.eyebrow}>YOUR FIRST WORKFLOW</span>
             <h2>
               작은 연결로 시작하는
               <br />
               MLOps의 전체 흐름
             </h2>
+            <span className={styles.eyebrow}>첫 워크플로</span>
             <p>
               위에서 노드를 추가하고 입출력을 연결해 보세요.
               <br />

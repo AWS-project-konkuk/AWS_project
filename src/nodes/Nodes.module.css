@@ -1,47 +1,55 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · redesign: full · nav: kept · signature: workflow node palette · states: existing · posture: restrained · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, replaced tiny palette labels with readable grouped rows */
 .palette {
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--c-2d3a52);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-rule);
 }
 .palette > header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--c-c3cfe2);
+  gap: var(--space-xs);
+  font-size: var(--text-md);
+  color: var(--color-ink);
 }
 .palette > p {
-  font-size: 11px;
-  color: var(--c-8da2bf);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
   line-height: 1.8;
-  margin: 10px 0 12px;
+  margin: var(--space-xs) 0 var(--space-md);
 }
-.palette button {
-  background: var(--c-25304b);
-  border: 1px solid var(--c-4a5877);
-  border-radius: 5px;
-  color: var(--c-c1c9e4);
-  padding: 7px 10px;
+.palette button,
+.editor button {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-input);
+  color: var(--color-ink-2);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-sm);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-sm);
   white-space: nowrap;
 }
-.palette button:disabled {
-  opacity: 0.5;
+.palette button:disabled,
+.editor button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--color-paper-2);
+  color: var(--color-muted);
 }
 .palette > div {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 .paletteRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--c-162135);
-  border: 1px solid var(--c-2d3e59);
-  border-radius: 6px;
-  padding: 10px;
+  gap: var(--space-xs);
+  background: var(--color-paper-2);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-sm);
 }
 .paletteRow > span {
   flex: 1;
@@ -49,81 +57,93 @@
 }
 .paletteRow strong {
   display: block;
-  font-size: 11px;
-  color: var(--c-c6d5e9);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
   font-weight: 500;
 }
 .paletteRow small {
   display: block;
-  font-size: 9px;
-  color: var(--c-7d98b9);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
   line-height: 1.7;
-  margin-top: 3px;
+  margin-top: var(--space-2xs);
 }
 .editor {
-  border: 1px solid var(--c-40506d);
-  background: var(--c-162339);
-  padding: 14px;
-  margin: 12px 0;
-  border-radius: 6px;
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  padding: var(--space-md) 0;
+  margin: var(--space-md) 0;
+  border-radius: 0;
 }
 .editor h3 {
-  font-size: 13px;
-  margin: 0 0 15px;
-  color: var(--c-c2d2e9);
+  font-size: var(--text-md);
+  margin: 0 0 var(--space-md);
+  color: var(--color-ink);
 }
 .editor label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  font-size: 11px;
-  margin: 12px 0;
-  color: var(--c-a8bfdd);
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  margin: var(--space-md) 0;
+  color: var(--color-ink-2);
 }
 .editor input,
 .editor select {
   font: inherit;
-  font-size: 12px;
-  color: var(--c-d5e1f1);
-  background: var(--c-0e1928);
-  border: 1px solid var(--c-475d7d);
-  padding: 9px;
-  border-radius: 4px;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  border: 1px solid var(--color-muted);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-input);
   min-width: 0;
+  min-height: 40px;
+  width: 100%;
 }
 .editor p {
-  font-size: 10px;
+  font-size: var(--text-sm);
   line-height: 1.8;
-  color: var(--c-839ebf);
+  color: var(--color-muted);
 }
 .editor > div {
   display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-.editor button {
-  font: inherit;
-  font-size: 11px;
-  padding: 7px 12px;
-  border: 1px solid var(--c-506185);
-  color: var(--c-b9c9e4);
-  background: var(--c-293651);
-  border-radius: 4px;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
 }
 .editor [role='alert'] {
-  color: var(--c-e8b27c);
+  color: var(--color-error);
+}
+.palette button:hover:not(:disabled),
+.editor button:hover:not(:disabled) {
+  background: var(--color-accent-wash);
+  color: var(--color-accent);
+}
+.palette button:active:not(:disabled),
+.editor button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.palette :is(button, input, select):focus-visible,
+.editor :is(button, input, select):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 @media (max-width: 1250px) {
   .palette > div {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
-
-.editor select {
-  color: var(--text);
-  background: var(--page);
-  padding: 8px;
-  border: 1px solid var(--border);
-  width: 100%;
-  border-radius: 5px;
+@media (max-width: 600px) {
+  .editor input,
+  .editor select {
+    font-size: var(--text-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .palette *,
+  .editor * {
+    transition: none;
+    animation: none;
+  }
 }

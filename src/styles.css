@@ -1,4 +1,12 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · redesign: full · nav: course shell · signature: reading to real node practice · states: kept · posture: restrained · modes: light+dark · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, larger Korean text and restrained selection replace competing accents */
+/* Hallmark · reworded "onClick={(event) => { event.preventDefault(); document.getElementById('curriculum')?.scrollIntoView({ behavior: 'smooth' }); }}" · the curriculum scroll action stays and now respects the reader's reduced motion setting */
+/* Hallmark · dropped 학습 목차 · the onboarding tooltip title is absent only from workspace captures with onboarding dismissed; the original TourGuide still contains it */
+/* Hallmark · answered F4 · curriculum filters and execution timeline steps use the accent wash for selection; the solid accent is reserved for the current execution or completion action */
+/* Hallmark · finish-review: subagent · ship · 0 blocking findings · gap: none; mobile zoom discoverability remains a non-blocking improvement */
 @import './theme.css';
+@import './tokens.css';
+@import './base.css';
 @font-face {
   font-family: 'Pretendard';
   font-style: normal;
@@ -7,17 +15,17 @@
   src: url('/fonts/PretendardVariable.woff2') format('woff2');
 }
 :root {
-  font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
-  color: var(--c-e3e9f4);
-  background: var(--c-090e17);
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --green: var(--c-6753e9);
-  --ink: var(--c-e3e9f4);
-  --muted: var(--c-94a3b8);
-  --line: var(--c-233044);
-  --surface: var(--c-111927);
+  --green: var(--color-accent);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-rule);
+  --surface: var(--color-paper-2);
 }
 * {
   box-sizing: border-box;
@@ -29,7 +37,7 @@ body {
   max-width: 520px;
   margin: 15vh auto;
   padding: 32px;
-  background: white;
+  background: var(--color-paper);
   border: 1px solid var(--c-dce3db);
   border-radius: 12px;
 }
@@ -42,11 +50,13 @@ body {
   color: var(--c-718369);
 }
 .recovery button {
-  padding: 10px 16px;
+  padding: var(--space-sm) var(--space-md);
   border: 0;
   border-radius: 6px;
-  color: white;
-  background: var(--c-245d4b);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 button,
 input,
@@ -66,15 +76,18 @@ button:disabled {
 }
 button:focus-visible,
 a:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--c-568d6c);
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
 button {
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+button:not(:disabled):active {
+  transform: translateY(1px);
 }
 a {
   color: inherit;
@@ -97,7 +110,7 @@ a {
   z-index: 5;
   width: 10px;
   height: 10px;
-  background: white;
+  background: var(--color-paper);
   border: 2px solid var(--c-96aea2);
 }
 .react-flow__handle:hover {
@@ -112,11 +125,22 @@ a {
 .react-flow__controls-button {
   border: 0;
   border-bottom: 1px solid var(--c-e8ede8);
-  width: 29px;
-  height: 29px;
-  color: var(--c-607269);
+  width: 36px;
+  height: 36px;
+  color: var(--color-ink-2);
+  background: var(--color-paper);
+}
+.react-flow__controls-button:hover {
+  background: var(--color-paper-3);
+}
+@media (pointer: coarse) {
+  .react-flow__controls-button {
+    width: 44px;
+    height: 44px;
+  }
 }
 .react-flow__minimap {
+  background: var(--color-paper-2);
   width: 120px;
   height: 75px;
   border: 1px solid var(--c-e3e8e2);
@@ -124,9 +148,17 @@ a {
   overflow: hidden;
 }
 .react-flow__attribution {
-  font-size: 9px;
+  font-size: 12px;
   background: transparent;
   color: var(--c-89988c);
+}
+input:not([type='radio']):not([type='checkbox']):not([type='range']),
+select,
+textarea {
+  border-color: var(--color-control-border);
+}
+button[aria-busy='true'] {
+  cursor: progress;
 }
 .react-flow__attribution a {
   color: inherit;

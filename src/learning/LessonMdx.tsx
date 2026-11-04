@@ -1,5 +1,6 @@
 import type { MDXComponents } from 'mdx/types';
 import { createContext, isValidElement, useContext, useState, type ReactNode } from 'react';
+import { ArrowUpRight } from 'lucide-react';
 import { Activity as LearningActivity } from '../activities/Activity';
 import { lessonById } from '../curriculum/blockml';
 import type { NodeExampleSpec } from '../curriculum/nodeExamples';
@@ -83,7 +84,8 @@ function References() {
       <summary>참고 자료 {lesson.references.length}개</summary>
       {lesson.references.map((source) => (
         <a key={source.url} href={source.url} target="_blank" rel="noreferrer">
-          {source.title} ↗
+          {source.title}
+          <ArrowUpRight size={16} aria-hidden="true" />
         </a>
       ))}
     </details>
@@ -126,7 +128,7 @@ function MdxImage({ src = '', alt = '', title }: { src?: string; alt?: string; t
         src={src}
         alt={alt}
         title={title}
-        loading="lazy"
+        loading="eager"
         decoding="async"
         onError={() => setFailed(true)}
       />

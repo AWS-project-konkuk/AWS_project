@@ -1,10 +1,12 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · redesign: full · nav: kept · signature: interactive lesson controls · states: existing · posture: restrained · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, increased control labels and removed competing side stripes */
 .activity {
-  margin: 28px 0 38px;
+  margin: 28px 0 var(--space-xl);
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel);
   overflow: hidden;
-  padding: 22px;
+  padding: var(--space-lg);
   color: var(--text);
   font-size: 14px;
   line-height: 1.7;
@@ -12,34 +14,34 @@
 .activity header > span {
   color: var(--accent);
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .activity h3 {
   font-size: 17px;
   line-height: 1.65;
-  margin: 8px 0;
+  margin: var(--space-xs) 0;
 }
 .activity small {
   color: var(--soft);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 .fields {
   display: grid;
-  gap: 15px;
+  gap: var(--space-md);
   margin: 20px 0;
 }
 .fields label > span {
   display: block;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-xs);
 }
 .fields select,
 .numeric input[type='number'] {
   background: var(--page);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 8px;
+  padding: var(--space-xs);
   border-radius: 5px;
   width: 100%;
   min-width: 0;
@@ -47,7 +49,7 @@
 .numeric {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 78px;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: center;
 }
 .numeric input[type='range'] {
@@ -64,7 +66,7 @@
 .playback,
 .commands {
   display: flex;
-  gap: 7px;
+  gap: var(--space-xs);
   flex-wrap: wrap;
 }
 .activity button {
@@ -72,22 +74,22 @@
   color: var(--text);
   background: var(--page);
   border-radius: 5px;
-  padding: 7px 10px;
-  font-size: 12px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
 }
 .playback button:first-child,
 .activity .complete {
   background: var(--accent);
-  color: white;
+  color: var(--color-accent-ink);
   border-color: var(--accent);
 }
 .phase {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--soft);
 }
 .result {
-  font-size: 13px;
-  margin: 18px 0;
+  font-size: var(--text-sm);
+  margin: 20px 0;
 }
 .result strong {
   display: block;
@@ -96,69 +98,69 @@
 .result dl {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-  margin: 14px 0;
+  gap: var(--space-sm);
+  margin: var(--space-md) 0;
 }
 .result dl div {
-  border-left: 2px solid var(--accent);
-  padding-left: 10px;
+  border-left: 1px solid var(--accent);
+  padding-left: var(--space-sm);
 }
 .result dt {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--soft);
 }
 .result dd {
-  margin: 3px 0;
+  margin: var(--space-2xs) 0;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
 .quiz {
   border: 0;
   border-top: 1px solid var(--border);
-  margin: 24px 0;
-  padding: 16px 0 0;
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) 0 0;
   min-width: 0;
 }
 .quiz legend {
   font-weight: 650;
   font-size: 14px;
-  padding: 0 0 12px;
+  padding: 0 0 var(--space-sm);
 }
 .quiz label {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  margin: 9px 0;
-  padding: 10px;
+  gap: var(--space-xs);
+  margin: var(--space-xs) 0;
+  padding: var(--space-sm);
   background: var(--page);
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 .quiz input {
-  margin-top: 5px;
+  margin-top: var(--space-2xs);
   accent-color: var(--accent);
   flex-shrink: 0;
 }
 .quiz p,
 .warning {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .compute,
 .comparison {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
 }
 .compute strong {
   display: block;
-  font-size: 12px;
-  margin-bottom: 10px;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-sm);
 }
 .jobs {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 3px;
+  gap: var(--space-2xs);
 }
 .jobs i {
   aspect-ratio: 1;
@@ -174,12 +176,12 @@
 }
 .memory div {
   background: var(--accent);
-  color: white;
-  font-size: 10px;
+  color: var(--color-accent-ink);
+  font-size: var(--text-sm);
   overflow: hidden;
   white-space: nowrap;
   text-align: center;
-  padding-top: 14px;
+  padding-top: var(--space-md);
 }
 .memory div + div {
   background: var(--soft);
@@ -187,15 +189,15 @@
 .gpus {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-  gap: 10px;
+  gap: var(--space-sm);
 }
 .gpus > div {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--accent);
   border-radius: 7px;
-  padding: 12px;
-  font-size: 12px;
+  padding: var(--space-sm);
+  font-size: var(--text-sm);
   background: var(--page);
 }
 .gpus b {
@@ -203,34 +205,34 @@
 }
 .parallel > strong {
   display: block;
-  margin-bottom: 16px;
-  font-size: 12px;
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
 }
 .flowBand {
   background: var(--page);
   border: 1px dashed var(--border);
   grid-column: 1/-1;
-  padding: 10px;
+  padding: var(--space-sm);
   border-radius: 5px;
-  font-size: 12px;
-  margin-top: 12px;
+  font-size: var(--text-sm);
+  margin-top: var(--space-sm);
 }
 .layerBox {
-  font-size: 12px;
+  font-size: var(--text-sm);
   background: var(--page);
   border: 1px solid var(--border);
-  padding: 12px;
+  padding: var(--space-sm);
   border-radius: 6px;
 }
 .layerBox strong {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-sm);
 }
 .layerBox > div {
-  padding: 8px;
-  margin-top: 7px;
+  padding: var(--space-xs);
+  margin-top: var(--space-xs);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 1px solid var(--accent);
   background: var(--panel);
 }
 .plot {
@@ -240,28 +242,26 @@
 }
 .plot text {
   fill: var(--soft);
-  font:
-    11px Pretendard,
-    sans-serif;
+  font: var(--text-sm) var(--font-body);
 }
 .requests {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  gap: 5px;
+  gap: var(--space-2xs);
 }
 .requests i {
   height: 10px;
   border-radius: 2px;
 }
 .bars > div {
-  margin-bottom: 14px;
-  font-size: 12px;
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
 }
 .bars > div > div {
   height: 12px;
   background: var(--accent);
   border-radius: 3px;
-  margin: 5px 0;
+  margin: var(--space-2xs) 0;
 }
 .steps {
   list-style: none;
@@ -270,18 +270,18 @@
 }
 .steps li {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: center;
-  padding: 9px;
-  border-left: 2px solid var(--border);
-  font-size: 13px;
+  padding: var(--space-xs);
+  border-left: 1px solid var(--border);
+  font-size: var(--text-sm);
 }
 .steps li[data-active='true'] {
   border-color: var(--accent);
   background: var(--page);
 }
 .steps span {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--accent);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -292,12 +292,157 @@
 }
 @media (max-width: 600px) {
   .activity {
-    padding: 16px;
+    padding: var(--space-md);
   }
   .comparison {
-    gap: 9px;
+    gap: var(--space-xs);
   }
   .jobs {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Reading activities share the article surface; only the controls and figures introduce a second level. */
+.activity {
+  margin: var(--space-lg) 0 var(--space-xl);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-md);
+  line-height: 1.8;
+}
+.activity h3 {
+  font-size: var(--text-lg);
+  color: var(--color-ink);
+  margin: 0 0 var(--space-sm);
+}
+.activity header > span {
+  display: inline;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  margin-right: var(--space-sm);
+}
+.activity header > small {
+  font-size: var(--text-sm);
+}
+.activity :is(select, input[type='number']) {
+  font-size: var(--text-md);
+  min-height: 40px;
+  border-color: var(--color-muted);
+  background: var(--color-paper);
+}
+.activity button {
+  min-height: 40px;
+  font-size: var(--text-sm);
+  border-color: var(--color-rule-2);
+  padding: var(--space-xs) var(--space-sm);
+}
+.activity button:hover:not(:disabled) {
+  background: var(--color-paper-2);
+}
+.activity button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.activity button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+}
+.activity :is(button, input, select, a):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.activity .playback button:first-child,
+.activity .complete {
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.activity .playback button:first-child:hover:not(:disabled),
+.activity .complete:hover:not(:disabled) {
+  background: var(--color-accent-deep);
+}
+.fields {
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+.fields label > span {
+  font-size: var(--text-sm);
+}
+.visual {
+  padding: var(--space-lg) 0;
+  margin: var(--space-lg) 0;
+}
+.result {
+  font-size: var(--text-md);
+  margin: var(--space-lg) 0;
+}
+.result dl {
+  gap: var(--space-md);
+  margin: var(--space-md) 0;
+}
+.result dl div {
+  border-left: 0;
+  border-top: 1px solid var(--color-rule);
+  padding: var(--space-sm) 0;
+}
+.result dt {
+  font-size: var(--text-sm);
+}
+.result dd {
+  font-variant-numeric: tabular-nums;
+}
+.quiz label {
+  background: var(--color-paper);
+  font-size: var(--text-md);
+}
+.layerBox {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.layerBox > div {
+  border-left: 1px solid var(--color-rule);
+  background: var(--color-paper-2);
+}
+.gpus > div {
+  border-color: var(--color-rule-2);
+  background: var(--color-paper-2);
+}
+.flowBand {
+  border: 0;
+  border-block: 1px solid var(--color-rule);
+  background: transparent;
+}
+.steps li {
+  border-left: 0;
+  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-sm);
+}
+.steps li[data-active='true'] {
+  background: var(--color-accent-wash);
+}
+@media (max-width: 600px) {
+  .activity {
+    padding: 0;
+  }
+  .activity button {
+    min-height: 44px;
+  }
+  .comparison {
+    gap: var(--space-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity *,
+  .activity *::before,
+  .activity *::after {
+    transition: none;
+    animation: none;
   }
 }

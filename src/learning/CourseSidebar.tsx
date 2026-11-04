@@ -38,7 +38,7 @@ export function CourseSidebar({
           <ArrowLeft size={16} />
           학습 과정
         </a>
-        <button onClick={onClose} aria-label="강의 목차 닫기">
+        <button type="button" onClick={onClose} aria-label="강의 목차 닫기">
           <X size={18} />
         </button>
       </header>

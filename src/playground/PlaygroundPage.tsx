@@ -83,8 +83,8 @@ export function PlaygroundPage() {
     <main className={styles.page}>
       <header className={styles.heading}>
         <div>
-          <span>노드로 만드는 학습 흐름</span>
           <h1>Playground</h1>
+          <span>노드로 만드는 학습 흐름</span>
           <p>노드를 추가하고 연결하며 MLOps의 흐름을 구성해 보세요.</p>
         </div>
         <div className={styles.actions}>

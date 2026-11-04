@@ -76,9 +76,8 @@ function LearningRoom() {
           <div className={styles.breadcrumb}>
             학습실 <ChevronRight size={12} /> MLOps 기초
           </div>
-          <h1>
-            나의 첫 MLOps 워크플로<span>실습 01</span>
-          </h1>
+          <h1>나의 첫 MLOps 워크플로</h1>
+          <span className={styles.lessonTag}>실습 01</span>
         </div>
         <div
           className={`${styles.saveStatus} ${state.saveBlocked || saveMessage.includes('실패') ? styles.saveError : ''}`}
@@ -158,9 +157,7 @@ function LearningRoom() {
         </div>
       </main>
       <footer className={styles.footer}>
-        <span>
-          BLOCKML <i /> 작은 연결이 만드는 큰 이해
-        </span>
+        <span>BlockML, 작은 연결이 만드는 큰 이해</span>
         <span>로컬 저장 · 학습용 예시 데이터</span>
       </footer>
       {dialog && (

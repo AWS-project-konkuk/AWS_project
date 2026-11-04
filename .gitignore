@@ -6,3 +6,5 @@ test-results/
 *.local
 .env*
 !.env.example
+.hallmark/
+.impeccable/

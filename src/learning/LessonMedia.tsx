@@ -25,7 +25,7 @@ export function LessonMedia({ part }: { part: Reading }) {
               <img
                 src={part.image.src}
                 alt={part.image.alt}
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 onError={() => setFailedSrc(part.image!.src)}
               />
@@ -33,15 +33,11 @@ export function LessonMedia({ part }: { part: Reading }) {
           )}
           {(part.image.caption || part.image.source) && (
             <figcaption>
-              {part.image.caption}
+              {part.image.caption && <span>{part.image.caption}</span>}
               {part.image.source && (
-                <>
-                  {' '}
-                  ·{' '}
-                  <a href={part.image.source.url} target="_blank" rel="noreferrer">
-                    {part.image.source.title}
-                  </a>
-                </>
+                <a href={part.image.source.url} target="_blank" rel="noreferrer">
+                  {part.image.source.title}
+                </a>
               )}
             </figcaption>
           )}
@@ -52,6 +48,7 @@ export function LessonMedia({ part }: { part: Reading }) {
           <div className={styles.codeToolbar}>
             <span>{part.code.language}</span>
             <button
+              type="button"
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(part.code!.text);

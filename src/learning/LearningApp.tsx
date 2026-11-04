@@ -32,18 +32,25 @@ function Header() {
   return (
     <>
       <header className={styles.header}>
-        <a className={styles.logo} href="#/learn">
+        <a className={styles.logo} href="#/learn" aria-label="BlockML 학습 과정 홈">
           <span>
             <GraduationCap size={24} />
           </span>
           <strong>
             Block<span>ML</span>
           </strong>
-          <small>MLOPS LEARNING</small>
+          <small>MLOps 학습실</small>
         </a>
         <nav>
-          <a href="#/learn">학습 과정</a>
-          <a href="#/playground">Playground</a>
+          <a href="#/learn" aria-current={location.hash !== '#/playground' ? 'page' : undefined}>
+            학습 과정
+          </a>
+          <a
+            href="#/playground"
+            aria-current={location.hash === '#/playground' ? 'page' : undefined}
+          >
+            Playground
+          </a>
           <span className={styles.progressPill}>
             <CheckCircle2 size={14} />
             {count} / {lessons.length} 완료
@@ -111,17 +118,12 @@ function LearningHub() {
     <main className={styles.hub}>
       <section className={styles.hero}>
         <div>
-          <span className={styles.eyebrow}>LEARN BY DOING · MLOPS</span>
           <h1>
             MLOps, 하나씩 이해하고
             <br />
-            <em>직접 해결해 보세요.</em>
+            직접 해결해 보세요.
           </h1>
-          <p>
-            설명으로 원리를 이해하고, 전체 지도에서 관계를 찾아보세요.
-            <br />
-            AWS 기초부터 모델 운영까지 이어지는 나만의 학습 여정.
-          </p>
+          <p>AWS 기초부터 모델 운영까지, 읽고 연결하며 전체 흐름을 익힙니다.</p>
           <a className={styles.primary} href={href(next.id)}>
             {count ? '이어서 학습하기' : '첫 강의 시작하기'}
             <ArrowRight size={16} />
@@ -131,7 +133,11 @@ function LearningHub() {
             href="#curriculum"
             onClick={(event) => {
               event.preventDefault();
-              document.getElementById('curriculum')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById('curriculum')?.scrollIntoView({
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                  ? 'instant'
+                  : 'smooth',
+              });
             }}
           >
             전체 과정 살펴보기
@@ -139,34 +145,39 @@ function LearningHub() {
           </a>
         </div>
         <aside className={styles.journey}>
-          <span>YOUR LEARNING JOURNEY</span>
+          <strong>읽고, 연결하고, 설명하기</strong>
           <div className={styles.journeyIcons}>
             <span>
-              <Layers3 />
+              <BookOpen aria-hidden="true" />
+              <span>개념 이해</span>
             </span>
             <i />
             <span>
-              <BookOpen />
+              <Layers3 aria-hidden="true" />
+              <span>흐름 연결</span>
             </span>
             <i />
             <span>
-              <Target />
+              <Target aria-hidden="true" />
+              <span>이해 확인</span>
             </span>
           </div>
-          <strong>읽고, 연결하고, 설명하기</strong>
-          <p>
-            실제 인프라 설치 없이
-            <br />
-            브라우저에서 안전하게 실험합니다.
-          </p>
+          <p>실제 인프라 설치 없이 브라우저에서 안전하게 실험합니다.</p>
           <div className={styles.journeyProgress}>
             <span>나의 학습 진행</span>
             <b>
               {count} / {lessons.length}
             </b>
           </div>
-          <div className={styles.progressBar}>
-            <i style={{ width: `${(count / lessons.length) * 100}%` }} />
+          <div
+            className={styles.progressBar}
+            role="progressbar"
+            aria-label="나의 학습 진행"
+            aria-valuemin={0}
+            aria-valuemax={lessons.length}
+            aria-valuenow={count}
+          >
+            <i style={{ transform: `scaleX(${count / lessons.length})` }} />
           </div>
         </aside>
       </section>
@@ -196,7 +207,6 @@ function LearningHub() {
       <section id="curriculum" className={styles.curriculum}>
         <div className={styles.curriculumHeading}>
           <div>
-            <span className={styles.eyebrow}>CURRICULUM</span>
             <h2>필수 기초부터 MLOps의 전체 흐름까지</h2>
             <p>
               설명 중심 학습과 선택 활동·워크플로·종합 과제로 총 {lessons.length}개 강의를
@@ -234,7 +244,7 @@ function LearningHub() {
               aria-label={chapterLabel(week.week)}
             >
               <div className={styles.chapterHeading}>
-                <span style={{ color: week.color }}>{chapterLabel(week.week)}</span>
+                <span>{chapterLabel(week.week)}</span>
                 <div>
                   <h3>{week.title}</h3>
                   <p>{week.summary}</p>
@@ -259,10 +269,34 @@ function LearningHub() {
                       className={styles.lessonCard}
                       data-testid={`lesson-card-${lesson.id}`}
                     >
-                      <div>
-                        <span className={styles.lessonNumber}>
-                          {String(lessons.indexOf(lesson) + 1).padStart(2, '0')}
-                        </span>
+                      <span className={styles.lessonNumber}>
+                        {String(lessons.indexOf(lesson) + 1).padStart(2, '0')}
+                      </span>
+                      <div className={styles.lessonIdentity}>
+                        <h4>{lesson.title}</h4>
+                        <p>{lesson.summary}</p>
+                      </div>
+                      <div className={styles.lessonDetails}>
+                        {(lesson.workflow ||
+                          lesson.nodeExample ||
+                          lesson.activity ||
+                          lesson.contentFeatures?.nodeExamples ||
+                          lesson.contentFeatures?.activities) && (
+                          <span className={styles.practiceBadge}>
+                            {lesson.workflow
+                              ? '노드 실습'
+                              : lesson.nodeExample || lesson.contentFeatures?.nodeExamples
+                                ? '본문 노드 학습'
+                                : '선택 활동'}
+                          </span>
+                        )}
+                        <div className={styles.concepts}>
+                          {lesson.concepts.slice(0, 3).map((concept) => (
+                            <span key={concept}>{concept}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <footer>
                         <span className={complete ? styles.cardComplete : styles.cardPending}>
                           {complete ? (
                             <>
@@ -276,30 +310,10 @@ function LearningHub() {
                             </>
                           )}
                         </span>
-                      </div>
-                      <h4>{lesson.title}</h4>
-                      {(lesson.workflow ||
-                        lesson.nodeExample ||
-                        lesson.activity ||
-                        lesson.contentFeatures?.nodeExamples ||
-                        lesson.contentFeatures?.activities) && (
-                        <span className={styles.practiceBadge}>
-                          {lesson.workflow
-                            ? '노드 실습'
-                            : lesson.nodeExample || lesson.contentFeatures?.nodeExamples
-                              ? '본문 노드 학습'
-                              : '선택 활동'}
+                        <span className={styles.lessonAction}>
+                          {complete ? '다시 학습하기' : '학습 시작'}
+                          <ArrowUpRight size={15} aria-hidden="true" />
                         </span>
-                      )}
-                      <p>{lesson.summary}</p>
-                      <div className={styles.concepts}>
-                        {lesson.concepts.slice(0, 3).map((concept) => (
-                          <span key={concept}>{concept}</span>
-                        ))}
-                      </div>
-                      <footer>
-                        <span>{complete ? '다시 학습하기' : '학습 시작'}</span>
-                        <ArrowUpRight size={15} />
                       </footer>
                     </a>
                   );
@@ -324,8 +338,8 @@ function LearningHub() {
         )}
       </section>
       <footer className={styles.siteFooter}>
-        <span>BLOCKML · 연결하며 배우는 MLOps</span>
-        <span>학습자를 위한 개념 실습 · 실제 클라우드 비용 없음</span>
+        <span>BlockML, 연결하며 배우는 MLOps</span>
+        <span>학습자를 위한 개념 실습. 실제 클라우드 비용 없음</span>
       </footer>
     </main>
   );
@@ -346,10 +360,10 @@ function RoutedLearning() {
   const isPlayground = hash === '#/playground';
   useEffect(() => {
     document.title = isPlayground
-      ? 'Playground — BlockML'
+      ? 'Playground | BlockML'
       : lesson
-        ? `${lesson.title} — BlockML`
-        : 'BlockML — MLOps 학습 여정';
+        ? `${lesson.title} | BlockML`
+        : 'BlockML | MLOps 학습 과정';
   }, [lesson, isPlayground]);
   return (
     <div className={styles.appFrame} data-lesson={Boolean(lesson) || isPlayground}>

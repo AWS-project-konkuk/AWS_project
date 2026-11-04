@@ -22,17 +22,17 @@ export function LessonArticle({ lesson, completed }: { lesson: Lesson; completed
       data-testid="lesson-reading"
     >
       <header className={styles.documentHeader}>
-        <p className={styles.chapterTag}>
-          {chapterLabel(lesson.week)} · MLOps · 원문 {lesson.sourceWeek ?? lesson.week}주차
-        </p>
         <h1>{lesson.title}</h1>
         <p className={styles.lead}>{lesson.summary}</p>
         <div className={styles.documentMeta}>
+          <span>{chapterLabel(lesson.week)}</span>
+          <span>MLOps</span>
+          <span>원문 {lesson.sourceWeek ?? lesson.week}주차</span>
           <span>
             <Clock3 size={14} />약 {lesson.minutes}분
           </span>
           {completed && (
-            <span>
+            <span className={styles.completed}>
               <CheckCircle2 size={14} />
               목표 달성
             </span>
@@ -43,10 +43,10 @@ export function LessonArticle({ lesson, completed }: { lesson: Lesson; completed
         <strong>이 강의에서 할 일</strong>
         {lesson.scenario}
       </p>
-      <WorkflowMap lesson={lesson} />
       <LessonMdxProvider lesson={lesson}>
         <Content components={lessonMdxComponents} />
       </LessonMdxProvider>
+      <WorkflowMap lesson={lesson} />
       <p className={styles.documentEnd}>
         원문 링크의 명령·YAML은 실제 환경에서 수행하는 추가 실습입니다. 사이트의 이해 확인과 별도로
         진행하세요.

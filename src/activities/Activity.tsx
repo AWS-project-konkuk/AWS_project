@@ -85,8 +85,8 @@ export function Activity({ lesson }: { lesson: Lesson }) {
       data-testid="inline-activity"
     >
       <header>
-        <span>직접 관찰하기</span>
         <h3>{spec.task}</h3>
+        <span>직접 관찰하기</span>
         <small>교육용 예시 · 실제 모델·인프라 실행 없음</small>
       </header>
       <Fields

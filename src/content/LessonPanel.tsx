@@ -10,8 +10,8 @@ export function LessonPanel() {
   return (
     <aside className={styles.panel} aria-label="학습 콘텐츠">
       <div className={styles.course}>
-        <span className={styles.eyebrow}>LEARNING PATH · 01</span>
         <h2>모델이 서비스가 되기까지</h2>
+        <span className={styles.eyebrow}>학습 과정 01</span>
         <p>
           데이터에서 시작해 서빙까지,
           <br />
@@ -75,12 +75,12 @@ export function LessonPanel() {
           </button>
         </article>
         <div className={styles.mission}>
-          <span>이번 과제</span>
           <h3>
             평가를 통과한 모델만
             <br />
             서비스로 보내기
           </h3>
+          <span>이번 과제</span>
           <p>6개 단계를 연결한 뒤, 평가 기준이 달라지면 어떤 일이 생기는지 확인하세요.</p>
           <div>
             <span>예시 정확도</span>
