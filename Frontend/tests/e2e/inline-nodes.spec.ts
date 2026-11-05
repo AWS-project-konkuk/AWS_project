@@ -47,22 +47,25 @@ test('빠진 연결을 직접 채우고 저장·복원하며 본 강의 완료�
   const example = page.getByTestId('inline-node-s3-objects');
   await example.scrollIntoViewIfNeeded();
   await example.getByRole('button', { name: '직접 연결해 보기', exact: true }).click();
-  await expect(example.locator('.react-flow__edge')).toHaveCount(1);
+  await expect(example.locator('.react-flow__edge')).toHaveCount(0);
   await example.getByRole('button', { name: '연결 확인', exact: true }).click();
   await expect(example.getByRole('status')).toContainText('빠진 연결');
   await example.getByLabel('예제 출발 노드').selectOption('artifact');
   await example.getByLabel('예제 도착 노드').selectOption('dataset');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
   await expect(example.getByRole('status')).toContainText('연결을 추가했습니다');
-  await expect(example.locator('.react-flow__edge')).toHaveCount(2);
+  await expect(example.locator('.react-flow__edge')).toHaveCount(1);
   await example.getByRole('button', { name: '다음 연결 따라가기', exact: true }).click();
   await expect(example.getByRole('status').filter({ hasText: '실행 실패' })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('blockml:learning:v5')))
     .toContain('extra');
   await page.reload();
-  await expect(example.locator('.react-flow__edge')).toHaveCount(2);
+  await expect(example.locator('.react-flow__edge')).toHaveCount(1);
   await example.getByRole('button', { name: '추가 연결 삭제', exact: true }).click();
+  await example.getByLabel('예제 출발 노드').selectOption('dataset');
+  await example.getByLabel('예제 도착 노드').selectOption('training');
+  await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
   await example.getByLabel('예제 출발 노드').selectOption('training');
   await example.getByLabel('예제 도착 노드').selectOption('artifact');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
@@ -84,6 +87,25 @@ test('빠진 연결을 직접 채우고 저장·복원하며 본 강의 완료�
   await example.getByRole('button', { name: '다음 연결 따라가기', exact: true }).click();
   await expect(example.getByRole('status').filter({ hasText: 'train-v1.csv' })).toBeVisible();
   await page.screenshot({ path: 'test-results/inline-node-desktop.png' });
+  await example.getByLabel('예제 출발 노드').selectOption('artifact');
+  await example.getByLabel('예제 도착 노드').selectOption('dataset');
+  await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
+  await expect(example.locator('.react-flow__edge')).toHaveCount(3);
+  await example.getByRole('button', { name: '직접 연결해 보기', exact: true }).click();
+  await expect(example.locator('.react-flow__edge')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const data = JSON.parse(localStorage.getItem('blockml:learning:v5') ?? '{}');
+        const raw = data.lessons?.['s3-objects']?.answers?.['_inline:s3-read-train'];
+        return raw ? JSON.parse(raw) : null;
+      }),
+    )
+    .toEqual({ mode: 'practice', links: [], extra: [] });
+  await page.reload();
+  await expect(example.locator('.react-flow__edge')).toHaveCount(0);
+  await example.getByRole('button', { name: '완성 예시 보기', exact: true }).click();
+  await expect(example.locator('.react-flow__edge')).toHaveCount(2);
 });
 
 test('구성 관계는 전송 애니메이션으로 오해시키지 않으며 목차에서 구분한다', async ({ page }) => {
@@ -111,6 +133,6 @@ test('모바일에서도 본문을 스크롤하고 키보드 방식으로 연결
   await example.getByLabel('예제 출발 노드').selectOption('search');
   await example.getByLabel('예제 도착 노드').selectOption('generation');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
-  await expect(example.locator('.react-flow__edge')).toHaveCount(3);
+  await expect(example.locator('.react-flow__edge')).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

@@ -245,11 +245,7 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
         >
           완성 예시 보기
         </button>
-        <button
-          onClick={() =>
-            save({ mode: 'practice', links: spec.links.slice(0, -1).map((link) => link.id) })
-          }
-        >
+        <button onClick={() => save({ mode: 'practice', links: [], extra: [] })}>
           직접 연결해 보기
         </button>
         <button onClick={() => setStep((value) => (value >= stages.length - 1 ? 0 : value + 1))}>

@@ -64,6 +64,9 @@ test('선택 활동과 본문 노드 학습을 테두리로 구분하고 연결 
     .locator('[data-feedback="error"]')
     .screenshot({ path: 'test-results/feedback-connection-wrong.png' });
   await example.getByRole('button', { name: '추가 연결 삭제', exact: true }).click();
+  await example.getByLabel('예제 출발 노드').selectOption('dataset');
+  await example.getByLabel('예제 도착 노드').selectOption('training');
+  await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
   await example.getByLabel('예제 출발 노드').selectOption('training');
   await example.getByLabel('예제 도착 노드').selectOption('artifact');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();

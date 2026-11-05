@@ -87,6 +87,9 @@ test('본문 예제의 정상 연결을 키보드로 삭제하고 작은 캔버�
   await page.goto('/#/learn/s3-objects');
   const example = page.getByTestId('inline-node-s3-objects');
   await example.getByRole('button', { name: '직접 연결해 보기', exact: true }).click();
+  await example.getByLabel('예제 출발 노드').selectOption('dataset');
+  await example.getByLabel('예제 도착 노드').selectOption('training');
+  await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
   const list = example.getByRole('list', { name: '예제 연결 목록' });
   await expect(list.getByRole('button')).toHaveCount(1);
   const remove = list.getByRole('button').first();
