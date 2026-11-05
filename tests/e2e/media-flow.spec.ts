@@ -46,6 +46,10 @@ test('노드별 아이콘·자료 이동·일시정지·실패 전파를 표시�
     .locator('[data-node-icon]')
     .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-node-icon')));
   expect(new Set(kinds).size).toBeGreaterThanOrEqual(4);
+  await page.getByRole('button', { name: '설정·결과 열기', exact: true }).click();
+  await page.getByRole('button', { name: '노드 설정', exact: true }).click();
+  await page.getByLabel('온라인 집계 시간', { exact: true }).selectOption('day');
+  await page.getByRole('button', { name: '패널 닫기', exact: true }).click();
   await page.getByRole('button', { name: '전체 실행', exact: true }).click();
   const packet = page.locator('[data-testid="data-transfer"] circle:has(animateMotion)').first();
   await expect(packet).toBeVisible();

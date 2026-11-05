@@ -1,3 +1,5 @@
+import { ResultFeedback } from '../learning/ResultFeedback';
+import { CheckCircle2, CircleAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 import { validInputs } from '../activities/simulation';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
@@ -28,6 +30,7 @@ import {
 } from './engine';
 import type { Run } from './types';
 import styles from './Weekly.module.css';
+import { applyWorkflowPreset } from './presets';
 const nodeTypes = { workflow: WorkflowNode };
 const edgeTypes = { transfer: TransferEdge };
 function Camera({
@@ -88,6 +91,14 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
     [showIssues, setShowIssues] = useState(false),
     [message, setMessage] = useState(''),
     [tab, setTab] = useState<'trace' | 'settings' | 'connections'>('trace');
+  const [messageTone, setMessageTone] = useState<'success' | 'error' | 'info'>('info');
+  const [messageVersion, setMessageVersion] = useState(0);
+  const announceMessage = (text: string, tone: 'success' | 'error' | 'info' = 'info') => {
+    setMessage(text);
+    setMessageTone(tone);
+    setMessageVersion((value) => value + 1);
+  };
+  const [previousPreset, setPreviousPreset] = useState<LabState | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [focused, setFocused] = useState(false);
   const [canvasHeight, setCanvasHeight] = useState(720);
@@ -115,6 +126,20 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
     history = workflowHistory(lab.answers);
   const goals = evaluateGoals(lesson, lab),
     ready = goals.every((g) => g.passed);
+  // 실행 전 미리보기와 실행 후 탐색 모두 동일한 위상 실행 순서를 쓴다.
+  const stageNodes = (current?.run ?? runWorkflow(lesson.id, lab)).stages
+    .map((stage) => spec.nodes.find((node) => node.id === stage.node))
+    .filter((node): node is NonNullable<typeof node> => Boolean(node));
+  const openCompletion = () => {
+    setDetailsOpen(true);
+    requestAnimationFrame(() => {
+      const target = document
+        .getElementById(detailsId)
+        ?.querySelector<HTMLElement>('[data-tour="goals"]');
+      target?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      target?.focus({ preventScroll: true });
+    });
+  };
   const inspect = spec.nodes.find((n) => n.id === selected);
   const selectedStage = current?.run.stages
     .slice(0, current.cursor + 1)
@@ -171,14 +196,10 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
     edit(lesson.id, fn, semantic);
     if (semantic) {
       setExecution(null);
-      setMessage('구성이 바뀌어 이전 실행을 중단했습니다. 다시 실행해 비교하세요.');
+      announceMessage('구성이 바뀌어 이전 실행을 중단했습니다. 다시 실행해 비교하세요.');
     }
   };
   const connect = (connection: Connection) => {
-    if (connection.source === connection.target) {
-      setMessage('자기 자신과 연결할 수 없습니다.');
-      return;
-    }
     const e = workflowEdge({
       source: connection.source,
       sourceHandle: connection.sourceHandle ?? '',
@@ -186,7 +207,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
       targetHandle: connection.targetHandle ?? '',
     });
     if (lab.edges.some((v) => v.id === e.id)) {
-      setMessage('이미 같은 포트가 연결되어 있습니다.');
+      announceMessage('이미 같은 포트가 연결되어 있습니다.');
       return;
     }
     change((c) => ({ ...c, edges: [...c.edges, e] }));
@@ -197,8 +218,8 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
     setCameraTarget('');
     setSelected(run.stages[0]?.node ?? '');
     setTab('trace');
-    setShowIssues(true);
-    setMessage('');
+    setShowIssues(false);
+    announceMessage('');
     if (run.stages.length === 1) record(run);
   };
   const next = () => {
@@ -273,6 +294,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
           <p>{spec.task}</p>
         </details>
         <div className={styles.workspaceActions}>
+          <button onClick={openCompletion}>완료 조건 보기</button>
           <button
             aria-expanded={detailsOpen}
             aria-controls={detailsId}
@@ -303,9 +325,10 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
         )}
         <button
           onClick={() => {
-            change((c) => ({ ...c, edges: spec.wires.map(workflowEdge) }));
-            setMessage(
-              '1. 연결된 예시를 단계 실행하며 입력과 출력을 추적하세요. 기본 조건의 실패 원인도 확인합니다.',
+            setPreviousPreset(structuredClone(lab));
+            change((c) => applyWorkflowPreset(lesson.id, c, 'example'));
+            announceMessage(
+              '1. 실행 가능한 연결과 설정을 불러왔습니다. 전체 실행하며 단계별 입력과 출력을 추적하세요.',
             );
           }}
         >
@@ -313,9 +336,10 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
         </button>
         <button
           onClick={() => {
-            change((c) => ({ ...c, edges: spec.wires.slice(1).map(workflowEdge) }));
-            setMessage(
-              '2. 연결 검사로 누락된 자료를 찾고 복원한 뒤, 설정 실패의 원인을 수정하세요.',
+            setPreviousPreset(structuredClone(lab));
+            change((c) => applyWorkflowPreset(lesson.id, c, 'repair'));
+            announceMessage(
+              '2. 처음 실습과 같은 일부 연결과 기본 설정을 불러왔습니다. 빠진 연결을 구성하고 잘못된 설정을 수정하세요.',
             );
           }}
         >
@@ -323,23 +347,66 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
         </button>
         <button
           onClick={() => {
-            change((c) => ({ ...c, edges: [], answers: { ...c.answers, _workflowQuiz: '' } }));
-            setMessage(
+            setPreviousPreset(structuredClone(lab));
+            change((c) => applyWorkflowPreset(lesson.id, c, 'new'));
+            announceMessage(
               '3. 요구 조건을 만족하는 경로를 직접 구성하세요. 두 가지 설정을 비교하고 왜 결과가 다른지 설명하세요.',
             );
           }}
         >
           3. 새로운 상황 구성
         </button>
+        {previousPreset && (
+          <button
+            onClick={() => {
+              const snapshot = previousPreset;
+              change((c) => ({
+                ...snapshot,
+                attempts: c.attempts,
+                answers: {
+                  ...snapshot.answers,
+                  _workflowHistory:
+                    c.answers._workflowHistory ?? snapshot.answers._workflowHistory ?? '[]',
+                },
+              }));
+              setPreviousPreset(null);
+              announceMessage(
+                '과제를 바꾸기 전 연결과 설정을 복원했습니다. 다시 실행해 결과를 확인하세요.',
+              );
+            }}
+          >
+            직전 구성 되돌리기
+          </button>
+        )}
       </div>
+      <p className={styles.presetNotice} hidden={focused}>
+        과제를 불러오면 현재 연결과 설정이 교체됩니다. 직전 구성은 되돌릴 수 있습니다.
+      </p>
+      {!focused && (
+        <details className={styles.completionGuide}>
+          <summary>
+            완료 조건 {goals.filter((goal) => goal.passed).length}/{goals.length}:{' '}
+            {goals.find((goal) => !goal.passed)?.label ?? '모든 조건 충족'}
+          </summary>
+          <ol>
+            {goals.map((goal) => (
+              <li key={goal.id}>
+                {goal.passed ? '완료' : '남음'}: {goal.label}
+              </li>
+            ))}
+          </ol>
+          <button onClick={openCompletion}>완료 문항과 목표 확인하기</button>
+        </details>
+      )}
       <div className={styles.tools} data-testid="weekly-run">
         <button
           onClick={() => {
             setShowIssues(true);
-            setMessage(
+            announceMessage(
               issues.length
                 ? `${issues.length}개 연결 조건을 확인하세요.`
                 : '포트 연결 조건을 충족했습니다. 실행 조건도 확인하세요.',
+              issues.length ? 'error' : 'success',
             );
           }}
         >
@@ -362,7 +429,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
         <button
           onClick={() => {
             setExecution(null);
-            setMessage('실행을 중단했습니다. 관찰이 끝난 비교 기록은 유지합니다.');
+            announceMessage('실행을 중단했습니다. 관찰이 끝난 비교 기록은 유지합니다.');
           }}
         >
           중단
@@ -387,8 +454,24 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
         </span>
       </div>
       {currentTrace && (
-        <div className={styles.transferStatus} role="status" aria-label="현재 데이터 흐름">
+        <div
+          key={`${signature}-${current!.cursor}`}
+          className={styles.transferStatus}
+          data-result={currentTrace.status}
+          role="status"
+          aria-label="현재 데이터 흐름"
+        >
+          {currentTrace.status === 'success' ? (
+            <CheckCircle2 size={20} aria-hidden="true" />
+          ) : (
+            <CircleAlert size={20} aria-hidden="true" />
+          )}
           <strong>
+            {currentTrace.status === 'success'
+              ? '단계 성공: '
+              : currentTrace.status === 'failed'
+                ? '단계 실패: '
+                : '후속 차단: '}
             {current!.cursor + 1}/{current!.run.stages.length} · {currentTrace.title}
           </strong>
           <span>
@@ -407,10 +490,19 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
           </small>
         </div>
       )}
-      {message && !detailsOpen && (
+      {message && messageTone === 'info' && !detailsOpen && (
         <p className={styles.workspaceNotice} role="status">
           {message}
         </p>
+      )}
+      {message && messageTone !== 'info' && !detailsOpen && (
+        <ResultFeedback
+          key={messageVersion}
+          tone={messageTone}
+          title={messageTone === 'success' ? '연결 확인 성공' : '연결 확인 실패'}
+        >
+          {message}
+        </ResultFeedback>
       )}
       <div
         className={styles.workArea}
@@ -488,10 +580,19 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
             <strong>설정·실행 결과</strong>
             <button onClick={() => setDetailsOpen(false)}>패널 닫기</button>
           </div>
-          {message && detailsOpen && (
+          {message && messageTone === 'info' && detailsOpen && (
             <p role="status" className={styles.notice}>
               {message}
             </p>
+          )}
+          {message && messageTone !== 'info' && detailsOpen && (
+            <ResultFeedback
+              key={messageVersion}
+              tone={messageTone}
+              title={messageTone === 'success' ? '연결 확인 성공' : '연결 확인 실패'}
+            >
+              {message}
+            </ResultFeedback>
           )}
           {showIssues && issues.length > 0 && (
             <div className={styles.issues} aria-label="연결 진단">
@@ -523,37 +624,75 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
           {tab === 'trace' && (
             <div className={styles.traceGrid}>
               <nav aria-label="실행 단계" className={styles.timeline}>
-                {spec.nodes.map((n) => {
-                  const index = current?.run.stages.findIndex((s) => s.node === n.id) ?? -1;
-                  const stage =
-                    current && index <= current.cursor && index >= 0
-                      ? current.run.stages[index]
-                      : undefined;
-                  return (
-                    <button
-                      key={n.id}
-                      aria-current={selected === n.id ? 'step' : undefined}
-                      onClick={() => {
-                        setSelected(n.id);
-                        setCameraTarget(n.id);
-                      }}
-                    >
-                      <i data-status={stage?.status ?? 'waiting'} />
-                      <span>
-                        {n.title}
-                        <small>
-                          {stage?.status === 'success'
-                            ? '자료 생성 완료'
-                            : stage?.status === 'failed'
-                              ? '실패 원인 확인'
-                              : stage?.status === 'blocked'
-                                ? '상위 실패로 차단'
-                                : '아직 실행 전'}
-                        </small>
-                      </span>
-                    </button>
-                  );
-                })}
+                <button
+                  className={styles.stageArrow}
+                  aria-label="이전 단계 살펴보기"
+                  disabled={stageNodes.findIndex((n) => n.id === selected) <= 0}
+                  onClick={() => {
+                    const node =
+                      stageNodes[Math.max(0, stageNodes.findIndex((n) => n.id === selected) - 1)];
+                    setSelected(node.id);
+                    setCameraTarget(node.id);
+                  }}
+                >
+                  <ChevronLeft size={18} aria-hidden="true" />
+                </button>
+                {stageNodes
+                  .filter((n, index) => (selected ? n.id === selected : index === 0))
+                  .map((n) => {
+                    const index = current?.run.stages.findIndex((s) => s.node === n.id) ?? -1;
+                    const stage =
+                      current && index <= current.cursor && index >= 0
+                        ? current.run.stages[index]
+                        : undefined;
+                    return (
+                      <button
+                        key={n.id}
+                        aria-current={selected === n.id ? 'step' : undefined}
+                        onClick={() => {
+                          setSelected(n.id);
+                          setCameraTarget(n.id);
+                        }}
+                      >
+                        <i data-status={stage?.status ?? 'waiting'} />
+                        <span>
+                          실행 {stageNodes.indexOf(n) + 1} / {stageNodes.length} {n.title}
+                          <small>
+                            {stage?.status === 'success'
+                              ? '자료 생성 완료'
+                              : stage?.status === 'failed'
+                                ? '실패 원인 확인'
+                                : stage?.status === 'blocked'
+                                  ? '상위 실패로 차단'
+                                  : '아직 실행 전'}
+                          </small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                <button
+                  className={styles.stageArrow}
+                  aria-label="다음 단계 살펴보기"
+                  disabled={
+                    stageNodes.findIndex((n) => n.id === selected) === stageNodes.length - 1
+                  }
+                  onClick={() => {
+                    const node =
+                      stageNodes[
+                        Math.min(
+                          stageNodes.length - 1,
+                          Math.max(
+                            0,
+                            stageNodes.findIndex((n) => n.id === selected),
+                          ) + 1,
+                        )
+                      ];
+                    setSelected(node.id);
+                    setCameraTarget(node.id);
+                  }}
+                >
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
               </nav>
               <section className={styles.inspector} data-testid="weekly-inspector">
                 {inspect ? (
@@ -565,9 +704,19 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
                     <p>{inspect.purpose}</p>
                     {selectedStage ? (
                       <>
-                        <p className={styles.reason} data-status={selectedStage.status}>
+                        <ResultFeedback
+                          key={selectedStage.node + selectedStage.status}
+                          tone={selectedStage.status === 'success' ? 'success' : 'error'}
+                          title={
+                            selectedStage.status === 'success'
+                              ? '실행 성공'
+                              : selectedStage.status === 'failed'
+                                ? '실행 실패'
+                                : '후속 단계 차단'
+                          }
+                        >
                           {selectedStage.reason}
-                        </p>
+                        </ResultFeedback>
                         {selectedStage.fix && (
                           <p>
                             <strong>수정 방향</strong>: {selectedStage.fix}
@@ -798,7 +947,7 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
               </table>
             </div>
           </section>
-          <section className={styles.goals} data-tour="goals">
+          <section className={styles.goals} data-tour="goals" tabIndex={-1}>
             <fieldset>
               <legend>{spec.question}</legend>
               {(spec.week % 2 ? [0, 1] : [1, 0]).map((i) => (
@@ -819,10 +968,14 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
               ))}
             </fieldset>
             {lab.answers._workflowQuiz && (
-              <p role="status">
+              <ResultFeedback
+                key={String(lab.answers._workflowQuiz)}
+                tone={lab.answers._workflowQuiz === 'correct' ? 'success' : 'error'}
+                title={lab.answers._workflowQuiz === 'correct' ? '정답입니다' : '오답입니다'}
+              >
                 {lab.answers._workflowQuiz === 'correct' ? '맞습니다. ' : '다시 생각해 보세요. '}
                 {spec.explanation}
-              </p>
+              </ResultFeedback>
             )}
             {goals.map((g) => (
               <p key={g.id} data-passed={g.passed}>

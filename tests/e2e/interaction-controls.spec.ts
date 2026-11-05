@@ -37,3 +37,21 @@ test('정답 제출 전에는 해설을 숨기고 선택 변경 시 판정을 �
   await page.getByRole('link', { name: '다음 강의', exact: true }).click();
   await expect(page).toHaveURL(/ec2-compute$/);
 });
+test('좁은 설정 패널에서 화살표로 단계를 탐색한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/#/learn/rag-workflow');
+  await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
+  await page.getByRole('button', { name: '설정·결과 열기', exact: true }).click();
+  const nav = page.getByRole('navigation', { name: '실행 단계', exact: true });
+  await expect(nav.getByRole('button', { name: '이전 단계 살펴보기' })).toBeDisabled();
+  const title = await page
+    .getByTestId('weekly-inspector')
+    .getByRole('heading', { level: 3 })
+    .textContent();
+  await nav.getByRole('button', { name: '다음 단계 살펴보기' }).click();
+  await expect(
+    page.getByTestId('weekly-inspector').getByRole('heading', { level: 3 }),
+  ).not.toHaveText(title!);
+  expect(await nav.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/stage-arrows-mobile.png' });
+});

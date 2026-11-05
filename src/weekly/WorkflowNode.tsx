@@ -39,7 +39,7 @@ export function WorkflowNode({ id, data, selected }: NodeProps<BoardNode>) {
     >
       <header>
         <span>
-          {String(data.order + 1).padStart(2, '0')} · {n.lane}
+          노드 {String(data.order + 1).padStart(2, '0')} · {n.lane}
         </span>
         <b>
           {data.status === 'success'

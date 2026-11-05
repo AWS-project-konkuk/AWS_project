@@ -344,8 +344,8 @@
   margin-top: var(--space-md);
 }
 .timeline {
-  display: flex;
-  overflow-x: auto;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
   gap: var(--space-xs);
   padding-bottom: var(--space-xs);
 }
@@ -625,6 +625,14 @@
   }
 }
 @media (max-width: 600px) {
+  .details {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    z-index: var(--z-modal);
+    overflow-y: auto;
+  }
   .workspaceActions {
     width: 100%;
   }
@@ -649,6 +657,65 @@
   .lab *::before,
   .lab *::after {
     transition: none;
+    animation: none;
+  }
+}
+
+.timeline button {
+  min-width: 0;
+}
+.timeline .stageArrow {
+  justify-content: center;
+  padding-inline: 0;
+  min-width: 0;
+}
+.presetNotice,
+.completionGuide {
+  margin: 0;
+  padding: var(--space-xs) var(--space-lg);
+  border-bottom: 1px solid var(--color-rule);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+.completionGuide summary {
+  cursor: pointer;
+}
+.completionGuide ol {
+  padding-left: var(--space-lg);
+}
+.completionGuide button {
+  margin-top: var(--space-xs);
+}
+.transferStatus[data-result] {
+  animation: resultArrive 280ms var(--ease-out) both;
+}
+.transferStatus[data-result='success'] {
+  color: var(--color-success);
+  background: color-mix(in oklab, var(--color-success) 7%, var(--color-paper));
+}
+.transferStatus[data-result='failed'],
+.transferStatus[data-result='blocked'] {
+  color: var(--color-error);
+  background: color-mix(in oklab, var(--color-error) 7%, var(--color-paper));
+}
+.transferStatus[data-result] strong,
+.transferStatus[data-result] small {
+  color: inherit;
+}
+@keyframes resultArrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .transferStatus[data-result] {
     animation: none;
   }
 }
