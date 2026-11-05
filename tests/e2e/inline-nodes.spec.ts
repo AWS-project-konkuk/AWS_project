@@ -53,13 +53,22 @@ test('빠진 연결을 직접 채우고 저장·복원하며 본 강의 완료�
   await example.getByLabel('예제 출발 노드').selectOption('artifact');
   await example.getByLabel('예제 도착 노드').selectOption('dataset');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
-  await expect(example.getByRole('status')).toContainText('맞지 않습니다');
+  await expect(example.getByRole('status')).toContainText('연결을 추가했습니다');
+  await expect(example.locator('.react-flow__edge')).toHaveCount(2);
+  await example.getByRole('button', { name: '다음 연결 따라가기', exact: true }).click();
+  await expect(example.getByRole('status').filter({ hasText: '실행 실패' })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('blockml:learning:v5')))
+    .toContain('extra');
+  await page.reload();
+  await expect(example.locator('.react-flow__edge')).toHaveCount(2);
+  await example.getByRole('button', { name: '추가 연결 삭제', exact: true }).click();
   await example.getByLabel('예제 출발 노드').selectOption('training');
   await example.getByLabel('예제 도착 노드').selectOption('artifact');
   await example.getByRole('button', { name: '선택한 노드 연결', exact: true }).click();
   await example.getByRole('button', { name: '연결 확인', exact: true }).click();
   await expect(example.getByRole('status')).toContainText('연결을 완성했습니다');
-  await expect(page.getByLabel('이해 확인', { exact: true }).getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   await expect
     .poll(() =>
       page.evaluate(() => {

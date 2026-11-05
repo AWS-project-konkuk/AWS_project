@@ -1,3 +1,4 @@
+import { ResultFeedback } from './ResultFeedback';
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   ReactFlow,
@@ -10,6 +11,8 @@ import {
   type Connection,
 } from '@xyflow/react';
 import { useReducedMotion } from 'motion/react';
+import { traceInline } from './inlineExecution';
+import type { Wire } from '../weekly/types';
 import { ArrowRight } from 'lucide-react';
 import type { NodeExampleSpec } from '../curriculum/nodeExamples';
 import { WorkflowNode, type BoardNode } from '../weekly/WorkflowNode';
@@ -22,6 +25,7 @@ const edgeTypes = { transfer: TransferEdge };
 interface ExampleState {
   mode: 'example' | 'practice';
   links: string[];
+  extra?: Wire[];
 }
 function readState(raw: unknown, spec: NodeExampleSpec): ExampleState {
   try {
@@ -33,7 +37,20 @@ function readState(raw: unknown, spec: NodeExampleSpec): ExampleState {
         (id: unknown) => typeof id === 'string' && spec.links.some((link) => link.id === id),
       )
     )
-      return { mode: 'practice', links: [...new Set<string>(value.links)] };
+      return {
+        mode: 'practice',
+        links: [...new Set<string>(value.links)],
+        extra: Array.isArray(value.extra)
+          ? value.extra.filter(
+              (edge: Wire) =>
+                edge &&
+                spec.nodes.some((node) => node.id === edge.source) &&
+                spec.nodes.some((node) => node.id === edge.target) &&
+                typeof edge.sourceHandle === 'string' &&
+                typeof edge.targetHandle === 'string',
+            )
+          : [],
+      };
   } catch {
     /* Older or absent example records start with the worked example. */
   }
@@ -77,13 +94,31 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
   const saved = useMemo(() => readState(raw, spec), [raw, spec]);
   const [step, setStep] = useState(-1);
   const [feedback, setFeedback] = useState('');
+  const [feedbackTone, setFeedbackTone] = useState<'success' | 'error' | 'info'>('info');
+  const [feedbackVersion, setFeedbackVersion] = useState(0);
+  const announce = (text: string, tone: 'success' | 'error' | 'info' = 'info') => {
+    setFeedback(text);
+    setFeedbackTone(tone);
+    setFeedbackVersion((value) => value + 1);
+  };
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [expanded, setExpanded] = useState(false);
   const canvas = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const complete = spec.links.every((link) => saved.links.includes(link.id));
-  const active = complete && step >= 0 ? spec.links[step] : undefined;
+  const complete =
+    !saved.extra?.length && spec.links.every((link) => saved.links.includes(link.id));
+  const stages = useMemo(
+    () => traceInline(spec, saved.links, saved.extra ?? []),
+    [spec, saved.links, saved.extra],
+  );
+  const currentStage = step >= 0 ? stages[step] : undefined;
+  const active =
+    currentStage?.status === 'success'
+      ? spec.links.find(
+          (link) => link.target === currentStage.node || link.source === currentStage.node,
+        )
+      : undefined;
   const save = (value: ExampleState) => {
     edit(
       lessonId,
@@ -91,11 +126,11 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
       false,
     );
     setStep(-1);
-    setFeedback('');
+    announce('');
   };
   const connect = (connection: Connection) => {
     if (saved.mode !== 'practice') {
-      setFeedback('직접 연결해 보기를 누른 뒤 연결을 바꿔보세요.');
+      announce('직접 연결해 보기를 누른 뒤 연결을 바꿔보세요.');
       return;
     }
     const match = spec.links.find(
@@ -106,15 +141,23 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
         link.id === connection.targetHandle,
     );
     if (!match) {
-      setFeedback(`이 포트 조합은 예제의 관계와 맞지 않습니다. ${spec.practiceHint}`);
+      const edge = {
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? '__output',
+        targetHandle: connection.targetHandle ?? '__input',
+      };
+      if ((saved.extra ?? []).some((item) => JSON.stringify(item) === JSON.stringify(edge))) return;
+      save({ ...saved, extra: [...(saved.extra ?? []), edge] });
+      announce('연결을 추가했습니다. 실행 시 도착 노드에서 입력과 출력을 확인합니다.');
       return;
     }
     if (saved.links.includes(match.id)) {
-      setFeedback('이미 연결된 경로입니다.');
+      announce('이미 연결된 경로입니다.');
       return;
     }
-    save({ mode: 'practice', links: [...saved.links, match.id] });
-    setFeedback(`${match.label} 연결을 추가했습니다. 연결 확인으로 이유를 확인하세요.`);
+    save({ ...saved, mode: 'practice', links: [...saved.links, match.id] });
+    announce(`${match.label} 연결을 추가했습니다. 연결 확인으로 이유를 확인하세요.`);
   };
   const initialNodes = useMemo<BoardNode[]>(
     () =>
@@ -128,12 +171,16 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
           stage: {
             ...node,
             lane: spec.kind,
-            inputs: spec.links
-              .filter((link) => link.target === node.id)
-              .map((link) => ({ id: link.id, label: link.label, material: link.material })),
-            outputs: spec.links
-              .filter((link) => link.source === node.id)
-              .map((link) => ({ id: link.id, label: link.label, material: link.material })),
+            inputs: !spec.links.some((link) => link.target === node.id)
+              ? [{ id: '__input', label: '추가 입력', material: 'data' }]
+              : spec.links
+                  .filter((link) => link.target === node.id)
+                  .map((link) => ({ id: link.id, label: link.label, material: link.material })),
+            outputs: !spec.links.some((link) => link.source === node.id)
+              ? [{ id: '__output', label: '추가 출력', material: 'data' }]
+              : spec.links
+                  .filter((link) => link.source === node.id)
+                  .map((link) => ({ id: link.id, label: link.label, material: link.material })),
           },
         },
       })),
@@ -146,15 +193,11 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
     setNodes((current) =>
       current.map((node) => {
         const status =
-          active?.target === node.id
-            ? 'active'
-            : active?.source === node.id
-              ? 'success'
-              : 'waiting';
+          stages.slice(0, step + 1).find((stage) => stage.node === node.id)?.status ?? 'waiting';
         return node.data.status === status ? node : { ...node, data: { ...node.data, status } };
       }),
     );
-  }, [active, setNodes]);
+  }, [stages, step, setNodes]);
   const edges = useMemo<TransferFlowEdge[]>(
     () =>
       spec.links
@@ -173,14 +216,14 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
           labelBgStyle: { fill: 'var(--panel)' },
           data: {
             relation: spec.kind === '구성 관계',
-            transferring: active?.id === link.id,
+            transferring: active?.id === link.id && currentStage?.status === 'success',
             delivered: complete && index < step,
             animate: active?.id === link.id && spec.kind === '자료 전달' && !reduced,
             artifact: link.label,
             content: link.detail,
           },
         })),
-    [spec, saved.links, active, complete, step, reduced],
+    [spec, saved.links, active, complete, step, reduced, currentStage?.status],
   );
   return (
     <section
@@ -209,21 +252,74 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
         >
           직접 연결해 보기
         </button>
-        <button
-          disabled={!complete}
-          onClick={() => setStep((value) => (value >= spec.links.length - 1 ? 0 : value + 1))}
-        >
-          {step >= spec.links.length - 1 ? '처음부터 흐름 보기' : '다음 연결 따라가기'}
+        <button onClick={() => setStep((value) => (value >= stages.length - 1 ? 0 : value + 1))}>
+          {step >= stages.length - 1 ? '처음부터 흐름 보기' : '다음 연결 따라가기'}
         </button>
         <button aria-pressed={expanded} onClick={() => setExpanded((value) => !value)}>
           {expanded ? '기본 높이' : '예제 높이 늘리기'}
         </button>
       </div>
-      <div ref={canvas} className={styles.canvas} data-expanded={expanded}>
+      {currentStage && (
+        <ResultFeedback
+          key={`stage-${step}`}
+          tone={currentStage.status === 'success' ? 'success' : 'error'}
+          title={
+            currentStage.status === 'success'
+              ? '실행 성공'
+              : currentStage.status === 'failed'
+                ? '실행 실패'
+                : '후속 단계 차단'
+          }
+        >
+          <strong>
+            {step + 1}/{stages.length}{' '}
+            {spec.nodes.find((node) => node.id === currentStage.node)?.title}
+          </strong>{' '}
+          {currentStage.status === 'success'
+            ? '실행 성공. '
+            : currentStage.status === 'failed'
+              ? '실행 실패. '
+              : '후속 차단. '}
+          {currentStage.detail}
+        </ResultFeedback>
+      )}
+      <div
+        ref={canvas}
+        className={styles.canvas}
+        data-expanded={expanded}
+        style={{
+          height: expanded
+            ? 840
+            : Math.min(
+                440,
+                Math.max(
+                  320,
+                  Math.max(...spec.nodes.map((node) => node.y)) -
+                    Math.min(...spec.nodes.map((node) => node.y)) +
+                    284,
+                ),
+              ),
+        }}
+      >
         <ReactFlowProvider>
           <ReactFlow<BoardNode, TransferFlowEdge>
             nodes={nodes}
-            edges={edges}
+            edges={[
+              ...edges,
+              ...(saved.extra ?? []).map((edge, index) => ({
+                ...edge,
+                id: `extra-${index}`,
+                type: 'transfer' as const,
+                data: {
+                  relation: true,
+                  artifact: '',
+                  content: '',
+                  transferring: false,
+                  delivered: false,
+                  animate: false,
+                },
+              })),
+            ]}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onConnect={connect}
@@ -235,7 +331,12 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
             onNodesChange={onNodesChange}
             onEdgeClick={(_, edge) => {
               if (saved.mode === 'practice')
-                save({ mode: 'practice', links: saved.links.filter((id) => id !== edge.id) });
+                save({
+                  ...saved,
+                  mode: 'practice',
+                  links: saved.links.filter((id) => id !== edge.id),
+                  extra: (saved.extra ?? []).filter((_, index) => edge.id !== `extra-${index}`),
+                });
             }}
             zoomOnScroll={false}
             preventScrolling={false}
@@ -247,16 +348,49 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
           </ReactFlow>
         </ReactFlowProvider>
       </div>
-      {active && (
-        <p className={styles.trace} role="status">
-          <strong>
-            {step + 1}/{spec.links.length} · {active.label}
-          </strong>{' '}
-          {active.detail}
-        </p>
-      )}
       {saved.mode === 'practice' && (
         <div className={styles.practice}>
+          <h4 className={styles.connectionTitle}>현재 연결</h4>
+          <ul className={styles.connectionList} aria-label="예제 연결 목록">
+            {spec.links
+              .filter((link) => saved.links.includes(link.id))
+              .map((link) => (
+                <li key={link.id}>
+                  <span>
+                    {spec.nodes.find((node) => node.id === link.source)?.title} →{' '}
+                    {spec.nodes.find((node) => node.id === link.target)?.title}: {link.label}
+                  </span>
+                  <button
+                    aria-label={`${spec.nodes.find((node) => node.id === link.source)?.title}에서 ${spec.nodes.find((node) => node.id === link.target)?.title}로 ${link.label} 연결 삭제`}
+                    onClick={() =>
+                      save({ ...saved, links: saved.links.filter((id) => id !== link.id) })
+                    }
+                  >
+                    연결 삭제
+                  </button>
+                </li>
+              ))}
+          </ul>
+          {!saved.links.length && !saved.extra?.length && (
+            <p>연결이 없습니다. 아래에서 출발·도착 노드를 선택해 연결하세요.</p>
+          )}
+          {!!saved.extra?.length && (
+            <ul aria-label="추가한 연결">
+              {saved.extra.map((edge, index) => (
+                <li key={index}>
+                  {spec.nodes.find((node) => node.id === edge.source)?.title} →{' '}
+                  {spec.nodes.find((node) => node.id === edge.target)?.title}{' '}
+                  <button
+                    onClick={() =>
+                      save({ ...saved, extra: saved.extra!.filter((_, item) => item !== index) })
+                    }
+                  >
+                    추가 연결 삭제
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <p>{spec.practiceHint}</p>
           <p>
             출력 포트에서 입력 포트로 드래그하거나 아래에서 두 노드를 선택하세요. 연결선을 누르면
@@ -300,8 +434,10 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
                 connect({
                   source: from,
                   target: to,
-                  sourceHandle: link?.id ?? '',
-                  targetHandle: link?.id ?? '',
+                  sourceHandle:
+                    link?.id ?? spec.links.find((item) => item.source === from)?.id ?? '__output',
+                  targetHandle:
+                    link?.id ?? spec.links.find((item) => item.target === to)?.id ?? '__input',
                 });
               }}
             >
@@ -309,10 +445,13 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
             </button>
             <button
               onClick={() =>
-                setFeedback(
+                announce(
                   complete
                     ? '연결을 완성했습니다. ' + spec.links.map((link) => link.detail).join(' ')
-                    : '아직 빠진 연결이 있습니다. ' + spec.practiceHint,
+                    : (saved.extra?.length
+                        ? '맞지 않습니다. 연결한 자료와 입력의 관계를 확인하세요. '
+                        : '아직 빠진 연결이 있습니다. ') + spec.practiceHint,
+                  complete ? 'success' : 'error',
                 )
               }
             >
@@ -321,7 +460,21 @@ export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: 
           </div>
         </div>
       )}
-      {feedback && <p role="status">{feedback}</p>}
+      {feedback && (
+        <ResultFeedback
+          key={`feedback-${feedbackVersion}`}
+          tone={feedbackTone}
+          title={
+            feedbackTone === 'success'
+              ? '연결 확인 성공'
+              : feedbackTone === 'error'
+                ? '연결 확인 실패'
+                : '연결 안내'
+          }
+        >
+          {feedback}
+        </ResultFeedback>
+      )}
       <footer>
         <span>작은 예제로 관계를 익힌 뒤 종합 실습에서 여러 조건을 함께 판단합니다.</span>
         <a href={`#/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">

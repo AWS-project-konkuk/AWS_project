@@ -51,7 +51,7 @@
   cursor: not-allowed;
 }
 .canvas {
-  height: 600px;
+  height: 320px;
   width: 100%;
   background: var(--page);
   border-bottom: 1px solid var(--border);
@@ -68,6 +68,25 @@
 .trace strong {
   display: block;
   color: var(--accent);
+}
+.connectionTitle {
+  margin: var(--space-md) var(--space-lg);
+}
+.connectionList {
+  list-style: none;
+  margin: var(--space-md) var(--space-lg);
+  padding: 0;
+}
+.connectionList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-xs);
+  border-bottom: 1px solid var(--color-rule);
+}
+.connectionList button {
+  flex-shrink: 0;
 }
 .practice {
   padding-top: var(--space-md);
@@ -117,14 +136,13 @@
 }
 
 .example {
-  border: 0;
-  border-block: 1px solid var(--color-rule);
-  border-radius: 0;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
   margin: var(--space-xl) 0;
   background: var(--color-paper);
 }
 .example > header {
-  padding: var(--space-lg) 0 var(--space-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
 }
 .example h3 {
   font-size: var(--text-xl);
@@ -200,8 +218,11 @@
   min-width: 144px;
 }
 .example footer {
-  padding: var(--space-lg) 0;
+  padding: var(--space-lg);
   font-size: var(--text-sm);
+}
+.example > [data-feedback] {
+  margin-inline: var(--space-lg);
 }
 .example footer a {
   display: inline-flex;
