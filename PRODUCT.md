@@ -20,7 +20,7 @@ MLOps를 배우려는 사람, 모델 학습 경험은 있으나 데이터·모�
 
 ## 자료
 
-`src/content/lessons/`에 실제 강의와 평가 설정, `public/images/lessons/`에 학습 도해가 있다. 성과 지표·후기·고객 로고는 추가하지 않는다.
+`Frontend/src/content/lessons/`에 실제 강의와 평가 설정, `Frontend/public/images/lessons/`에 학습 도해가 있다. 성과 지표·후기·고객 로고는 추가하지 않는다.
 
 ## 표현 원칙
 
