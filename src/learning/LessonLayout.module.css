@@ -1032,3 +1032,19 @@
   flex-wrap: wrap;
   gap: var(--space-sm);
 }
+.practiceEntry {
+  margin-block: var(--space-xl);
+  padding-block: var(--space-lg);
+  border-block: 1px solid var(--color-rule);
+}
+.practiceEntry button {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-input);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.practiceEntry button:hover {
+  background: var(--color-accent-deep);
+}

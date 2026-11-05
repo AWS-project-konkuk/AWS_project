@@ -8,6 +8,8 @@ import { LessonArticle } from './LessonArticle';
 import { WeeklyLab } from '../weekly/WeeklyLab';
 import { useLearning } from './LearningStore';
 import styles from './LessonLayout.module.css';
+import { getLab } from './blockProgress';
+import { workflowGoals } from '../weekly/engine';
 
 export function LessonPage({ lesson }: { lesson: Lesson }) {
   const { state } = useLearning();
@@ -21,6 +23,10 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
   const index = lessons.indexOf(lesson);
   const next = lessons[index + 1];
   const completed = state.data.lessons[lesson.id]?.completed ?? false;
+  const pendingGoal = lesson.workflow
+    ? workflowGoals(lesson, getLab(state.data, lesson.id)).find((goal) => !goal.passed)
+    : undefined;
+  const startPractice = () => changeView('practice');
   return (
     <main className={styles.shell}>
       <CourseSidebar lesson={lesson} open={sidebarOpen} onClose={closeSidebar} />
@@ -76,7 +82,11 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
           data-view={lesson.workflow ? view : 'interactive'}
           data-testid="lesson-workspace"
         >
-          <LessonArticle lesson={lesson} completed={completed} />
+          <LessonArticle
+            lesson={lesson}
+            completed={completed}
+            onStartPractice={lesson.workflow ? startPractice : undefined}
+          />
           {lesson.workflow && (
             <div
               className={styles.practice}
@@ -93,8 +103,21 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
             {index ? '이전 강의' : '전체 과정'}
           </a>
           <span>
-            {completed ? '목표 달성이 기록되었습니다.' : '설명을 읽고 이해 확인 문제에 답하세요.'}
+            {completed
+              ? '목표 달성이 기록되었습니다.'
+              : lesson.workflow
+                ? view === 'reading'
+                  ? '설명을 읽었다면 실습을 시작하세요.'
+                  : pendingGoal
+                    ? `남은 목표: ${pendingGoal.label}`
+                    : '설정·결과에서 실습 완료를 기록하세요.'
+                : '설명을 읽고 이해 확인 문제에 답하세요.'}
           </span>
+          {lesson.workflow && !completed && view === 'reading' && (
+            <button className={styles.next} onClick={startPractice}>
+              실습 시작하기
+            </button>
+          )}
           {next ? (
             completed ? (
               <a className={styles.next} href={`#/learn/${next.id}`}>
