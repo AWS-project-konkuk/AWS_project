@@ -26,9 +26,10 @@ Notion MLOps 워크북을 바탕으로 **설명 → 전체 관계 → 선택 활
 
 ## 실행·검증
 
-Node.js 24와 npm을 사용합니다.
+프런트엔드는 `Frontend/`에서 Node.js 24와 npm으로 실행합니다. Node.js·TypeScript 의존성과 설정은 이 폴더 안에서 관리합니다.
 
 ```sh
+cd Frontend
 npm ci
 npm run dev
 npm run typecheck
@@ -43,6 +44,16 @@ npm run build
 
 ## 구조와 호환성
 
+Java 백엔드와 프런트엔드를 각각 독립된 폴더에서 관리하는 모노레포 구조입니다. 백엔드는 추후 `Backend/`에 추가합니다.
+
+| 경로         | 역할                                                            |
+| ------------ | --------------------------------------------------------------- |
+| `Frontend/`  | React 앱, Node.js 의존성·설정, 테스트·정적 파일·프런트엔드 문서 |
+| `PRODUCT.md` | 프로젝트 공통 제품 요구사항                                     |
+| `.github/`   | 저장소 공통 GitHub 설정                                         |
+
+다음 구성은 모두 `Frontend/src/` 기준입니다.
+
 | 구성            | 책임                                        |
 | --------------- | ------------------------------------------- |
 | content/lessons | 강의별 본문·이미지·코드·문제·본문 노드 예제 |
@@ -51,14 +62,14 @@ npm run build
 | weekly          | 포트 자료 검증·실행 추적·실패와 개선 비교   |
 | playground      | 별도의 자유 구성과 저장                     |
 
-강의 문서에 화면용 기본값을 채우는 `defineLesson` 어댑터 구조와 기존 목표 판정의 전략 패턴을 사용합니다. 파일 이동·삭제 없이 새 모듈을 추가했습니다. 상세 매핑과 교육용 한계는 [커리큘럼](docs/curriculum.md)을 참고하세요.
+강의 문서에 화면용 기본값을 채우는 `defineLesson` 어댑터 구조와 기존 목표 판정의 전략 패턴을 사용합니다. 상세 매핑과 교육용 한계는 [커리큘럼](Frontend/docs/curriculum.md)을 참고하세요.
 
 새 학습 저장 키는 `blockml:learning:v5`입니다. v3·v4의 원본 기록과 `flow-lab:playground:v1`은 그대로 보존하며 새 목표의 완료로 자동 승격하지 않습니다. v5 저장이 손상되면 자동 덮어쓰기를 중단하고 사용자 초기화로 복구합니다. 테마와 안내 설정도 별도 보존합니다.
 
 ## 내가 강의를 작성하려면
 
-[강의 문서 작성 안내](src/content/README.md)를 참고하세요. 53개 강의를 `src/content/lessons/`의 단원별 MDX 본문과 `.lesson.ts` 설정으로 분리했습니다. `templates/new-lesson.mdx`와 `templates/new-lesson.ts`를 함께 복사해 작성하면 목록과 주소에 자동 등록됩니다. [전체 문서 목록](src/content/lesson-index.md)에서 수정할 강의를 찾을 수 있습니다.
+[강의 문서 작성 안내](Frontend/src/content/README.md)를 참고하세요. 53개 강의를 `Frontend/src/content/lessons/`의 단원별 MDX 본문과 `.lesson.ts` 설정으로 분리했습니다. `templates/new-lesson.mdx`와 `templates/new-lesson.ts`를 함께 복사해 작성하면 목록과 주소에 자동 등록됩니다. [전체 문서 목록](Frontend/src/content/lesson-index.md)에서 수정할 강의를 찾을 수 있습니다.
 
 ### MDX 강의 작성
 
-53개 강의 본문을 MDX로 작성합니다. 같은 이름의 `.lesson.ts`는 제목·순서·실습·평가 설정을 담습니다. [작성 안내](src/content/README.md)와 [문법·실습 배치 예제](docs/content-authoring.md)를 참고하세요. 기존 주소와 진행 기록은 유지합니다.
+53개 강의 본문을 MDX로 작성합니다. 같은 이름의 `.lesson.ts`는 제목·순서·실습·평가 설정을 담습니다. [작성 안내](Frontend/src/content/README.md)와 [문법·실습 배치 예제](Frontend/docs/content-authoring.md)를 참고하세요. 기존 주소와 진행 기록은 유지합니다.

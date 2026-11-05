@@ -1,0 +1,149 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · redesign: full · nav: kept · signature: workflow node palette · states: existing · posture: restrained · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, replaced tiny palette labels with readable grouped rows */
+.palette {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-rule);
+}
+.palette > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+.palette > p {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.8;
+  margin: var(--space-xs) 0 var(--space-md);
+}
+.palette button,
+.editor button {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-input);
+  color: var(--color-ink-2);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-sm);
+  font: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.palette button:disabled,
+.editor button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--color-paper-2);
+  color: var(--color-muted);
+}
+.palette > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+.paletteRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: var(--color-paper-2);
+  border: 0;
+  border-radius: var(--radius-input);
+  padding: var(--space-sm);
+}
+.paletteRow > span {
+  flex: 1;
+  min-width: 0;
+}
+.paletteRow strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  font-weight: 500;
+}
+.paletteRow small {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.7;
+  margin-top: var(--space-2xs);
+}
+.editor {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  padding: var(--space-md) 0;
+  margin: var(--space-md) 0;
+  border-radius: 0;
+}
+.editor h3 {
+  font-size: var(--text-md);
+  margin: 0 0 var(--space-md);
+  color: var(--color-ink);
+}
+.editor label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  margin: var(--space-md) 0;
+  color: var(--color-ink-2);
+}
+.editor input,
+.editor select {
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  border: 1px solid var(--color-muted);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-input);
+  min-width: 0;
+  min-height: 40px;
+  width: 100%;
+}
+.editor p {
+  font-size: var(--text-sm);
+  line-height: 1.8;
+  color: var(--color-muted);
+}
+.editor > div {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+.editor [role='alert'] {
+  color: var(--color-error);
+}
+.palette button:hover:not(:disabled),
+.editor button:hover:not(:disabled) {
+  background: var(--color-accent-wash);
+  color: var(--color-accent);
+}
+.palette button:active:not(:disabled),
+.editor button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.palette :is(button, input, select):focus-visible,
+.editor :is(button, input, select):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+@media (max-width: 1250px) {
+  .palette > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .editor input,
+  .editor select {
+    font-size: var(--text-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .palette *,
+  .editor * {
+    transition: none;
+    animation: none;
+  }
+}
