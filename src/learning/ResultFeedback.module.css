@@ -1,0 +1,58 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt · nav: kept · signature: explicit result feedback · states: success, error, info · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: H, an icon and result title make submitted feedback distinguishable from prose */
+.feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  margin-block: var(--space-md);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-card);
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+  animation: feedbackArrive 280ms var(--ease-out) both;
+}
+.feedback[data-feedback='success'] {
+  color: var(--color-success);
+  background: color-mix(in oklab, var(--color-success) 7%, var(--color-paper));
+}
+.feedback[data-feedback='error'] {
+  color: var(--color-error);
+  background: color-mix(in oklab, var(--color-error) 7%, var(--color-paper));
+}
+.feedback > svg {
+  flex-shrink: 0;
+  margin-top: var(--space-2xs);
+}
+.content {
+  min-width: 0;
+}
+.feedback .title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: inherit;
+}
+.feedback .message {
+  margin-top: var(--space-2xs);
+  font-size: 16px;
+  line-height: 1.8;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+@keyframes feedbackArrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feedback {
+    animation: none;
+  }
+}

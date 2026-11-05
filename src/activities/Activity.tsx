@@ -1,3 +1,4 @@
+import { ResultFeedback } from '../learning/ResultFeedback';
 import { useEffect, useRef, useState } from 'react';
 import { useInView, useReducedMotion } from 'motion/react';
 import type { Lesson } from '../curriculum/types';
@@ -204,10 +205,14 @@ export function Activity({ lesson }: { lesson: Lesson }) {
               </label>
             ))}
             {feedback && (
-              <p role="status">
+              <ResultFeedback
+                key={String(lab.answers._quiz)}
+                tone={lab.answers._quiz === spec.correct ? 'success' : 'error'}
+                title={lab.answers._quiz === spec.correct ? '정답입니다' : '오답입니다'}
+              >
                 {lab.answers._quiz === spec.correct ? '맞습니다. ' : '다시 생각해 보세요. '}
                 {spec.explanation}
-              </p>
+              </ResultFeedback>
             )}
           </fieldset>
           <button

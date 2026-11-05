@@ -1,3 +1,4 @@
+import { ResultFeedback } from './ResultFeedback';
 import type { MDXComponents } from 'mdx/types';
 import { createContext, isValidElement, useContext, useState, type ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
@@ -189,6 +190,7 @@ function Question({
   correct: number;
   explanation: string;
 }) {
+  const [feedbackVersion, setFeedbackVersion] = useState(0);
   const lesson = useLesson();
   const { state, edit } = useLearning();
   if (
@@ -206,7 +208,16 @@ function Question({
       <fieldset>
         <legend>{question}</legend>
         {options.map((option, index) => (
-          <label key={`${index}-${option}`}>
+          <label
+            key={`${index}-${option}`}
+            data-answer-state={
+              answer === index && getLab(state.data, lesson.id).answers[`${key}:checked`] === answer
+                ? answer === correct
+                  ? 'success'
+                  : 'error'
+                : undefined
+            }
+          >
             <input
               type="radio"
               name={`${lesson.id}-${id}`}
@@ -214,7 +225,10 @@ function Question({
               onChange={() =>
                 edit(
                   lesson.id,
-                  (lab) => ({ ...lab, answers: { ...lab.answers, [key]: index } }),
+                  (lab) => ({
+                    ...lab,
+                    answers: { ...lab.answers, [key]: index, [`${key}:checked`]: '' },
+                  }),
                   false,
                 )
               }
@@ -223,11 +237,29 @@ function Question({
           </label>
         ))}
       </fieldset>
-      {answer !== undefined && (
-        <p role="status">
-          {answer === correct ? '맞습니다.' : '다시 생각해 보세요.'} {explanation}
-        </p>
-      )}
+      <button
+        disabled={answer === undefined}
+        onClick={() => {
+          setFeedbackVersion((value) => value + 1);
+          edit(
+            lesson.id,
+            (lab) => ({ ...lab, answers: { ...lab.answers, [`${key}:checked`]: answer! } }),
+            false,
+          );
+        }}
+      >
+        정답 확인하기
+      </button>
+      {answer !== undefined &&
+        getLab(state.data, lesson.id).answers[`${key}:checked`] === answer && (
+          <ResultFeedback
+            key={feedbackVersion}
+            tone={answer === correct ? 'success' : 'error'}
+            title={answer === correct ? '정답입니다' : '오답입니다'}
+          >
+            {answer === correct ? '맞습니다.' : '다시 생각해 보세요.'} {explanation}
+          </ResultFeedback>
+        )}
     </section>
   );
 }

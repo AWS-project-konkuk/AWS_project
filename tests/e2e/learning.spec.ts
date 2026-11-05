@@ -43,19 +43,19 @@ test('모든 강의 주소·본문·지도·출처가 열리고 오류가 없다
 test('읽기 전용 강의도 이해 확인으로 완료하고 새로고침 후 복원한다', async ({ page }) => {
   await page.goto('/#/learn/mlops-overview');
   const quiz = page.getByLabel('이해 확인', { exact: true });
-  await expect(quiz.getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   await quiz.getByRole('radio').nth(1).check();
-  await expect(quiz.getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   await quiz.getByRole('radio').nth(0).check();
-  await quiz.getByRole('button').click();
-  await expect(quiz.getByRole('button')).toHaveText('이해 확인 완료');
+  await expect(quiz.getByRole('status')).toHaveCount(0);
+  await quiz.getByRole('button', { name: '정답 확인하기', exact: true }).click();
+  await expect(page).toHaveURL(/mlops-overview$/);
+  await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('blockml:learning:v5')))
     .toContain('mlops-overview');
   await page.reload();
-  await expect(page.getByLabel('이해 확인', { exact: true }).getByRole('button')).toHaveText(
-    '이해 확인 완료',
-  );
+  await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
 });
 test('선택 활동을 조작하지 않고 이해 확인을 완료한다', async ({ page }) => {
   await page.goto('/#/learn/cpu-gpu');
@@ -63,8 +63,20 @@ test('선택 활동을 조작하지 않고 이해 확인을 완료한다', async
   const lesson = (await readLessons(page)).find((l) => l.id === 'cpu-gpu')!;
   const quiz = page.getByLabel('이해 확인', { exact: true });
   await quiz.getByRole('radio').nth(lesson.assessment!.correct).check();
-  await quiz.getByRole('button').click();
-  await expect(quiz.getByRole('button')).toHaveText('이해 확인 완료');
+  await expect(quiz.getByRole('status')).toHaveCount(0);
+  await quiz.getByRole('button', { name: '정답 확인하기', exact: true }).click();
+  await expect(page).toHaveURL(/cpu-gpu$/);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('blockml:learning:v5') ?? '{}').lessons?.['cpu-gpu']
+            ?.completed,
+      ),
+    )
+    .toBe(true);
+  await page.goto('/#/learn/cpu-gpu');
+  await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
   await page.getByText('선택 활동 · 결과를 예측하고 비교하기', { exact: true }).click();
   await expect(page.getByTestId('activity-run')).toBeVisible();
 });
@@ -75,7 +87,7 @@ test('이전 기록·Playground를 보존하고 새 평가로 승격하지 않�
     localStorage.setItem('flow-lab:playground:v1', 'previous');
   }, raw);
   await page.goto('/#/learn/cpu-gpu');
-  await expect(page.getByLabel('이해 확인', { exact: true }).getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => localStorage.getItem('blockml:learning:v4'))).toBe(raw);
   expect(await page.evaluate(() => localStorage.getItem('flow-lab:playground:v1'))).toBe(
     'previous',

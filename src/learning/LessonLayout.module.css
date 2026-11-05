@@ -697,7 +697,23 @@
 .optionalActivity {
   margin-block: var(--space-xl);
   padding-block: var(--space-md);
-  border-block: 1px solid var(--color-rule);
+  padding-inline: var(--space-lg);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-paper-2);
+}
+.optionalActivity > section {
+  border: 0;
+  background: transparent;
+  padding-inline: 0;
+}
+.understanding label[data-answer-state='success'] {
+  color: var(--color-success);
+  background: color-mix(in oklab, var(--color-success) 7%, var(--color-paper));
+}
+.understanding label[data-answer-state='error'] {
+  color: var(--color-error);
+  background: color-mix(in oklab, var(--color-error) 7%, var(--color-paper));
 }
 .optionalActivity summary {
   padding-block: var(--space-xs);
@@ -1009,4 +1025,10 @@
   .drawer button:active {
     transform: none;
   }
+}
+
+.quizActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
