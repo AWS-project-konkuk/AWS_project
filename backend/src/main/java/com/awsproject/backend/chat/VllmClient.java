@@ -33,7 +33,9 @@ public class VllmClient {
         this.model = model;
         this.systemPrompt = promptResource.getContentAsString(StandardCharsets.UTF_8).strip();
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
-                .connectTimeout(connectTimeout).build());
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(connectTimeout)
+                .build());
         factory.setReadTimeout(readTimeout);
         var builder = RestClient.builder().baseUrl(baseUrl.replaceAll("/+$", ""))
                 .requestFactory(factory);
