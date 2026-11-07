@@ -4,7 +4,7 @@
 
 | 단원 | 순서 | 문서                                                                          | 제목                                      |
 | ---- | ---- | ----------------------------------------------------------------------------- | ----------------------------------------- |
-| 0    | 1    | [mlops-overview](lessons/00-overview/mlops-overview.mdx)                      | 모델 파일에서 서비스까지, 무엇이 이어질까 |
+| 0    | 1    | [mlops-overview](lessons/00-overview/mlops-overview.mdx)                      | MLOps란?                                  |
 | 0    | 2    | [ec2-compute](lessons/00-overview/ec2-compute.mdx)                            | EC2는 코드를 실행하는 컴퓨터              |
 | 0    | 3    | [s3-objects](lessons/00-overview/s3-objects.mdx)                              | S3는 객체를 보관하는 저장소               |
 | 1    | 1    | [container-isolation](lessons/02-runtime/container-isolation.mdx)             | 커널을 공유하면서 어떻게 격리할까         |

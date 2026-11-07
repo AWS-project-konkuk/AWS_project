@@ -16,6 +16,6 @@ export interface NodeExampleSpec {
     material: Material;
   }[];
   practiceHint: string;
-  nextLesson: string;
+  nextLesson?: string;
 }
 // 예제 데이터도 해당 강의 문서의 nodeExample에서 작성합니다.
