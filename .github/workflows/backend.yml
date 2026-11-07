@@ -1,0 +1,59 @@
+name: Backend CI and publish
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+
+jobs:
+  verify:
+    name: Backend verify
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - run: docker build --platform linux/amd64 -t backend-ci ./backend
+
+  publish:
+    name: Publish backend image
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: backend-publish-main
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/backend"
+
+          docker build --platform linux/amd64 \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "${image}:${GITHUB_SHA}" -t "${image}:main" ./backend
+
+          head_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq .object.sha)"
+          if [[ "$head_sha" != "$GITHUB_SHA" ]]; then
+            echo "A newer main commit is available. Skipping publish."
+            exit 0
+          fi
+
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "${image}:${GITHUB_SHA}"
+          docker push "${image}:main"
