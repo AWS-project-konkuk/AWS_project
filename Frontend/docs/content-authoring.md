@@ -43,6 +43,20 @@ print("checkpoint loaded")
 
 MDX는 기존 React 실습을 원하는 위치에서 사용하는 수단입니다. 새로운 실습의 계산·실행 동작은 React 컴포넌트로 구현한 뒤 `src/learning/LessonMdx.tsx`의 컴포넌트 목록에 등록해야 합니다. Python·셸 코드 블록은 읽고 복사하는 예제이며 실행되지 않습니다. WorkflowLab은 지정한 기존 종합 실습의 진행 기록을 공유합니다.
 
+### Activity 종류 추가하기
+
+기존 `<Activity />` 안에서 다른 조작 방식을 제공할 때는 MDX 컴포넌트를 새로 등록하지 않습니다. 공통 프레임은 유지하고 종류별 본문만 교체합니다.
+
+| 파일 | 책임 |
+| --- | --- |
+| `src/activities/Activity.tsx` | 펼침·접힘, 제목, 교육용 모형 안내와 본문 배치 |
+| `src/activities/activityRegistry.ts` | 활동 종류와 본문 컴포넌트·안내 문구 연결 |
+| `src/activities/MachineActivity.tsx` | EC2와 프로그램 실행 상태 조작 |
+| `src/activities/VirtualActivity.tsx` | 앱 수에 따른 VM·컨테이너 구조 비교 |
+| `src/activities/SimulationActivity.tsx` | 기존 설정 기반 시뮬레이션의 재생·결과·기록 |
+
+새 활동 본문은 `ActivityViewProps`의 `lesson`과 `spec`을 입력으로 받을 수 있습니다. 상태와 조작 로직은 해당 본문에서 관리하고, 공통 제목이나 펼침 틀을 다시 만들지 않습니다. `ActivityKind`에 종류를 추가하고 `activityRegistry.ts`에 본문과 문구를 등록하면 강의 렌더러를 수정하지 않고 `<Activity />`에서 선택합니다. 별도 등록이 없는 기존 종류는 `SimulationActivity`를 재사용합니다.
+
 ### 본문 연습 문제
 
 ```mdx
