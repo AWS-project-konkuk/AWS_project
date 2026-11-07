@@ -1,60 +1,272 @@
-## 문제 상황과 전체 맥락
+import { useState } from 'react';
+import { Database, FolderOpen, HardDrive } from 'lucide-react';
+import { storageActivity } from './storage-compare.lesson';
 
-데이터를 디스크처럼 읽을까요, 객체로 읽을까요? 저장소의 형태와 요청 크기를 함께 비교합니다.
+export const activityIcons = [HardDrive, FolderOpen, Database];
+
+export const activityStyles = {
+  activity: {
+    margin: '28px 0',
+    padding: 'clamp(16px, 3vw, 28px)',
+    border: '1px solid #c5d3df',
+    borderRadius: 20,
+    background: '#f5f8fc',
+    color: '#193249',
+  },
+  choices: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+    margin: '20px 0',
+  },
+  reason: {
+    padding: 18,
+    background: '#e6eef8',
+    borderRadius: 12,
+    lineHeight: 1.7,
+  },
+  cards: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
+    gap: 14,
+    marginTop: 20,
+  },
+  card: {
+    padding: 18,
+    border: '2px solid #c5d3df',
+    borderRadius: 16,
+    background: 'white',
+    minWidth: 0,
+  },
+};
+
+export function Activity() {
+  const [selected, setSelected] = useState(0);
+  const scenario = storageActivity.scenarios[selected];
+
+return (
+
+<section style={activityStyles.activity} aria-label="저장 방식 비교 활동">
+<h3 style={{ margin: '0 0 10px' }}>{storageActivity.title}</h3>
+<p>상황을 눌러 보세요. 어울리는 저장 방식과 선택 이유를 함께 볼 수 있습니다.</p>
+
+      <div style={activityStyles.choices} role="group" aria-label="사용 상황 선택">
+        {storageActivity.scenarios.map((item, index) => {
+          const active = selected === index;
+          return (
+            <button
+              type="button"
+              key={item.match}
+              aria-pressed={active}
+              onClick={() => setSelected(index)}
+              style={{
+                flex: '1 1 180px',
+                padding: '13px 16px',
+                border: `1px solid ${active ? '#244e78' : '#8d9fb0'}`,
+                borderRadius: 12,
+                background: active ? '#244e78' : 'white',
+                color: active ? 'white' : '#193249',
+                font: 'inherit',
+                cursor: 'pointer',
+              }}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div role="status" aria-live="polite" style={activityStyles.reason}>
+        <strong>{scenario.need}</strong>
+        <p style={{ margin: '8px 0 0' }}>{scenario.reason}</p>
+      </div>
+
+      <div style={activityStyles.cards}>
+        {storageActivity.cards.map((card, index) => {
+          const Icon = activityIcons[index];
+          const matches = scenario.match === card.id;
+          return (
+            <article
+              key={card.id}
+              style={{
+                ...activityStyles.card,
+                borderColor: matches ? '#22755b' : '#c5d3df',
+                background: matches ? '#edf9f3' : 'white',
+              }}
+            >
+              <span
+                style={{
+                  display: 'block',
+                  minHeight: 36,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: matches ? '#15563f' : '#455b6c',
+                }}
+              >
+                {matches ? '✓ 이 상황에 어울려요' : '함께 비교해 보세요'}
+              </span>
+              <Icon size={32} aria-hidden="true" />
+              <h4 style={{ fontSize: 22, margin: '10px 0 5px' }}>{card.title}</h4>
+              <strong>{card.meaning}</strong>
+              <dl style={{ margin: '20px 0' }}>
+                <dt style={{ color: '#506477', fontSize: 13, marginTop: 14 }}>찾는 방법</dt>
+                <dd style={{ margin: '4px 0 0', lineHeight: 1.6 }}>{card.access}</dd>
+                <dt style={{ color: '#506477', fontSize: 13, marginTop: 14 }}>사용 예</dt>
+                <dd style={{ margin: '4px 0 0', lineHeight: 1.6 }}>{card.example}</dd>
+              </dl>
+              <p>{card.service}</p>
+              <small style={{ display: 'block', lineHeight: 1.6 }}>{card.check}</small>
+            </article>
+          );
+        })}
+      </div>
+
+      <p style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 0 }}>
+        접근 방식으로 고르는 예시입니다. 실제 선택에서는 파일 수명, 공유 조건과 성능도 함께
+        확인하세요.
+      </p>
+    </section>
+
+);
+}
+
+## 문제 상황
+
+Kubernetes 환경에서 AI 모델을 학습하기 위해 저장소를 선택하려고 합니다.
+
+모델 학습 과정에서는 다음과 같은 데이터가 사용됩니다.
+
+- **운영체제와 애플리케이션 파일**: 하나의 서버에서 빠르게 읽고 써야 합니다.
+- **공통 학습 데이터셋**: 여러 학습 Pod가 같은 파일과 디렉터리를 읽어야 합니다.
+- **모델 아티팩트**: 학습 서버가 사라진 뒤에도 보관하고 다른 작업에서 다시 사용해야 합니다.
+
+이 데이터들을 모두 같은 저장 방식으로 관리해도 될까요?
+
+Block, File, Object Storage는 데이터를 저장한다는 공통점이 있지만, 프로그램이 데이터를 찾고 읽고 수정하는 방법이 서로 다릅니다. 따라서 단순히 가장 빠르거나 가장 큰 저장소를 고르는 것이 아니라, 애플리케이션이 요구하는 접근 방식을 먼저 확인해야 합니다.
 
 <Figure
-  src="/images/lessons/03-storage/storage-compare/intro.svg"
-  alt="데이터를 디스크처럼 읽을까요, 객체로 읽을까요? 그림에 Block, File, Object의 모습을 표시했습니다."
-  caption="Block · File · Object"
+  src="/images/lessons/03-storage/storage-compare/compare.svg"
+  alt="Block, File, Object Storage가 각각 블록 장치, 파일 경로, 객체 키를 제공하는 모습"
+  caption="Block · File · Object Storage의 접근 방식"
 />
 
-그림의 **Block**, **File**, **Object**에 주목해 보세요. Block은 디스크 블록, File은 파일과 디렉터리, Object는 키와 메타데이터를 중심으로 접근합니다.
+이번 학습에서는 세 저장 방식의 차이를 알아보고, AI 모델 학습 과정의 데이터에 어떤 방식이 알맞은지 판단합니다.
 
-## 개념 이해
+## 먼저 이렇게 떠올려 보세요
 
-Block은 디스크의 블록 단위로 접근하며 보통 파일 시스템 위에서 사용합니다. File은 파일·디렉터리와 공유 경로를 제공하고 Object는 키와 메타데이터를 통해 객체 단위로 접근합니다. 어느 하나가 모든 작업에서 가장 빠르지는 않습니다.
+세 저장 방식의 차이는 **데이터를 어떤 모습으로 건네받는가**에서 시작합니다.
 
-| 종류   | 접근                  | 사용 예               |
-| ------ | --------------------- | --------------------- |
-| Block  | 블록 주소·파일 시스템 | OS·디스크             |
-| File   | 파일 경로·디렉터리    | 공유 파일 작업        |
-| Object | 버킷·객체 키          | 원본 데이터·모델 파일 |
+| 저장 방식 | 익숙한 모습으로 비유하면                   | 프로그램이 받는 것    |
+| --------- | ------------------------------------------ | --------------------- |
+| Block     | 내 컴퓨터에 새 SSD를 꽂는 것               | 비어 있는 디스크 장치 |
+| File      | 여러 사람이 같은 공용 폴더를 여는 것       | 파일과 폴더 경로      |
+| Object    | 이름표가 붙은 물건을 보관 창고에 맡기는 것 | 버킷 안의 객체 키     |
 
-<Figure
-  src="/images/lessons/03-storage/storage-compare/mechanism.svg"
-  alt="Block · File · Object의 비교. 세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
-  caption="세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
-/>
+예를 들어 **model.pt**라는 모델 파일을 사용한다고 생각해 보겠습니다.
 
-## 관찰한 결과 해석하기
+### Block은 “내 서버에 디스크를 하나 더 연결하는 것”
 
-작은 요청을 많이 보내면 요청당 지연의 비중이 커집니다. 큰 순차 읽기는 처리량이 중요해집니다. 아래 수치는 비교용 가정이며 실제 서비스·네트워크·캐시·병렬성에 따라 결과가 달라집니다.
+서버는 먼저 디스크를 연결하고, 파일 시스템을 만든 뒤 **/models/model.pt**라는 파일을 저장합니다. **한 서버가 자신의 작업 디스크처럼 사용하는 모습**을 떠올리면 쉽습니다.
+
+다만 이 디스크를 한 서버에 연결했다고 해서 다른 노드의 Pod에서도 같은 파일이 자동으로 보이지는 않습니다.
+
+### File은 “여러 컴퓨터가 같은 공용 폴더를 여는 것”
+
+여러 Pod가 같은 공유 저장소를 **/shared**에 마운트하면 모두 **/shared/model.pt**라는 경로로 파일을 볼 수 있습니다. **학교나 회사의 공용 드라이브**와 비슷합니다.
+
+여러 사용자가 같은 문서를 동시에 수정하면 충돌할 수 있듯이, 여러 Pod가 같은 파일을 동시에 쓸 때도 조정이 필요합니다.
+
+### Object는 “이름표로 물건을 맡기고 찾아오는 보관 창고”
+
+프로그램은 **models/run-42/model.pt**라는 객체 키로 모델을 저장하고, 필요할 때 GET 요청으로 가져옵니다. **파일이 있는 디스크를 직접 연결하는 대신, 보관소에 키를 말하고 객체를 받는 방식**입니다.
+
+학습 서버를 종료해도 객체는 보관소에 남으므로 다른 평가·배포 작업에서 다시 찾기 좋습니다. 대신 기존 프로그램이 로컬 파일 경로를 요구한다면 객체를 먼저 내려받는 과정이 필요할 수 있습니다.
+
+## 개념과 동작 원리
+
+### 1. Block Storage
+
+Block Storage는 저장 공간을 일정한 크기의 **블록 단위 장치**로 제공합니다. 서버에서는 새로운 디스크가 연결된 것처럼 보이며, 보통 그 위에 파일 시스템을 만든 뒤 사용합니다.
+
+> **한 문장으로:** 서버 한 대가 자기 디스크처럼 사용할 저장 공간이 필요할 때 떠올립니다.
+
+- 운영체제나 데이터베이스처럼 낮은 수준의 디스크 접근이 필요한 작업에 적합합니다.
+- 일반적으로 특정 서버나 노드에 연결해 사용합니다.
+- 여러 노드가 같은 디스크를 동시에 사용하려면 별도의 지원과 조정이 필요합니다.
+
+AWS의 대표적인 Block Storage는 Amazon EBS입니다.
+
+### 2. File Storage
+
+File Storage는 데이터를 **파일과 디렉터리 경로**로 제공합니다. 여러 클라이언트가 같은 경로를 마운트하면 공통 파일을 읽거나 쓸 수 있습니다.
+
+> **한 문장으로:** 여러 Pod가 같은 폴더와 파일 이름을 봐야 할 때 떠올립니다.
+
+- 기존 프로그램의 파일 읽기·쓰기 방식을 그대로 사용하기 쉽습니다.
+- 여러 Pod나 노드가 같은 디렉터리를 공유해야 할 때 사용할 수 있습니다.
+- 여러 작업이 같은 파일을 동시에 수정한다면 충돌을 조정해야 합니다.
+
+AWS의 대표적인 File Storage는 Amazon EFS와 Amazon FSx입니다.
+
+### 3. Object Storage
+
+Object Storage는 데이터를 **객체**로 저장하며, 버킷과 객체 키를 이용해 찾습니다. 파일 시스템의 디렉터리처럼 보이는 문자열을 키에 사용할 수 있지만, 일반적인 디스크나 공유 파일 시스템과 동작 방식은 다릅니다.
+
+> **한 문장으로:** 서버와 떨어진 공통 보관소에서 데이터셋이나 모델을 키로 다시 찾을 때 떠올립니다.
+
+- 큰 데이터셋, 모델 파일, 로그와 백업을 장기간 보관하기 좋습니다.
+- 서버나 Pod와 저장 공간의 수명을 분리할 수 있습니다.
+- 데이터를 읽고 쓸 때 파일 경로 대신 API 요청을 사용합니다.
+
+AWS의 대표적인 Object Storage는 Amazon S3입니다.
+
+| 저장 방식 | 프로그램이 보는 모습 | 적합한 예시               | 먼저 확인할 조건             |
+| --------- | -------------------- | ------------------------- | ---------------------------- |
+| Block     | 연결된 디스크        | 운영체제, 데이터베이스    | 연결할 노드, IOPS, 처리량    |
+| File      | 파일과 디렉터리      | 여러 Pod의 공유 작업 경로 | 동시 접근, 읽기·쓰기 방식    |
+| Object    | 버킷과 객체 키       | 데이터셋, 모델 아티팩트   | API 사용, 객체 크기, 요청 수 |
+
+## 지연 시간과 처리량
+
+저장 방식뿐 아니라 실제 요청 형태도 성능에 영향을 줍니다.
+
+- **지연 시간(Latency)**은 요청 하나가 완료될 때까지 걸리는 시간입니다.
+- **처리량(Throughput)**은 일정 시간 동안 전송할 수 있는 전체 데이터 양입니다.
+
+작은 파일을 매우 많이 읽으면 요청마다 발생하는 지연과 메타데이터 처리 비용이 커질 수 있습니다. 반대로 큰 파일을 연속으로 읽는 작업에서는 초당 얼마나 많은 데이터를 전달할 수 있는지가 중요합니다.
+
+## 상황에 맞는 저장소 골라 보기
+
+서버 디스크, 공유 폴더, 모델 보관 중 하나를 선택해 보세요. 세 저장 방식의 접근 방법과 사용 예를 나란히 비교할 수 있습니다.
 
 <Activity />
 
-## 적용 조건과 한계
+## 비교와 한계
 
-영구 볼륨은 백업이 아닙니다. 공유 읽기만 필요한지 동시 쓰기도 필요한지 판단하고 저장소·드라이버의 지원을 확인합니다. 캐시는 반복 읽기를 돕지만 최초 읽기나 잘못된 데이터 자체를 해결하지 않습니다.
+앞의 활동에서는 **서버 디스크에는 Block**, **공유 폴더에는 File**, **모델 보관에는 Object**를 연결했습니다. 실제로 적용할 때는 각 방식이 제공하는 기능과 추가로 필요한 조건을 함께 확인해야 합니다.
 
-## 전체 과정과 연결하기
+- **Block — 디스크 연결과 파일 공유는 다릅니다.** 한 서버에 연결한 디스크가 다른 노드의 Pod에도 자동으로 보이지는 않습니다. 여러 노드에서 사용하려면 저장소의 연결 지원과 파일 공유 방법을 확인해야 합니다.
+- **File — 함께 접근하는 것과 안전하게 수정하는 것은 다릅니다.** 여러 Pod가 같은 데이터셋을 읽을 수 있어도, 같은 결과 파일을 동시에 수정하면 충돌할 수 있습니다. 작업별로 출력 파일을 나누거나 쓰기 순서를 조정해야 합니다.
+- **Object — 객체 키는 일반 파일 경로와 사용 방식이 다릅니다.** 모델을 키로 보관하고 가져오는 데 적합하지만, 기존 프로그램이 파일 경로를 요구한다면 객체를 내려받거나 별도의 연결 방법을 마련해야 합니다.
 
-Block은 디스크 블록, File은 파일과 디렉터리, Object는 키와 메타데이터를 중심으로 접근합니다. 프로그램이 요구하는 접근 방식에 맞춰 저장소와 읽기 경로를 구성해야 합니다.
+접근 방식이 맞는 저장소를 골랐다면, 앞에서 살펴본 **지연 시간과 처리량**을 확인합니다. 작은 파일을 많이 읽는지, 큰 파일을 연속으로 읽는지에 따라 실제 작업 속도가 달라질 수 있으므로 학습 데이터의 요청 형태로 측정해야 합니다.
 
-<Callout title="판단할 때 확인하기">
+## 전체 과정과 연결
 
-공유 여부·변경 패턴·접근 API·수명과 성능을 함께 비교하세요.
+storage-lifecycle에서 정한 파일 수명과 공유 조건을 바탕으로 저장 방식을 선택합니다.
 
-</Callout>
+1. 애플리케이션이 디스크, 파일 경로, 객체 API 중 어떤 방식을 요구하는지 확인합니다.
+2. 하나의 노드만 사용하는지, 여러 Pod와 노드가 함께 접근하는지 확인합니다.
+3. 읽기만 필요한지, 여러 작업이 동시에 쓰기도 하는지 확인합니다.
+4. 실제 요청 크기와 병렬성으로 지연 시간과 처리량을 측정합니다.
 
-<LessonSummary>
+> **판단할 때 확인하기**
+>
+> “이 프로그램은 데이터를 디스크, 파일 경로, 객체 키 중 어떤 방식으로 찾고 수정할까?”
 
-Block은 디스크 블록, File은 파일과 디렉터리, Object는 키와 메타데이터를 중심으로 접근합니다. 프로그램이 요구하는 접근 방식에 맞춰 저장소와 읽기 경로를 구성해야 합니다.
+## 핵심 정리
 
-- **다시 판단해 보기** — 공유 여부·변경 패턴·접근 API·수명과 성능을 함께 비교하세요. 큰 모델 파일 보관과 여러 작업의 공유 파일 수정은 서로 다른 요구를 가집니다.
-
-</LessonSummary>
-
-<Reflection />
+**Block Storage는 디스크 장치**, **File Storage는 공유 파일과 디렉터리**, **Object Storage는 버킷과 객체 키**를 중심으로 접근합니다. 저장소 이름만 보고 선택하지 말고, 데이터의 수명·공유 조건·접근 방식·요청 형태를 함께 확인해야 합니다.
 
 <AdvancedReadings />
 

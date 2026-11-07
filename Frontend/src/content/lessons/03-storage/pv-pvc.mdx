@@ -1,74 +1,119 @@
-## 문제 상황과 전체 맥락
+## 문제 상황
 
-Pod는 저장 공간을 어떻게 요청할까요? 저장 요청과 실제 볼륨을 구분하고 Pod 교체를 관찰합니다.
+Kubernetes에서 모델을 학습하는 Pod가 체크포인트를 `/checkpoints`에 저장하고 있습니다.
+
+학습 도중 Pod에 문제가 생겨 새 Pod가 생성되자 기존 체크포인트가 사라졌습니다. 같은 이름의 Pod를 다시 만들었지만 이전 파일은 돌아오지 않았습니다.
+
+Pod가 교체되어도 데이터를 계속 사용하려면 Pod와 독립적으로 관리되는 저장 공간을 연결해야 합니다.
 
 <Figure
-  src="/images/lessons/03-storage/pv-pvc/intro.svg"
-  alt="Pod는 저장 공간을 어떻게 요청할까요? 그림에 Pod, PVC, PV의 모습을 표시했습니다."
-  caption="Pod · PVC · PV"
+  src="/images/lessons/03-storage/pv-pvc/volume-binding.svg"
+  alt="Pod가 PVC를 참조하고 PVC가 조건에 맞는 PV와 연결되는 모습"
+  caption="Pod · PersistentVolumeClaim · PersistentVolume"
 />
 
-그림의 **Pod**, **PVC**, **PV**에 주목해 보세요. Pod가 PVC를 참조하면 PVC의 용량·접근 모드·스토리지 조건에 맞는 PV가 결합되어 사용됩니다.
+그렇다면 Pod는 실제 저장소의 위치와 종류를 모두 알고 있어야 할까요?
 
-## 개념 이해
+Kubernetes에서는 Pod가 **PersistentVolumeClaim(PVC)**을 요청하고, 클러스터가 조건에 맞는 **PersistentVolume(PV)**을 연결합니다.
 
-PV는 클러스터가 다루는 스토리지 자원이고 PVC는 용량과 접근 조건을 요청하는 객체입니다. Pod는 PVC를 통해 볼륨을 사용합니다. 조건이 맞아 결합된 볼륨의 수명은 Pod 자체의 수명과 다를 수 있습니다.
+**이번 학습에서는 Pod, PVC, PV의 역할과 연결 관계를 알아보고, Pod 교체 뒤에도 데이터를 다시 사용하는 방법을 학습합니다.**
 
-> **연결 전에 예측하기** — 이 그림은 실행 순서가 아니라 참조·바인딩·저장소 대응 관계입니다. 데이터 파일과 저장소 요청을 구분하세요.
+## 개념과 동작 원리
+
+### 1. PersistentVolume(PV)
+
+PV는 Kubernetes 클러스터가 사용할 수 있는 **저장 자원**입니다. 저장 용량, 접근 모드, StorageClass, 실제 스토리지 정보와 반환 정책 등이 포함될 수 있습니다. PV의 수명은 이를 사용하는 개별 Pod의 수명과 분리되어 있습니다.
+
+### 2. PersistentVolumeClaim(PVC)
+
+PVC는 애플리케이션이 필요한 저장 조건을 작성한 **요청서**입니다.
+
+- 필요한 저장 용량
+- 읽기·쓰기 접근 모드
+- 사용할 StorageClass
+- 파일 시스템 또는 블록 장치와 같은 볼륨 모드
+
+PVC는 조건이 맞는 기존 PV와 연결되거나, StorageClass와 provisioner를 통해 새로운 볼륨을 동적으로 만들 수 있습니다.
+
+### 3. Pod
+
+Pod는 실제 PV를 직접 고르는 대신 PVC의 이름을 참조합니다. 그리고 `volumeMounts`를 이용해 컨테이너 안의 경로에 볼륨을 연결합니다.
 
 <NodeExample />
 
-연결을 따라가며 확인한 자료는 **PVC 참조 · 볼륨 바인딩**입니다. Pod 삭제 후 자료 보존은 볼륨과 반환 정책에서 확인합니다. 분산 작업이라고 무조건 RWX를 선택하지 말고 실제 읽기·쓰기 주체와 노드 배치를 판단하세요.
-
-## 관찰한 결과 해석하기
-
-PVC는 백업이 아니며 실제 보존은 스토리지와 회수 정책 등에 달려 있습니다. RWO는 단일 노드의 읽기·쓰기 조건이지 항상 단일 Pod라는 뜻은 아닙니다. S3 버킷이 기본적으로 PVC에 직접 결합되는 것도 아닙니다.
-
-<Activity />
-
-## YAML 예제 · 저장소 요청과 마운트
-
-아래 PVC는 기본 StorageClass가 있는 클러스터를 가정합니다. PVC만 만들면 Pod에 자동 마운트되지 않으며 Pod의 volumes와 volumeMounts에서 이 요청을 참조해야 합니다. 저장소 제공 조건이 맞지 않으면 Pending 상태를 조사합니다.
+아래 PVC는 10GiB의 저장 공간을 요청합니다.
 
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: training-data
+  name: training-checkpoints
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
 ```
 
-실행 예제에서 각 명령이 변경하는 파일 또는 실행 상태를 확인한 뒤, 위에서 설명한 흐름과 비교해 보세요.
+PVC를 만든 것만으로 컨테이너에 자동 마운트되지는 않습니다. Pod 명세에서도 요청과 경로를 연결해야 합니다.
 
-## 적용 조건과 한계
+```yaml
+spec:
+  volumes:
+    - name: checkpoints
+      persistentVolumeClaim:
+        claimName: training-checkpoints
+  containers:
+    - name: trainer
+      volumeMounts:
+        - name: checkpoints
+          mountPath: /checkpoints
+```
 
-영구 볼륨은 백업이 아닙니다. 공유 읽기만 필요한지 동시 쓰기도 필요한지 판단하고 저장소·드라이버의 지원을 확인합니다. 캐시는 반복 읽기를 돕지만 최초 읽기나 잘못된 데이터 자체를 해결하지 않습니다.
+## 접근 모드 이해하기
 
-## 전체 과정과 연결하기
+| 접근 모드              | 의미                               |
+| ---------------------- | ---------------------------------- |
+| RWO(ReadWriteOnce)     | 하나의 노드에서 읽기·쓰기로 마운트 |
+| ROX(ReadOnlyMany)      | 여러 노드에서 읽기 전용으로 마운트 |
+| RWX(ReadWriteMany)     | 여러 노드에서 읽기·쓰기로 마운트   |
+| RWOP(ReadWriteOncePod) | 하나의 Pod에서 읽기·쓰기로 마운트  |
 
-Pod가 PVC를 참조하면 PVC의 용량·접근 모드·스토리지 조건에 맞는 PV가 결합되어 사용됩니다. StorageClass는 동적 프로비저닝의 기준을 제공하며, 실제 지원 조건은 스토리지 구현에 달려 있습니다.
+RWO는 항상 하나의 Pod만 사용할 수 있다는 뜻이 아닙니다. 같은 노드의 여러 Pod가 사용할 수도 있습니다. 하나의 Pod로 제한해야 한다면 CSI 드라이버가 RWOP를 지원하는지 확인해야 합니다.
 
-<Callout title="판단할 때 확인하기">
+모든 스토리지가 모든 접근 모드를 제공하는 것도 아닙니다. PVC에 모드를 적는 것만으로 기반 저장소에 없는 기능이 생기지는 않습니다.
 
-Pod 삭제 후 자료 보존은 볼륨과 반환 정책에서 확인합니다.
+<Activity />
 
-</Callout>
+## 문제가 생겼을 때 확인하기
 
-<LessonSummary>
+PVC가 `Pending` 상태라면 다음 항목을 확인합니다.
 
-Pod가 PVC를 참조하면 PVC의 용량·접근 모드·스토리지 조건에 맞는 PV가 결합되어 사용됩니다. StorageClass는 동적 프로비저닝의 기준을 제공하며, 실제 지원 조건은 스토리지 구현에 달려 있습니다.
+1. 요청한 용량을 제공할 수 있는가?
+2. 요청한 접근 모드를 드라이버가 지원하는가?
+3. StorageClass 이름과 provisioner가 올바른가?
+4. Pod가 올바른 `claimName`을 참조하는가?
+5. `volumes`와 `volumeMounts`의 이름이 일치하는가?
 
-- **다시 판단해 보기** — Pod 삭제 후 자료 보존은 볼륨과 반환 정책에서 확인합니다. 분산 작업이라고 무조건 RWX를 선택하지 말고 실제 읽기·쓰기 주체와 노드 배치를 판단하세요.
+## 비교와 한계
 
-</LessonSummary>
+- PVC는 저장 공간을 요청하고 연결하는 객체이며 백업 기능이 아닙니다.
+- Pod 삭제 뒤 데이터 처리는 기반 저장소와 PV 반환 정책에 따라 달라집니다.
+- 여러 Pod가 볼륨을 마운트할 수 있어도 같은 파일을 안전하게 수정하는 것은 별도 문제입니다.
+- S3 버킷은 일반적인 PV와 같은 방식으로 자동 연결되지 않습니다. 필요한 드라이버나 애플리케이션 접근 방식을 확인해야 합니다.
 
-<Reflection />
+## 전체 과정과 연결
 
-<AdvancedReadings />
+PV와 PVC는 Pod가 사용할 저장 공간을 Kubernetes에서 연결하는 방법입니다. 원본 데이터의 장기 보관, 체크포인트의 보존, 반복 읽기 캐시는 목적이 다르므로 각각의 수명과 공유 조건을 판단해야 합니다.
+
+> **판단할 때 확인하기**
+>
+> “Pod가 요청한 용량·접근 모드·StorageClass를 실제 저장소가 제공할 수 있을까?”
+
+## 핵심 정리
+
+**PV는 클러스터의 저장 자원**, **PVC는 애플리케이션의 저장 요청**, **Pod는 PVC를 참조해 볼륨을 마운트하는 실행 단위**입니다. PVC와 PV가 연결되어도 백업과 동시 쓰기 안전성이 자동으로 보장되지는 않습니다.
 
 <Quiz />
 

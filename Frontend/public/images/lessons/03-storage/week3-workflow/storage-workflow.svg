@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="806" height="452" viewBox="0 0 806 452" role="img" aria-labelledby="title desc">
+<title id="title">MLOps 저장과 공급의 전체 워크플로</title>
+<desc id="desc">Object Storage의 원본이 캐시와 로더를 거쳐 GPU로 공급되고 결과 모델이 다시 Object Storage에 저장된다</desc>
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0l9 4.5L0 9z" fill="#365b78"/></marker><style>text{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;fill:#173149}.t{font-size:25px;font-weight:800}.h{font-size:18px;font-weight:800}.b{font-size:13px;font-weight:600}.lane{font-size:12px;font-weight:800;letter-spacing:1px}</style></defs>
+<rect width="806" height="452" rx="24" fill="#f8fafc"/>
+<text class="t" x="403" y="39" text-anchor="middle">보관 경로와 빠른 공급 경로를 함께 설계합니다</text>
+<rect x="24" y="65" width="758" height="105" rx="18" fill="#edf4ff"/><text class="lane" x="43" y="87" fill="#5075a7">영구 보관 계층</text>
+<g transform="translate(67 94)"><ellipse cx="67" cy="13" rx="64" ry="13" fill="#bdd6ff" stroke="#4c78b4" stroke-width="2"/><path d="M3 13v39c0 18 128 18 128 0V13" fill="#dce9ff" stroke="#4c78b4" stroke-width="2"/><text class="h" x="67" y="42" text-anchor="middle">원본 데이터</text></g>
+<g transform="translate(611 94)"><ellipse cx="67" cy="13" rx="64" ry="13" fill="#ffdca9" stroke="#b87527" stroke-width="2"/><path d="M3 13v39c0 18 128 18 128 0V13" fill="#ffead0" stroke="#b87527" stroke-width="2"/><text class="h" x="67" y="42" text-anchor="middle">모델 아티팩트</text></g>
+<text class="b" x="403" y="120" text-anchor="middle">Object Storage · 객체 키 · 버전</text><path d="M202 134h397" stroke="#6d8cac" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#a)"/>
+<rect x="24" y="185" width="758" height="118" rx="18" fill="#eaf8f3"/><text class="lane" x="43" y="207" fill="#38836d">데이터 공급 계층</text>
+<g transform="translate(65 222)"><rect width="151" height="58" rx="13" fill="white" stroke="#4e9e86" stroke-width="2"/><text class="h" x="75" y="25" text-anchor="middle">Shard</text><text class="b" x="75" y="46" text-anchor="middle">작은 요청 묶기</text></g>
+<g transform="translate(270 222)"><rect width="151" height="58" rx="13" fill="white" stroke="#4e9e86" stroke-width="2"/><text class="h" x="75" y="25" text-anchor="middle">PVC Cache</text><text class="b" x="75" y="46" text-anchor="middle">반복 읽기 재사용</text></g>
+<g transform="translate(475 222)"><rect width="151" height="58" rx="13" fill="white" stroke="#4e9e86" stroke-width="2"/><text class="h" x="75" y="25" text-anchor="middle">Data Loader</text><text class="b" x="75" y="46" text-anchor="middle">디코딩 · 전처리</text></g>
+<path d="M216 251h48M421 251h48" stroke="#365b78" stroke-width="4" marker-end="url(#a)"/>
+<path d="M134 170v47" stroke="#365b78" stroke-width="4" marker-end="url(#a)"/><text class="b" x="154" y="198">GET</text>
+<rect x="24" y="318" width="758" height="110" rx="18" fill="#fff4e5"/><text class="lane" x="43" y="340" fill="#a96a24">학습 계층</text>
+<g transform="translate(293 348)"><rect width="220" height="60" rx="15" fill="white" stroke="#c48232" stroke-width="2"/><rect x="20" y="15" width="32" height="32" rx="5" fill="#ffe0b5" stroke="#b87527" stroke-width="2"/><text class="h" x="127" y="27" text-anchor="middle">GPU 학습</text><text class="b" x="127" y="49" text-anchor="middle">준비된 배치 소비</text></g>
+<path d="M550 280c0 43-56 43-56 63" fill="none" stroke="#365b78" stroke-width="4" marker-end="url(#a)"/><path d="M513 378c100 0 165-62 165-208" fill="none" stroke="#b87527" stroke-width="4" marker-end="url(#a)"/><text class="b" x="679" y="300" text-anchor="middle" fill="#a55f1e">PUT 모델 저장</text>
+<rect x="634" y="222" width="124" height="58" rx="13" fill="#fff0ee" stroke="#d96868" stroke-width="2"/><text class="h" x="696" y="246" text-anchor="middle" fill="#bd4545">공급 속도</text><text class="b" x="696" y="267" text-anchor="middle">30 ↔ 100 배치/초</text>
+</svg>

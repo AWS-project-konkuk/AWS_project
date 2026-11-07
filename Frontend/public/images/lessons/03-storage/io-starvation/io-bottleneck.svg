@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="806" height="452" viewBox="0 0 806 452" role="img" aria-labelledby="title desc">
+<title id="title">데이터 공급 병목 때문에 기다리는 GPU</title>
+<desc id="desc">저장소는 초당 30배치를 공급하고 GPU는 초당 100배치를 소비해 공급 경로에서 병목이 생긴다</desc>
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0l9 4.5L0 9z" fill="#3d5c75"/></marker><style>text{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;fill:#18324b}.t{font-size:26px;font-weight:800}.h{font-size:19px;font-weight:800}.b{font-size:14px;font-weight:600}.n{font-size:25px;font-weight:900}</style></defs>
+<rect width="806" height="452" rx="24" fill="#f8fafc"/>
+<text class="t" x="403" y="45" text-anchor="middle">GPU가 쉬고 있다면 공급 파이프라인을 확인합니다</text>
+<g transform="translate(35 100)">
+  <ellipse cx="78" cy="20" rx="67" ry="18" fill="#d7e6ff" stroke="#4c79b7" stroke-width="3"/><path d="M11 20v108c0 24 134 24 134 0V20M11 70c0 24 134 24 134 0" fill="#e9f1ff" stroke="#4c79b7" stroke-width="3"/>
+  <text class="h" x="78" y="177" text-anchor="middle">저장소 읽기</text><text class="b" x="78" y="202" text-anchor="middle">작은 파일 요청</text>
+</g>
+<path d="M184 188h86" stroke="#3d5c75" stroke-width="8" marker-end="url(#a)"/><g fill="#79a1d2"><circle cx="203" cy="188" r="7"/><circle cx="226" cy="188" r="7"/><circle cx="249" cy="188" r="7"/></g>
+<g transform="translate(283 100)"><rect width="196" height="176" rx="20" fill="#eaf8f2" stroke="#4a9e84" stroke-width="3"/><path d="M26 49h144M26 81h109M26 113h128" stroke="#4a9e84" stroke-width="9" stroke-linecap="round"/><text class="h" x="98" y="207" text-anchor="middle">CPU 데이터 로더</text><text class="b" x="98" y="232" text-anchor="middle">디코딩 · 전처리</text></g>
+<path d="M479 188h40" stroke="#e25858" stroke-width="14"/><path d="M519 188h78" stroke="#3d5c75" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#a)"/><path d="M506 159l14 29-14 29" fill="#fff0ef" stroke="#e25858" stroke-width="5"/>
+<text class="n" x="511" y="139" text-anchor="middle" fill="#d33f46">30</text><text class="b" x="511" y="238" text-anchor="middle" fill="#d33f46">배치/초 병목</text>
+<g transform="translate(611 100)"><rect width="160" height="176" rx="20" fill="#fff1db" stroke="#c28231" stroke-width="3"/><rect x="45" y="37" width="70" height="70" rx="7" fill="white" stroke="#c28231" stroke-width="4"/><path d="M29 52h16M29 91h16M115 52h16M115 91h16M59 21v16M101 21v16M59 107v16M101 107v16" stroke="#c28231" stroke-width="4"/><text class="n" x="80" y="88" text-anchor="middle">GPU</text><text class="h" x="80" y="207" text-anchor="middle">100 배치/초</text><text class="b" x="80" y="232" text-anchor="middle">계산 가능</text></g>
+<rect x="62" y="361" width="682" height="54" rx="15" fill="#fff3f2" stroke="#ed9b97"/><text class="h" x="403" y="385" text-anchor="middle" fill="#bd3e46">GPU를 추가하기 전에 가장 느린 단계를 측정하세요</text><text class="b" x="403" y="405" text-anchor="middle">저장소 읽기 → CPU 전처리 → 메모리 전송 → GPU 계산</text>
+</svg>

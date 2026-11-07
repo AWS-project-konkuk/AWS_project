@@ -14,8 +14,8 @@ export default defineMdxLesson({
   concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
   advanced: [
     {
-      title: '심화 · CSI와 JuiceFS',
-      body: 'CSI는 저장소 플러그인이 볼륨 생성·연결·마운트 등을 구현하는 표준 인터페이스입니다. JuiceFS는 파일 메타데이터 엔진, 객체 저장소의 데이터, 클라이언트 캐시를 결합합니다. 캐시 적중과 최초 읽기를 구분하며 용량·일관성·장애 복구 비용도 함께 판단합니다.',
+      title: '심화 · 보존 경로와 공급 경로를 따로 검증하기',
+      body: 'Object Storage의 원본 버전, PVC로 연결한 캐시, 로더의 공급 속도를 각각 확인합니다. 원본을 복구할 수 있어도 학습 공급은 느릴 수 있고, 빠른 캐시가 있어도 원본 버전이 불명확하면 실험을 재현하기 어렵습니다.',
     },
   ],
   caution: '보관 효율과 학습 중 공급 성능은 다른 조건이며, PVC는 백업 기능이 아닙니다.',
@@ -23,15 +23,15 @@ export default defineMdxLesson({
   references: [
     {
       title: '원문 · MLOps 4주차 · 실제 도구 실습',
-      url: 'https://www.notion.so/02eebb1cb38a82a5b14d811093182c3f',
+      url: 'https://cool-candle-658.notion.site/MLOps-4-02eebb1cb38a82a5b14d811093182c3f',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: 'Kubernetes 공식 · PersistentVolume과 PersistentVolumeClaim',
       url: 'https://kubernetes.io/docs/concepts/storage/persistent-volumes/',
     },
     {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://docs.aws.amazon.com/whitepapers/latest/aws-overview/storage-services.html',
+      title: 'AWS 공식 · EKS AI/ML 스토리지 선택',
+      url: 'https://docs.aws.amazon.com/eks/latest/best-practices/aiml-storage.html',
     },
   ],
   sourceWeek: 4,

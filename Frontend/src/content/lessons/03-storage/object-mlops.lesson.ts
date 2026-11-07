@@ -8,34 +8,41 @@ export default defineMdxLesson({
   title: 'MLOps에서 Object Storage를 쓰는 이유',
   summary: '큰 데이터셋과 모델 파일의 공통 보관소를 구성합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
+    '학습 서버를 교체해도 같은 데이터셋을 읽고, 완성된 모델을 다음 배포 작업에서 찾을 수 있도록 연산 자원과 공통 보관소를 분리하세요.',
   concepts: ['Object Storage', '데이터 로더', 'GPU 학습', '모델 아티팩트'],
   assessment: {
     question: '객체 저장소의 역할에 맞는 것은?',
-    options: ['GPU 계산을 대신 수행하는 장치', '연산과 분리된 공통 데이터·모델 보관소'],
+    options: [
+      'GPU 계산을 대신 수행하는 장치',
+      '연산과 분리된 공통 데이터·모델 보관소',
+      'Pod가 삭제되면 함께 사라지는 임시 작업 공간',
+      '데이터를 저장하기만 하면 GPU에 배치를 자동으로 공급하는 장치',
+    ],
     correct: 1,
-    explanation: '데이터 보관과 데이터 공급·연산의 책임을 나눕니다.',
+    explanation:
+      '객체 저장소는 버킷과 키로 데이터셋·체크포인트·모델을 보관합니다. 실제 전처리와 GPU 계산은 학습 작업이 수행합니다.',
   },
   advanced: [
     {
-      title: '심화 · CSI와 JuiceFS',
-      body: 'CSI는 저장소 플러그인이 볼륨 생성·연결·마운트 등을 구현하는 표준 인터페이스입니다. JuiceFS는 파일 메타데이터 엔진, 객체 저장소의 데이터, 클라이언트 캐시를 결합합니다. 캐시 적중과 최초 읽기를 구분하며 용량·일관성·장애 복구 비용도 함께 판단합니다.',
+      title: '심화 · 객체 키와 버전 추적',
+      body: '데이터 버전과 실행 ID를 객체 키 또는 메타데이터에 기록하면 입력과 결과 모델의 관계를 추적하기 쉽습니다. S3 Versioning은 같은 키의 과거 버전을 구분하지만, 어떤 데이터로 학습했는지는 실험 메타데이터와 함께 기록해야 합니다.',
     },
   ],
-  caution: '데이터 보관과 데이터 공급·연산의 책임을 나눕니다.',
-  reflection: '객체 저장소의 역할에 맞는 것은?',
+  caution:
+    '공통 보관소가 생겨도 작은 객체 요청, 네트워크와 전처리 병목이 자동으로 사라지지는 않습니다.',
+  reflection: '데이터셋과 모델 키에 어떤 정보를 넣어야 같은 실험을 다시 찾을 수 있을까요?',
   references: [
     {
       title: '원문 · MLOps 4주차 · 실제 도구 실습',
-      url: 'https://www.notion.so/02eebb1cb38a82a5b14d811093182c3f',
+      url: 'https://cool-candle-658.notion.site/MLOps-4-02eebb1cb38a82a5b14d811093182c3f',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://kubernetes.io/docs/concepts/storage/persistent-volumes/',
-    },
-    {
-      title: '공식 자료 · 더 알아보기',
+      title: 'AWS 공식 · Amazon S3 개요',
       url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html',
+    },
+    {
+      title: 'AWS 공식 · S3 Versioning 사용',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html',
     },
   ],
   sourceWeek: 4,
@@ -71,9 +78,18 @@ export default defineMdxLesson({
         value: 'a',
         label: '연산과 분리된 공통 데이터·모델 보관소',
       },
+      {
+        value: 'c',
+        label: 'Pod가 삭제되면 함께 사라지는 임시 작업 공간',
+      },
+      {
+        value: 'd',
+        label: '데이터를 저장하기만 하면 GPU에 배치를 자동으로 공급하는 장치',
+      },
     ],
     correct: 'a',
-    explanation: '데이터 보관과 데이터 공급·연산의 책임을 나눕니다.',
+    explanation:
+      '객체 저장소는 버킷과 키로 데이터셋·체크포인트·모델을 보관합니다. 실제 전처리와 GPU 계산은 학습 작업이 수행합니다.',
     task: '데이터 조회와 모델 보관의 경로를 비교하세요.',
   },
   practice: 'interactive',

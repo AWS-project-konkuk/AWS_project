@@ -8,30 +8,37 @@ export default defineMdxLesson({
   title: '데이터가 늦으면 GPU도 기다린다',
   summary: '공급 속도와 소비 속도를 맞춰 I/O 병목을 줄입니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
+    'GPU는 초당 100배치를 처리할 수 있지만 데이터 로더는 30배치만 준비합니다. 저장소 읽기·CPU 전처리·장치 전송을 나누어 측정하고 가장 느린 구간을 개선하세요.',
   concepts: ['원본 데이터', '로더·캐시', 'GPU'],
   assessment: {
     question: 'GPU가 다음 배치를 오래 기다리면 먼저 확인할 것은?',
-    options: ['데이터 공급과 전처리 병목', 'GPU 개수만 무조건 늘리기'],
+    options: [
+      '데이터 공급과 전처리 병목',
+      'GPU 개수만 무조건 늘리기',
+      '데이터를 옮기지 않고 저장소 용량만 늘리기',
+      'CPU와 메모리 사용량을 확인하지 않고 로더 worker 수를 최대로 늘리기',
+    ],
     correct: 0,
-    explanation: '대기 원인을 관측한 뒤 데이터 공급 경로를 개선합니다.',
+    explanation:
+      'GPU 사용률만 보고 장치를 늘리지 말고 배치 대기 시간, 저장소 읽기, CPU 전처리와 GPU 전송 시간을 나누어 확인해야 합니다.',
   },
   advanced: [
     {
-      title: '심화 · CSI와 JuiceFS',
-      body: 'CSI는 저장소 플러그인이 볼륨 생성·연결·마운트 등을 구현하는 표준 인터페이스입니다. JuiceFS는 파일 메타데이터 엔진, 객체 저장소의 데이터, 클라이언트 캐시를 결합합니다. 캐시 적중과 최초 읽기를 구분하며 용량·일관성·장애 복구 비용도 함께 판단합니다.',
+      title: '심화 · 로더 병렬성과 작은 파일',
+      body: 'worker 수를 늘리면 읽기와 전처리를 겹칠 수 있지만 CPU·메모리·스토리지 경쟁도 커집니다. 작은 샘플 파일을 shard로 묶으면 요청 수와 메타데이터 부담을 줄일 수 있습니다. 변경 전후의 배치 대기 시간과 처리량을 같은 조건에서 비교하세요.',
     },
   ],
-  caution: '대기 원인을 관측한 뒤 데이터 공급 경로를 개선합니다.',
-  reflection: 'GPU가 다음 배치를 오래 기다리면 먼저 확인할 것은?',
+  caution: '캐시는 반복 읽기에만 유리하며 첫 읽기와 CPU 전처리 병목까지 해결하지는 않습니다.',
+  reflection:
+    'GPU 사용률이 낮을 때 저장소, CPU 전처리, GPU 중 병목 위치를 어떻게 구분할 수 있을까요?',
   references: [
     {
       title: '원문 · MLOps 4주차 · 실제 도구 실습',
-      url: 'https://www.notion.so/02eebb1cb38a82a5b14d811093182c3f',
+      url: 'https://cool-candle-658.notion.site/MLOps-4-02eebb1cb38a82a5b14d811093182c3f',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://kubernetes.io/docs/concepts/storage/persistent-volumes/',
+      title: 'AWS 공식 · EKS AI/ML 스토리지 최적화',
+      url: 'https://docs.aws.amazon.com/eks/latest/best-practices/aiml-storage.html',
     },
     {
       title: '공식 자료 · 더 알아보기',
@@ -88,9 +95,18 @@ export default defineMdxLesson({
         value: 'b',
         label: 'GPU 개수만 무조건 늘리기',
       },
+      {
+        value: 'c',
+        label: '데이터를 옮기지 않고 저장소 용량만 늘리기',
+      },
+      {
+        value: 'd',
+        label: 'CPU와 메모리 사용량을 확인하지 않고 로더 worker 수를 최대로 늘리기',
+      },
     ],
     correct: 'a',
-    explanation: '대기 원인을 관측한 뒤 데이터 공급 경로를 개선합니다.',
+    explanation:
+      'GPU 사용률만 보고 장치를 늘리지 말고 배치 대기 시간, 저장소 읽기, CPU 전처리와 GPU 전송 시간을 나누어 확인해야 합니다.',
     task: '공급·소비 속도를 바꾸며 대기 비율을 비교하세요.',
   },
   practice: 'interactive',
