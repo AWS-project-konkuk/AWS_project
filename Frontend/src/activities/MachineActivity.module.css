@@ -1,0 +1,63 @@
+.instructions {
+  padding-inline-start: 24px;
+  margin-block: 16px 24px;
+}
+.instructions li + li {
+  margin-block-start: 8px;
+}
+.states {
+  margin: 0;
+  border-block: 1px solid var(--border);
+}
+.states > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 16px;
+  padding-block: 12px;
+}
+.states > div + div {
+  border-top: 1px solid var(--border);
+}
+.states dt {
+  color: var(--soft);
+}
+.states dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 24px 16px;
+}
+.controls button:not(:disabled) {
+  border-color: var(--accent);
+}
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.controls button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.message {
+  min-height: 5em;
+  margin-block: 16px;
+}
+.note {
+  color: var(--soft);
+  font-size: var(--text-sm);
+}
+@media (max-width: 480px) {
+  .states > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

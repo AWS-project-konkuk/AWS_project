@@ -3,6 +3,7 @@ import type { MDXComponents } from 'mdx/types';
 import { createContext, isValidElement, useContext, useState, type ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Activity as LearningActivity } from '../activities/Activity';
+import { MachineActivity } from '../activities/MachineActivity';
 import { lessonById } from '../curriculum/blockml';
 import type { NodeExampleSpec } from '../curriculum/nodeExamples';
 import type { Lesson, Reading } from '../curriculum/types';
@@ -36,9 +37,17 @@ function Activity({ open = false }: { open?: boolean }) {
     throw new Error(`${lesson.id}: Activity를 사용하려면 activity 설정이 필요합니다.`);
   return (
     <details className={styles.optionalActivity} open={open}>
-      <summary>선택 활동 · 결과를 예측하고 비교하기</summary>
+      <summary>
+        {lesson.activity.kind === 'machine'
+          ? '선택 활동 · EC2와 프로그램을 따로 실행해 보기'
+          : '선택 활동 · 결과를 예측하고 비교하기'}
+      </summary>
       <p>브라우저의 교육용 모형입니다. 실제 도구 실행이나 필수 완료 조건이 아닙니다.</p>
-      <LearningActivity lesson={lesson} />
+      {lesson.activity.kind === 'machine' ? (
+        <MachineActivity />
+      ) : (
+        <LearningActivity lesson={lesson} />
+      )}
     </details>
   );
 }
