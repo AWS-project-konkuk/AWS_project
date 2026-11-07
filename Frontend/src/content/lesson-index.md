@@ -7,13 +7,14 @@
 | 0    | 1    | [mlops-overview](lessons/00-overview/mlops-overview.mdx)                      | MLOps란?                                  |
 | 0    | 2    | [ec2-compute](lessons/00-overview/ec2-compute.mdx)                            | EC2는 코드를 실행하는 컴퓨터              |
 | 0    | 3    | [s3-objects](lessons/00-overview/s3-objects.mdx)                              | S3는 객체를 보관하는 저장소               |
-| 1    | 1    | [container-isolation](lessons/02-runtime/container-isolation.mdx)             | 커널을 공유하면서 어떻게 격리할까         |
-| 1    | 2    | [k8s-control-traffic](lessons/02-runtime/k8s-control-traffic.mdx)             | Pod 배치와 요청 전달의 경로 나누기        |
-| 1    | 3    | [docker-image](lessons/02-runtime/docker-image.mdx)                           | 이미지와 컨테이너의 관계                  |
-| 1    | 4    | [docker-commands](lessons/02-runtime/docker-commands.mdx)                     | Docker 명령으로 상태 바꾸기               |
-| 1    | 5    | [vm-container](lessons/02-runtime/vm-container.mdx)                           | VM과 컨테이너는 무엇을 공유할까           |
-| 1    | 6    | [k8s-basics](lessons/02-runtime/k8s-basics.mdx)                               | Kubernetes는 컨테이너의 실행을 관리한다   |
-| 1    | 7    | [week2-workflow](lessons/02-runtime/week2-workflow.mdx)                       | 같은 이미지로 서비스를 복구하기           |
+| 1    | 1    | [runtime-overview](lessons/02-runtime/runtime-overview.mdx)                   | 단원 개요                                 |
+| 1    | 2    | [vm-container](lessons/02-runtime/vm-container.mdx)                           | VM과 컨테이너의 차이                      |
+| 1    | 3    | [docker-commands](lessons/02-runtime/docker-commands.mdx)                     | Docker란?                                 |
+| 1    | 4    | [container-isolation](lessons/02-runtime/container-isolation.mdx)             | 커널을 공유하면서 어떻게 격리할까         |
+| 1    | 5    | [docker-image](lessons/02-runtime/docker-image.mdx)                           | 이미지와 컨테이너의 관계                  |
+| 1    | 6    | [k8s-basics](lessons/02-runtime/k8s-basics.mdx)                               | Kubernetes란?                             |
+| 1    | 7    | [k8s-control-traffic](lessons/02-runtime/k8s-control-traffic.mdx)             | Pod 배치와 요청 전달의 경로 나누기        |
+| 1    | 8    | [week2-workflow](lessons/02-runtime/week2-workflow.mdx)                       | 실습                                      |
 | 2    | 1    | [storage-lifecycle](lessons/03-storage/storage-lifecycle.mdx)                 | 파일의 수명과 공유 조건 판단하기          |
 | 2    | 2    | [storage-compare](lessons/03-storage/storage-compare.mdx)                     | Block·File·Object의 접근 방식             |
 | 2    | 3    | [object-mlops](lessons/03-storage/object-mlops.mdx)                           | MLOps에서 Object Storage를 쓰는 이유      |
