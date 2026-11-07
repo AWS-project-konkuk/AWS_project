@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem('blockml:preferences:v1') || '{}');
+        var t = p.theme;
+        document.documentElement.dataset.theme =
+          t === 'dark' || t === 'light'
+            ? t
+            : matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        document.documentElement.style.colorScheme = document.documentElement.dataset.theme;
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090e17" />
+    <meta
+      name="description"
+      content="AWS 기초부터 Docker, Kubernetes, 모델 운영까지, 개념을 읽고 노드 실습으로 MLOps의 전체 흐름을 배우는 한국어 학습 사이트"
+    />
+    <title>BlockML | MLOps 학습 과정</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
