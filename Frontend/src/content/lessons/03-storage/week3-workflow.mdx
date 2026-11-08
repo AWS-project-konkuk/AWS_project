@@ -31,6 +31,125 @@ GPU는 초당 100배치를 소비하지만 작은 객체 읽기는 초당 30배�
 3. 캐시 경로를 Pod 임시 공간과 PVC 볼륨으로 바꾸어 Pod 교체 결과를 비교합니다.
 4. 학습 결과 모델이 다시 Object Storage로 가는 경로를 완성합니다.
 
+## 직접 실습: Pod를 지워도 파일이 남을까요?
+
+아래 실습은 **단일 노드 Minikube 학습 환경**을 기준으로 합니다. 먼저 컨테이너 내부 파일의 수명을 확인한 뒤, 수동 PV와 PVC를 연결해 비교합니다. 예시 YAML은 실습자가 별도 파일로 저장해 사용합니다.
+
+### 1. 컨테이너 내부 파일 확인하기
+
+```bash
+minikube start
+kubectl create namespace storage-lab
+kubectl run ephemeral-demo --image=nginx -n storage-lab
+kubectl wait --for=condition=Ready pod/ephemeral-demo -n storage-lab --timeout=120s
+kubectl exec -n storage-lab ephemeral-demo -- sh -c 'echo ephemeral > /test.txt'
+kubectl exec -n storage-lab ephemeral-demo -- cat /test.txt
+kubectl delete pod ephemeral-demo -n storage-lab
+kubectl run ephemeral-demo --image=nginx -n storage-lab
+kubectl wait --for=condition=Ready pod/ephemeral-demo -n storage-lab --timeout=120s
+kubectl exec -n storage-lab ephemeral-demo -- cat /test.txt
+```
+
+마지막 명령에서 파일이 없다는 오류가 예상됩니다. 이름이 같아도 새 Pod는 이전 컨테이너의 쓰기 계층을 이어받지 않습니다.
+
+### 2. PV와 PVC 만들기
+
+다음을 `storage-lab-volume.yaml`로 저장합니다. `manual`은 PV와 PVC를 맞추기 위한 클래스 이름이며, 이 실습에서는 StorageClass 리소스나 동적 provisioner를 만들지 않습니다.
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: storage-lab-pv
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /mnt/storage-lab
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-lab-claim
+  namespace: storage-lab
+spec:
+  storageClassName: manual
+  volumeName: storage-lab-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+```
+
+`hostPath`는 Minikube **노드 내부의 경로**를 사용합니다. PC의 같은 경로와는 다를 수 있으며, 다중 노드 공유나 노드 장애 시 복구를 보장하지 않습니다. 여기의 `1Gi`는 바인딩에 쓰이는 선언이며 hostPath 디렉터리의 사용량을 실제로 제한하는 디스크 할당은 아닙니다.
+
+다음을 `storage-lab-pod.yaml`로 저장합니다.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: persistent-demo
+  namespace: storage-lab
+spec:
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: storage-lab-claim
+  containers:
+    - name: web
+      image: nginx
+      volumeMounts:
+        - name: data
+          mountPath: /usr/share/nginx/html
+```
+
+PV·PVC를 먼저 적용하고 Pod를 연결합니다.
+
+```bash
+kubectl apply -f storage-lab-volume.yaml
+kubectl get pv storage-lab-pv
+kubectl get pvc -n storage-lab
+kubectl apply -f storage-lab-pod.yaml
+kubectl wait --for=condition=Ready pod/persistent-demo -n storage-lab --timeout=120s
+kubectl exec -n storage-lab persistent-demo -- sh -c 'echo persistent > /usr/share/nginx/html/index.html'
+kubectl delete pod persistent-demo -n storage-lab
+kubectl apply -f storage-lab-pod.yaml
+kubectl wait --for=condition=Ready pod/persistent-demo -n storage-lab --timeout=120s
+kubectl exec -n storage-lab persistent-demo -- cat /usr/share/nginx/html/index.html
+```
+
+PV와 PVC가 `Bound`이고 마지막 출력이 `persistent`라면, 새 Pod가 같은 볼륨의 파일을 다시 읽은 것입니다. 이 결과는 Pod 교체 시 보존을 확인하며, 노드 삭제나 디스크 장애에 대한 내구성을 입증하지는 않습니다.
+
+### 3. 문제를 기록하고 정리하기
+
+실패하면 `kubectl describe pvc storage-lab-claim -n storage-lab`과 `kubectl describe pod persistent-demo -n storage-lab`의 이벤트를 확인합니다. 용량·접근 모드·클래스 불일치, 잘못된 claim 이름, 마운트 권한을 구분해 **증상 → 원인 → 수정 → 재확인 결과**를 기록하세요.
+
+실습 결과 확인 후 이번 실습의 리소스만 정리합니다.
+
+```bash
+kubectl delete pod ephemeral-demo persistent-demo -n storage-lab
+kubectl delete pvc storage-lab-claim -n storage-lab
+kubectl delete pv storage-lab-pv
+kubectl delete namespace storage-lab
+```
+
+`Retain`을 사용했으므로 노드의 `/mnt/storage-lab/index.html`은 남습니다. 파일까지 정리하려면 `minikube ssh`로 노드에 접속해 `cat /mnt/storage-lab/index.html`로 실습 파일을 확인한 뒤 `sudo rm /mnt/storage-lab/index.html`과 `sudo rmdir /mnt/storage-lab`을 실행합니다. 디렉터리에 다른 파일이 있으면 삭제 범위를 넓히지 말고 내용을 먼저 확인합니다.
+
+### 4. 스터디에서 공유할 것
+
+- Block·File·Object를 각각 비유 하나로 설명하고 데이터셋·가중치·부팅 디스크에 연결해 봅니다.
+- 파일이 사라진 경우와 유지된 경우의 명령·출력을 비교합니다.
+- 분산 학습의 읽기 경로와 체크포인트 쓰기 경로를 나누어 접근 모드를 설명합니다.
+- worker 수, shard, 캐시 중 하나를 바꾸고 전후 측정값과 남은 병목을 공유합니다.
+- 새로 이해한 개념, 헷갈린 개념, 다음에 확인할 질문을 각각 기록합니다.
+
 ## 결과를 해석할 때
 
 활동에서 캐시와 shard가 공급을 두 배로 만드는 값은 원리를 보여 주는 교육용 가정입니다. 실제 개선 폭은 객체 크기, 네트워크, 로더 worker, CPU 전처리와 캐시 적중률을 측정해야 알 수 있습니다. PVC로 캐시를 남겨도 원본의 버전 관리와 백업을 대신하지는 않습니다.

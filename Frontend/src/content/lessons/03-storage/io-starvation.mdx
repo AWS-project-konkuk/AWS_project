@@ -60,6 +60,37 @@ GPU 사용률만 확인해서는 정확한 원인을 알기 어렵습니다. 각
 
 이 방법들이 항상 성능을 높이는 것은 아닙니다. worker가 너무 많으면 CPU와 메모리 경쟁이 생기고, 캐시는 첫 읽기에는 도움이 되지 않습니다. 한 가지 설정을 바꾼 뒤 같은 조건에서 다시 측정해야 합니다.
 
+### 4. PyTorch DataLoader 옵션 이해하기
+
+`num_workers=0`이면 메인 프로세스에서 데이터를 로딩합니다. 양수로 지정하면 별도 worker 프로세스가 읽기와 전처리를 담당해 GPU가 현재 배치를 계산하는 동안 다음 배치를 준비할 수 있습니다. 저장소 처리량 자체가 부족하면 worker만 늘려도 해결되지 않으며 CPU·메모리 경쟁이 심해질 수 있습니다.
+
+`pin_memory=True`는 배치를 페이지가 고정된 호스트 메모리에 준비해 CPU에서 CUDA GPU로 전송할 때 도움을 줍니다. **디스크 읽기 속도를 높이거나 가상 주소 변환을 없애는 옵션은 아닙니다.** 고정 메모리를 과도하게 사용하면 시스템 메모리에 부담을 줄 수 있습니다.
+
+아래는 `dataset`이 `(입력 텐서, 정답 텐서)`를 반환하고 CUDA GPU를 사용하는 경우의 예입니다. Windows에서 worker를 사용한다면 실행 코드를 메인 가드 안에 두고, Dataset 클래스는 모듈 최상위에 정의합니다.
+
+```python
+from torch.utils.data import DataLoader
+
+def train(dataset, model, optimizer, loss_fn):
+    loader = DataLoader(
+        dataset, batch_size=64, num_workers=4, pin_memory=True
+    )
+    model = model.to("cuda")
+    for inputs, targets in loader:
+        inputs = inputs.to("cuda", non_blocking=True)
+        targets = targets.to("cuda", non_blocking=True)
+        optimizer.zero_grad()
+        loss = loss_fn(model(inputs), targets)
+        loss.backward()
+        optimizer.step()
+```
+
+`non_blocking=True`는 전송 시 CPU의 대기를 줄이는 데 활용할 수 있지만, GPU 전송과 계산이 항상 겹쳐 실행된다는 보장은 아닙니다. 같은 데이터로 worker 수를 0, 2, 4 등으로 바꾸며 배치 대기 시간·초당 샘플 수·CPU 및 메모리 사용량을 비교하세요. 옵션의 의미는 [PyTorch DataLoader 문서](https://docs.pytorch.org/docs/stable/data.html)를 참고하세요.
+
+### 5. 작은 파일 묶기와 압축은 다릅니다
+
+여러 이미지를 tar 같은 shard로 묶으면 파일 열기나 객체 요청 횟수를 줄일 수 있습니다. 압축은 전송량을 줄일 수 있지만 CPU에서 압축을 푸는 비용이 추가됩니다. 이미 압축된 이미지에서는 이득이 작을 수 있으므로 **묶음 크기와 압축 여부를 따로 비교**해야 합니다. 분산 학습에서는 각 worker가 읽을 shard도 나누어 중복 읽기를 줄입니다.
+
 ## 비교와 한계
 
 - GPU를 늘리면 데이터 소비 능력도 커져 기존 공급 병목이 더 심해질 수 있습니다.

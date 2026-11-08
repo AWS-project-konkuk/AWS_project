@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1342" height="682" viewBox="0 0 1342 682">
+  <defs>
+    <style>
+      .bg { fill: #efefef; }
+      .outline { fill: none; stroke: #111; stroke-width: 2; }
+      .regionBlue { fill: #1580bc; }
+      .smTeal { fill: #2f9f8b; }
+      .smTealStroke { stroke: #11836f; }
+      .ec2Orange { fill: #c77517; }
+      .ec2Stroke { stroke: #c77517; }
+      .s3Green { stroke: #2d7f17; }
+      .textDark { fill: #1d2430; font-family: Arial, Helvetica, sans-serif; }
+      .title { font-size: 30px; font-weight: 600; }
+      .label { font-size: 26px; font-weight: 500; }
+      .smallLabel { font-size: 23px; font-weight: 500; }
+      .miniLabel { font-size: 20px; }
+      .center { text-anchor: middle; }
+      .iconStroke2 { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .iconStroke4 { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow { stroke: #656d79; stroke-width: 2.4; fill: none; }
+    </style>
+    <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="#656d79"/>
+    </marker>
+  </defs>
+
+  <!-- outer background and border -->
+  <rect x="1" y="1" width="1340" height="680" class="bg" stroke="#1890d0" stroke-width="2"/>
+  <rect x="40" y="60" width="1260" height="582" class="outline"/>
+
+  <!-- Region tag -->
+  <rect x="1" y="1" width="50" height="50" class="regionBlue"/>
+  <g transform="translate(8,6)" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <line x1="8" y1="3" x2="8" y2="35"/>
+    <line x1="4" y1="35" x2="14" y2="35"/>
+    <path d="M8,7 C12,7 18,10 21,10 C18,14 12,17 8,17"/>
+  </g>
+  <text x="65" y="43" class="textDark title" fill="#1675aa">Region</text>
+
+  <!-- SageMaker Training header -->
+  <g transform="translate(440,21)">
+    <rect x="0" y="0" width="462" height="60" fill="#ffffff" stroke="#111" stroke-width="2"/>
+    <rect x="0" y="0" width="60" height="60" class="smTeal"/>
+    <!-- abstract AI icon -->
+    <g transform="translate(10,10) scale(1.0)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 4 l6 4 l0 8 l-6 4 l-6 -4 l0 -8 z"/>
+      <path d="M21 20 l6 4 l0 8 l-6 4 l-6 -4 l0 -8 z"/>
+      <path d="M9 11 l6 4 l0 8 l-6 4 l-6 -4 l0 -8 z"/>
+      <path d="M33 11 l6 4 l0 8 l-6 4 l-6 -4 l0 -8 z"/>
+      <line x1="21" y1="12" x2="21" y2="28"/>
+      <line x1="15" y1="16" x2="9" y2="19"/>
+      <line x1="27" y1="16" x2="33" y2="19"/>
+    </g>
+    <text x="110" y="40" class="textDark title" fill="#119b62">SageMaker Training</text>
+  </g>
+
+  <!-- left user box -->
+  <g transform="translate(190,101)">
+    <rect x="0" y="0" width="280" height="180" fill="#ffffff" stroke="#111" stroke-width="2"/>
+    <g transform="translate(72,18)" class="iconStroke2" stroke="#ca7a12">
+      <circle cx="45" cy="14" r="12"/>
+      <circle cx="93" cy="15" r="12"/>
+      <circle cx="69" cy="46" r="18"/>
+      <path d="M30 82c0-17 12-31 39-31s39 14 39 31"/>
+      <path d="M24 54c0-10 8-18 21-18 13 0 21 8 21 18"/>
+      <path d="M72 54c0-10 8-18 21-18 13 0 21 8 21 18"/>
+    </g>
+    <text x="140" y="160" class="textDark label center" fill="#484d56">SageMaker users</text>
+  </g>
+
+  <!-- left resources container -->
+  <g transform="translate(80,241)">
+    <rect x="0" y="0" width="502" height="359" fill="none" stroke="#697791" stroke-width="2"/>
+
+    <!-- S3 bucket icon -->
+    <g transform="translate(105,104)">
+      <ellipse cx="59" cy="13" rx="60" ry="16" fill="none" stroke="#2d7f17" stroke-width="6"/>
+      <path d="M-1,13 v92 c0,18 118,18 120,0 v-92" fill="none" stroke="#2d7f17" stroke-width="6"/>
+      <path d="M19 72 l15 -25 l15 25 z" fill="none" stroke="#2d7f17" stroke-width="6" stroke-linejoin="round"/>
+      <rect x="29" y="91" width="23" height="23" rx="1" fill="none" stroke="#2d7f17" stroke-width="6"/>
+      <circle cx="91" cy="81" r="16" fill="none" stroke="#2d7f17" stroke-width="6"/>
+      <circle cx="60" cy="42" r="5" fill="none" stroke="#2d7f17" stroke-width="6"/>
+      <path d="M65 45 C84 54, 96 61, 116 75" fill="none" stroke="#2d7f17" stroke-width="6" stroke-linecap="round"/>
+    </g>
+    <text x="160" y="293" class="textDark title center" fill="#1d2430">Amazon S3</text>
+
+    <!-- ML model icon -->
+    <g transform="translate(390,104)">
+      <rect x="0" y="0" width="120" height="150" fill="none" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="0" x2="0" y2="150" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="0" x2="-12" y2="0" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="22" x2="-12" y2="22" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="44" x2="-12" y2="44" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="66" x2="-12" y2="66" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="88" x2="-12" y2="88" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="110" x2="-12" y2="110" stroke="#11836f" stroke-width="6"/>
+      <line x1="0" y1="132" x2="-12" y2="132" stroke="#11836f" stroke-width="6"/>
+      <line x1="22" y1="24" x2="88" y2="24" stroke="#11836f" stroke-width="6" stroke-linecap="round"/>
+      <line x1="22" y1="50" x2="88" y2="50" stroke="#11836f" stroke-width="6" stroke-linecap="round"/>
+      <line x1="22" y1="76" x2="88" y2="76" stroke="#11836f" stroke-width="6" stroke-linecap="round"/>
+      <line x1="22" y1="102" x2="58" y2="102" stroke="#11836f" stroke-width="6" stroke-linecap="round"/>
+      <!-- small brain chip -->
+      <g transform="translate(79,108) scale(0.9)" stroke="#11836f" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22,0 36,8 36,24 22,32 8,24 8,8"/>
+        <line x1="22" y1="0" x2="22" y2="-6"/>
+        <line x1="36" y1="8" x2="42" y2="8"/>
+        <line x1="36" y1="24" x2="42" y2="24"/>
+        <line x1="22" y1="32" x2="22" y2="38"/>
+        <line x1="8" y1="24" x2="2" y2="24"/>
+        <line x1="8" y1="8" x2="2" y2="8"/>
+        <circle cx="14" cy="10" r="2"/>
+        <circle cx="29" cy="10" r="2"/>
+        <circle cx="20" cy="18" r="2"/>
+        <circle cx="30" cy="24" r="2"/>
+        <path d="M14 10 L20 18 L29 10 L30 24"/>
+      </g>
+    </g>
+    <text x="387" y="293" class="textDark title center" fill="#1d2430">ML model</text>
+  </g>
+
+  <!-- right EC2 outer box -->
+  <g transform="translate(780,101)">
+    <rect x="0" y="0" width="481" height="499" fill="none" stroke="#c77517" stroke-width="2"/>
+    <rect x="0" y="0" width="50" height="50" class="ec2Orange"/>
+    <g transform="translate(10,10)" stroke="#ffffff" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="14" height="14"/>
+      <line x1="15" y1="0" x2="15" y2="8"/>
+      <line x1="15" y1="22" x2="15" y2="30"/>
+      <line x1="0" y1="15" x2="8" y2="15"/>
+      <line x1="22" y1="15" x2="30" y2="15"/>
+      <line x1="4" y1="4" x2="8" y2="8"/>
+      <line x1="22" y1="22" x2="26" y2="26"/>
+      <line x1="4" y1="26" x2="8" y2="22"/>
+      <line x1="22" y1="8" x2="26" y2="4"/>
+    </g>
+    <text x="65" y="39" class="textDark title" fill="#c77517">Amazon EC2 instance</text>
+
+    <!-- Training container inner -->
+    <g transform="translate(40,80)">
+      <rect x="0" y="0" width="402" height="380" fill="#ffffff" stroke="#111" stroke-width="2"/>
+      <rect x="0" y="0" width="58" height="58" class="smTeal"/>
+      <!-- small container icon -->
+      <g transform="translate(9,14)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 22 h32 l4 -10 h-28 z"/>
+        <path d="M10 12 h9 l2 4 h-13z"/>
+        <path d="M17 7 q2 -6 8 -5 t9 7"/>
+        <path d="M4 22 q10 8 24 0 q10 8 18 0"/>
+      </g>
+      <text x="73" y="42" class="textDark title" fill="#2b2b2b">Training Container</text>
+
+      <!-- Train icon -->
+      <g transform="translate(124,106)" stroke="#11836f" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="0" y="45" width="90" height="78" stroke-width="6"/>
+        <line x1="18" y1="65" x2="70" y2="65" stroke-width="6"/>
+        <line x1="18" y1="84" x2="70" y2="84" stroke-width="6"/>
+        <line x1="18" y1="103" x2="52" y2="103" stroke-width="6"/>
+        <circle cx="86" cy="34" r="34" stroke-width="6"/>
+        <line x1="108" y1="57" x2="145" y2="94" stroke-width="12"/>
+        <path d="M71 36 l11 12 l24 -28" stroke-width="6"/>
+      </g>
+      <text x="201" y="274" class="textDark title center" fill="#2e3440">Train</text>
+    </g>
+  </g>
+
+  <!-- arrow -->
+  <line x1="583" y1="400" x2="805" y2="400" class="arrow" marker-start="url(#arrowHead)" marker-end="url(#arrowHead)"/>
+  <text x="694" y="381" class="textDark title center" font-size="24">read/write</text>
+</svg>
