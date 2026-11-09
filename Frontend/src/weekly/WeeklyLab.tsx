@@ -910,43 +910,45 @@ export function WeeklyLab({ lesson }: { lesson: Lesson }) {
               ))}
             </div>
           )}
-          <section className={styles.comparison} aria-label="실패와 개선 비교">
-            <h3>무엇을 바꿨고 결과는 왜 달라졌나요?</h3>
-            <p>
-              조건 실패와 개선 성공을 각각 마지막 단계까지 관찰하면 비교 기록이 남습니다. 연결
-              누락만으로 생긴 실패는 조건 비교에 포함하지 않습니다.
-            </p>
-            <div className={styles.tableWrap}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>관측 항목</th>
-                    <th>실패 조건</th>
-                    <th>개선 성공</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(
-                    latestSuccess?.metrics ??
-                    latestFailure?.metrics ??
-                    spec.fields.map((f) => ({ label: f.label, value: '아직 관찰 전' }))
-                  ).map((m) => (
-                    <tr key={m.label}>
-                      <th scope="row">{m.label}</th>
-                      <td>
-                        {latestFailure?.metrics.find((x) => x.label === m.label)?.value ??
-                          '관찰 전'}
-                      </td>
-                      <td>
-                        {latestSuccess?.metrics.find((x) => x.label === m.label)?.value ??
-                          '관찰 전'}
-                      </td>
+          {lesson.id !== 'week3-workflow' && (
+            <section className={styles.comparison} aria-label="실패와 개선 비교">
+              <h3>무엇을 바꿨고 결과는 왜 달라졌나요?</h3>
+              <p>
+                조건 실패와 개선 성공을 각각 마지막 단계까지 관찰하면 비교 기록이 남습니다. 연결
+                누락만으로 생긴 실패는 조건 비교에 포함하지 않습니다.
+              </p>
+              <div className={styles.tableWrap}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>관측 항목</th>
+                      <th>실패 조건</th>
+                      <th>개선 성공</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                  </thead>
+                  <tbody>
+                    {(
+                      latestSuccess?.metrics ??
+                      latestFailure?.metrics ??
+                      spec.fields.map((f) => ({ label: f.label, value: '아직 관찰 전' }))
+                    ).map((m) => (
+                      <tr key={m.label}>
+                        <th scope="row">{m.label}</th>
+                        <td>
+                          {latestFailure?.metrics.find((x) => x.label === m.label)?.value ??
+                            '관찰 전'}
+                        </td>
+                        <td>
+                          {latestSuccess?.metrics.find((x) => x.label === m.label)?.value ??
+                            '관찰 전'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
           <section className={styles.goals} data-tour="goals" tabIndex={-1}>
             <fieldset>
               <legend>{spec.question}</legend>

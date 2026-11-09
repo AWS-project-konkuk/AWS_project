@@ -7,11 +7,16 @@ export default defineMdxLesson({
   order: 6,
   title: 'GPU까지 끊기지 않는 데이터 공급',
   summary:
-    '주차 종합 실습 · Object Storage는 원본 보관, 로더·캐시는 공급 최적화, PV·PVC는 실행 단위 밖의 저장 연결을 담당합니다.',
-  minutes: 18,
+    '앞에서 배운 파일 수명·저장소 선택·Object Storage·I/O 병목·PV와 PVC를 하나의 노드 흐름으로 연결하고, 설정을 바꿔 결과를 비교합니다.',
+  minutes: 20,
   scenario:
-    '원본 객체·읽기 경로·PVC·GPU를 구분해 연결하세요. 데이터 대기와 임시 캐시 손실을 확인한 뒤 공급과 보존을 개선하세요.',
-  concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
+    '원본에서 모델 보관까지 노드를 연결하세요. Pod 교체 시 캐시 손실을 먼저 확인하고, PVC 보존 경로와 캐시·샤딩 설정을 차례로 바꿔 GPU 공급 부족을 해결하세요.',
+  concepts: [
+    '파일 수명과 저장소 선택',
+    'Object Storage와 모델 보관',
+    'I/O 공급 병목',
+    'PV·PVC 연결',
+  ],
   advanced: [
     {
       title: '심화 · 보존 경로와 공급 경로를 따로 검증하기',
@@ -37,37 +42,38 @@ export default defineMdxLesson({
   sourceWeek: 4,
   mapStages: ['data', 'training'],
   workflow: 'week3-workflow',
-  experiment: '워크플로 실행',
+  experiment: '노드 연결 · 보존과 공급 비교',
   nodes: [
     {
       id: 'objects',
       title: 'Object Storage',
-      detail: '원본 이미지 데이터셋의 공통 보관소입니다.',
+      detail: 'Object Storage에서 배운 원본 보관 역할입니다. train-v1 객체를 로더에 전달합니다.',
     },
     {
       id: 'pv',
       title: 'PV 볼륨',
-      detail: 'Pod와 독립적으로 존재하는 저장 자원입니다.',
+      detail: '파일 수명에서 배운 Pod 밖의 저장 자원입니다. PVC에 캐시를 보관할 볼륨을 제공합니다.',
     },
     {
       id: 'pvc',
       title: 'PVC 요청',
-      detail: '필요한 저장 조건을 PV에 결합합니다.',
+      detail: 'PV·PVC에서 배운 저장 요청입니다. PV의 볼륨을 로더가 사용할 캐시 경로로 연결합니다.',
     },
     {
       id: 'loader',
       title: '데이터 로더',
-      detail: '원본을 읽고 배치를 만들어 공급합니다.',
+      detail:
+        'I/O 병목에서 배운 읽기·전처리 역할입니다. 캐시와 샤딩으로 GPU에 공급할 배치를 준비합니다.',
     },
     {
       id: 'gpu',
       title: 'GPU 학습',
-      detail: '배치가 준비되지 않으면 기다립니다.',
+      detail: '초당 100배치를 소비하는 학습 단계입니다. 공급량이 부족하면 데이터를 기다립니다.',
     },
     {
       id: 'artifact',
       title: '모델 보관',
-      detail: '완료한 모델 파일을 객체로 보관합니다.',
+      detail: '완성된 모델을 models/model-v1.bin 객체로 보관해 학습 Pod 밖에 결과를 남깁니다.',
     },
   ],
   fields: [
@@ -85,7 +91,7 @@ export default defineMdxLesson({
           label: '사용 · 공급 2배 예시',
         },
       ],
-      help: '캐시를 켜도 첫 읽기 비용과 실제 성능은 별도 측정이 필요합니다.',
+      help: '샤딩을 끈 상태에서 캐시만 켜고 공급 30 → 60을 비교하세요. 첫 읽기와 실제 성능은 별도 측정 대상입니다.',
     },
     {
       id: 'shard',
@@ -101,7 +107,7 @@ export default defineMdxLesson({
           label: '샤딩 · 공급 2배 예시',
         },
       ],
-      help: '요청 개수와 지연 부담을 줄이는 예시입니다.',
+      help: '캐시를 켠 뒤 샤딩도 켜서 공급 60 → 120을 비교하세요. 작은 객체 요청 부담을 줄이는 교육용 가정입니다.',
     },
     {
       id: 'persistent',
@@ -117,7 +123,7 @@ export default defineMdxLesson({
           label: 'PVC로 연결한 볼륨',
         },
       ],
-      help: 'Pod를 교체한 뒤 cache.bin이 남는지 확인합니다.',
+      help: 'PV → PVC → 로더를 연결한 뒤 이 설정도 바꾸세요. 임시 공간의 캐시 손실과 볼륨 사용 결과를 비교합니다.',
     },
   ],
 });

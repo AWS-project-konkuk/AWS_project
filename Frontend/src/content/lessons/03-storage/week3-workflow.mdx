@@ -1,174 +1,121 @@
-## 종합 문제
+﻿## 앞에서 배운 내용을 하나의 흐름으로 연결하기
 
-원본 데이터는 남아 있지만 GPU는 다음 배치를 기다리고, Pod가 교체되면 내려받아 둔 캐시가 사라집니다. **원본 보존**, **빠른 공급**, **Pod 교체 뒤 캐시 유지**를 서로 다른 문제로 나누어 해결해 봅니다.
+앞에서 파일의 수명과 공유 조건으로 저장소를 고르고, Object Storage에 원본과 모델을 보관하는 이유를 배웠습니다. 이어서 GPU가 데이터를 기다리는 원인과 PV·PVC로 Pod 밖의 저장 공간을 연결하는 방법을 확인했습니다. 이번에는 **같은 학습 작업의 노드를 직접 연결하고 설정을 바꾸며** 이 개념들을 함께 적용합니다.
 
-<Figure
-  src="/images/lessons/03-storage/week3-workflow/storage-workflow.svg"
-  alt="파일 보존과 느린 데이터 공급을 같이 해결하려면? 그림에 영속 원본, 캐시·로더, GPU 소비의 모습을 표시했습니다."
-  caption="영속 원본 · 캐시·로더 · GPU 소비"
-/>
+원본 이미지 1,000개는 `train-v1`으로 보관되어 있습니다. 로더는 초당 30배치를 준비하지만 GPU는 초당 100배치를 소비할 수 있습니다. 여기에 학습 Pod가 교체되면 임시 공간의 `cache.bin`도 사라집니다. **무엇을 오래 남길지, 어디서 읽을지, 얼마나 빨리 공급할지**를 나누어 해결해 보세요.
 
-그림의 **영속 원본**, **캐시·로더**, **GPU 소비**에 주목해 보세요. 원본은 실행 작업보다 오래 보존할 저장소에 두고, 로더와 캐시가 GPU에 배치를 공급하게 구성합니다.
+## 앞 단원과 실습 노드 연결하기
 
-## 이번 미션
+| 앞에서 배운 내용       | 이번에 조작하거나 관찰할 곳            | 확인할 질문                                        |
+| ---------------------- | -------------------------------------- | -------------------------------------------------- |
+| 파일 수명과 공유 조건  | 로더의 캐시 보관 경로                  | Pod가 교체되어도 다시 사용할 파일인가?             |
+| Block·File·Object 비교 | Object Storage와 PV 볼륨의 역할        | 객체 보관과 마운트해서 쓰는 공간은 어떻게 다른가?  |
+| Object Storage와 MLOps | Object Storage → 로더, GPU → 모델 보관 | 학습 입력과 완성된 모델을 실행 작업 밖에 남기는가? |
+| I/O 병목               | 로더 → GPU, 캐시·샤딩 설정             | 공급 속도가 GPU 소비 속도를 따라가는가?            |
+| PV와 PVC               | PV → PVC → 로더                        | 볼륨 연결과 실제 캐시 경로 설정을 모두 했는가?     |
 
-GPU는 초당 100배치를 소비하지만 작은 객체 읽기는 초당 30배치만 공급합니다. Pod 교체 후 캐시 파일까지 사라집니다.
+이 실습에서는 원본과 완성 모델은 객체로 보관하고, 재사용할 캐시는 PVC로 연결한 볼륨에 둡니다. PV의 기반 저장소가 Block인지 File인지 선택하거나 접근 모드를 검증하는 기능은 이 보드에 없습니다. 앞 단원에서 배운 기준으로 선택 이유를 설명해 보세요.
 
-## 설계하고 비교할 것
+## 1. 노드의 역할을 보고 빠진 연결 완성하기
 
-다음 역할을 구분해 연결하세요.
+화면 위의 **설명과 실습**을 선택하고, 노드 보드에서 **2. 잘못된 구성 수정**을 누릅니다. 현재 구성을 기본 연결과 설정으로 바꾸는 버튼입니다. 처음에는 원본 → 로더 → GPU 경로만 연결되어 있습니다.
 
-- **Object Storage**: 버전이 있는 원본 데이터와 완성된 모델을 보관합니다.
-- **데이터 로더**: 객체를 읽고 전처리해 배치를 만듭니다.
-- **캐시·shard**: 반복 읽기와 작은 객체 요청 횟수를 줄입니다.
-- **PV·PVC**: Pod가 사용할 캐시 볼륨을 요청하고 연결합니다.
-- **GPU**: 준비된 배치를 소비해 학습합니다.
+1. 각 노드를 선택해 역할과 입력·출력을 읽습니다.
+2. **연결 검사**를 눌러 어떤 입력이 빠졌는지 확인합니다.
+3. 출력 점에서 입력 점으로 선을 연결합니다. 드래그가 어렵다면 **설정·결과 열기 → 연결 편집**에서 출력과 입력을 선택한 뒤 **포트 연결**을 누릅니다.
+4. 아래 다섯 연결이 갖춰졌는지 다시 검사합니다.
 
-## 실습 순서
+| 보내는 노드 · 출력         | 받는 노드 · 입력          | 전달하는 것             |
+| -------------------------- | ------------------------- | ----------------------- |
+| Object Storage · 원본 객체 | 데이터 로더 · 원본 데이터 | 학습할 원본 이미지      |
+| PV 볼륨 · 볼륨             | PVC 요청 · 볼륨 자원      | Pod 밖의 저장 자원      |
+| PVC 요청 · 볼륨 연결       | 데이터 로더 · 캐시 경로   | 로더가 사용할 볼륨 연결 |
+| 데이터 로더 · 준비된 배치  | GPU 학습 · 학습 배치      | 읽기·전처리를 마친 배치 |
+| GPU 학습 · 학습 모델       | 모델 보관 · 모델 파일     | 학습 결과 모델          |
 
-1. 기본 설정에서 공급 30배치/초와 소비 100배치/초의 차이를 확인합니다.
-2. shard와 반복 읽기 캐시를 적용해 공급 속도가 어떻게 변하는지 비교합니다.
-3. 캐시 경로를 Pod 임시 공간과 PVC 볼륨으로 바꾸어 Pod 교체 결과를 비교합니다.
-4. 학습 결과 모델이 다시 Object Storage로 가는 경로를 완성합니다.
+**원본 데이터가 흐르는 선**과 **저장 공간을 연결하는 선**을 구분하세요. PV → PVC → 로더는 볼륨을 제공하는 관계를 표현합니다. Kubernetes에서 Pod가 PVC를 참조한다는 앞 단원의 설명과 함께 읽으면 됩니다. 여기서는 로더가 실행되는 Pod를 별도 노드로 표시하지 않습니다.
 
-## 직접 실습: Pod를 지워도 파일이 남을까요?
+<Callout title="연결 성공과 실행 성공은 다릅니다">
 
-아래 실습은 **단일 노드 Minikube 학습 환경**을 기준으로 합니다. 먼저 컨테이너 내부 파일의 수명을 확인한 뒤, 수동 PV와 PVC를 연결해 비교합니다. 예시 YAML은 실습자가 별도 파일로 저장해 사용합니다.
-
-### 1. 컨테이너 내부 파일 확인하기
-
-```bash
-minikube start
-kubectl create namespace storage-lab
-kubectl run ephemeral-demo --image=nginx -n storage-lab
-kubectl wait --for=condition=Ready pod/ephemeral-demo -n storage-lab --timeout=120s
-kubectl exec -n storage-lab ephemeral-demo -- sh -c 'echo ephemeral > /test.txt'
-kubectl exec -n storage-lab ephemeral-demo -- cat /test.txt
-kubectl delete pod ephemeral-demo -n storage-lab
-kubectl run ephemeral-demo --image=nginx -n storage-lab
-kubectl wait --for=condition=Ready pod/ephemeral-demo -n storage-lab --timeout=120s
-kubectl exec -n storage-lab ephemeral-demo -- cat /test.txt
-```
-
-마지막 명령에서 파일이 없다는 오류가 예상됩니다. 이름이 같아도 새 Pod는 이전 컨테이너의 쓰기 계층을 이어받지 않습니다.
-
-### 2. PV와 PVC 만들기
-
-다음을 `storage-lab-volume.yaml`로 저장합니다. `manual`은 PV와 PVC를 맞추기 위한 클래스 이름이며, 이 실습에서는 StorageClass 리소스나 동적 provisioner를 만들지 않습니다.
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: storage-lab-pv
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: /mnt/storage-lab
-    type: DirectoryOrCreate
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: storage-lab-claim
-  namespace: storage-lab
-spec:
-  storageClassName: manual
-  volumeName: storage-lab-pv
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-```
-
-`hostPath`는 Minikube **노드 내부의 경로**를 사용합니다. PC의 같은 경로와는 다를 수 있으며, 다중 노드 공유나 노드 장애 시 복구를 보장하지 않습니다. 여기의 `1Gi`는 바인딩에 쓰이는 선언이며 hostPath 디렉터리의 사용량을 실제로 제한하는 디스크 할당은 아닙니다.
-
-다음을 `storage-lab-pod.yaml`로 저장합니다.
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: persistent-demo
-  namespace: storage-lab
-spec:
-  volumes:
-    - name: data
-      persistentVolumeClaim:
-        claimName: storage-lab-claim
-  containers:
-    - name: web
-      image: nginx
-      volumeMounts:
-        - name: data
-          mountPath: /usr/share/nginx/html
-```
-
-PV·PVC를 먼저 적용하고 Pod를 연결합니다.
-
-```bash
-kubectl apply -f storage-lab-volume.yaml
-kubectl get pv storage-lab-pv
-kubectl get pvc -n storage-lab
-kubectl apply -f storage-lab-pod.yaml
-kubectl wait --for=condition=Ready pod/persistent-demo -n storage-lab --timeout=120s
-kubectl exec -n storage-lab persistent-demo -- sh -c 'echo persistent > /usr/share/nginx/html/index.html'
-kubectl delete pod persistent-demo -n storage-lab
-kubectl apply -f storage-lab-pod.yaml
-kubectl wait --for=condition=Ready pod/persistent-demo -n storage-lab --timeout=120s
-kubectl exec -n storage-lab persistent-demo -- cat /usr/share/nginx/html/index.html
-```
-
-PV와 PVC가 `Bound`이고 마지막 출력이 `persistent`라면, 새 Pod가 같은 볼륨의 파일을 다시 읽은 것입니다. 이 결과는 Pod 교체 시 보존을 확인하며, 노드 삭제나 디스크 장애에 대한 내구성을 입증하지는 않습니다.
-
-### 3. 문제를 기록하고 정리하기
-
-실패하면 `kubectl describe pvc storage-lab-claim -n storage-lab`과 `kubectl describe pod persistent-demo -n storage-lab`의 이벤트를 확인합니다. 용량·접근 모드·클래스 불일치, 잘못된 claim 이름, 마운트 권한을 구분해 **증상 → 원인 → 수정 → 재확인 결과**를 기록하세요.
-
-실습 결과 확인 후 이번 실습의 리소스만 정리합니다.
-
-```bash
-kubectl delete pod ephemeral-demo persistent-demo -n storage-lab
-kubectl delete pvc storage-lab-claim -n storage-lab
-kubectl delete pv storage-lab-pv
-kubectl delete namespace storage-lab
-```
-
-`Retain`을 사용했으므로 노드의 `/mnt/storage-lab/index.html`은 남습니다. 파일까지 정리하려면 `minikube ssh`로 노드에 접속해 `cat /mnt/storage-lab/index.html`로 실습 파일을 확인한 뒤 `sudo rm /mnt/storage-lab/index.html`과 `sudo rmdir /mnt/storage-lab`을 실행합니다. 디렉터리에 다른 파일이 있으면 삭제 범위를 넓히지 말고 내용을 먼저 확인합니다.
-
-### 4. 스터디에서 공유할 것
-
-- Block·File·Object를 각각 비유 하나로 설명하고 데이터셋·가중치·부팅 디스크에 연결해 봅니다.
-- 파일이 사라진 경우와 유지된 경우의 명령·출력을 비교합니다.
-- 분산 학습의 읽기 경로와 체크포인트 쓰기 경로를 나누어 접근 모드를 설명합니다.
-- worker 수, shard, 캐시 중 하나를 바꾸고 전후 측정값과 남은 병목을 공유합니다.
-- 새로 이해한 개념, 헷갈린 개념, 다음에 확인할 질문을 각각 기록합니다.
-
-## 결과를 해석할 때
-
-활동에서 캐시와 shard가 공급을 두 배로 만드는 값은 원리를 보여 주는 교육용 가정입니다. 실제 개선 폭은 객체 크기, 네트워크, 로더 worker, CPU 전처리와 캐시 적중률을 측정해야 알 수 있습니다. PVC로 캐시를 남겨도 원본의 버전 관리와 백업을 대신하지는 않습니다.
-
-## 전체 과정과 연결하기
-
-원본은 실행 작업보다 오래 보존할 저장소에 두고, 로더와 캐시가 GPU에 배치를 공급하게 구성합니다. Pod 교체 때 사라지는 캐시와 다시 가져올 수 있는 원본을 구분합니다.
-
-<Callout title="실습에서 확인할 기준">
-
-초당 30배치 공급으로는 초당 100배치를 소비하는 GPU를 계속 채울 수 없습니다. 자료 보존 경로를 확인한 뒤 실제 공급 병목을 개선하고 다시 측정합니다.
+연결 검사는 포트의 종류와 빠진 입력을 확인합니다. 선을 모두 연결해도 캐시 경로가 임시 공간이거나 공급 속도가 부족하면 실행 조건을 만족하지 못합니다. 다음 단계부터 연결은 유지하고 로더 설정을 하나씩 바꿉니다.
 
 </Callout>
 
+## 2. 파일 수명 실습: Pod가 교체되면 무엇이 사라질까요?
+
+**데이터 로더**를 선택하고 **설정·결과 열기 → 노드 설정**에서 기본값을 확인합니다.
+
+- 반복 읽기 캐시: **사용 안 함**
+- 작은 파일 묶음 읽기: **개별 객체 읽기**
+- 캐시 보관 경로: **Pod 임시 공간**
+
+**전체 실행**을 누르고 마지막 단계까지 관찰합니다. 로더에서 Pod 교체로 임시 `cache.bin`이 손실되었다는 실패가 나고, 뒤의 GPU와 모델 보관은 입력을 받지 못해 대기합니다. 이 실행은 Pod 교체 상황을 포함한 시뮬레이션입니다.
+
+이제 **캐시 보관 경로만 PVC로 연결한 볼륨으로 변경**하고 다시 전체 실행합니다. 이번에는 로더가 배치를 만들지만 GPU 단계에서 공급 부족이 나타납니다.
+
+앞의 파일 수명·PV와 PVC 단원으로 돌아가 설명해 보세요. **PV·PVC 선을 연결하는 것**과 **로더가 그 볼륨을 사용하도록 설정하는 것**은 모두 필요합니다. 캐시 보존 문제를 해결해도 읽기 성능까지 자동으로 개선되지는 않습니다.
+
+## 3. I/O 병목 실습: 공급량을 한 조건씩 바꿔 보기
+
+캐시 보관 경로는 **PVC로 연결한 볼륨**으로 유지합니다. 아래 순서대로 로더 설정을 바꾸고, 매번 **전체 실행**으로 GPU 단계의 결과까지 관찰하세요.
+
+### 실행 A · 기본 공급 경로
+
+- 반복 읽기 캐시: **사용 안 함**
+- 작은 파일 묶음 읽기: **개별 객체 읽기**
+- 예시 공급량: **30배치/초**
+- 관찰 결과: GPU 소비 100에 비해 부족하여 데이터 대기 70%
+
+### 실행 B · 캐시 적용
+
+- 반복 읽기 캐시: **사용**
+- 작은 파일 묶음 읽기: **개별 객체 읽기**
+- 예시 공급량: **60배치/초**
+- 관찰 결과: 데이터 대기는 40%로 줄지만 공급 목표에는 미달
+
+### 실행 C · 캐시와 샤딩 적용
+
+- 반복 읽기 캐시: **사용**
+- 작은 파일 묶음 읽기: **샤딩**
+- 예시 공급량: **120배치/초**
+- 관찰 결과: 공급 목표를 충족하여 모델 보관 단계까지 진행
+
+A → B는 앞에서 배운 **Cache**를 적용한 비교입니다. 반복해서 읽는 데이터를 가까운 공간에서 재사용합니다. B → C는 **Sharding**을 더한 비교입니다. 작은 파일을 묶어 요청 횟수와 지연 부담을 줄입니다.
+
+이 시뮬레이터는 캐시와 샤딩을 각각 공급량 2배로 계산하며, GPU 활용 목표는 80%입니다. 공급 120은 GPU가 초당 120배치를 처리한다는 뜻이 아닙니다. 이 예시의 GPU 소비 능력은 100배치/초입니다. 실제 속도나 대기 비율은 저장소·CPU 전처리·전송 시간 등을 측정해야 알 수 있습니다.
+
+앞에서 배운 병렬 로더와 Prefetch도 공급 개선 방법이지만 이 보드의 조절 항목에는 포함되지 않습니다. 이번 비교에서는 캐시와 샤딩의 효과를 구분해 설명하세요.
+
+## 4. Object Storage 실습: 입력부터 결과 보관까지 추적하기
+
+실행 C의 결과에서 각 노드를 선택해 입력과 출력을 확인합니다.
+
+1. **Object Storage**: `train-v1`의 작은 이미지 객체 1,000개가 출발점입니다.
+2. **데이터 로더**: 원본과 캐시 경로를 입력받아 준비된 배치를 만듭니다.
+3. **GPU 학습**: 배치를 받아 학습하고 `model-v1`을 출력합니다.
+4. **모델 보관**: 모델을 `models/model-v1.bin`이라는 객체 키로 보관합니다.
+
+앞의 Object Storage 단원처럼 **어떤 원본으로 학습했고 어떤 모델을 남겼는지** 연결해서 설명해 보세요. 여기의 데이터 버전과 모델 키는 교육용 출력입니다. 실제 버킷 업로드나 객체 버전 관리 설정을 수행하지는 않습니다.
+
+## 5. 다시 검증하기: 빠른 공급과 파일 보존은 같은 문제일까요?
+
+캐시와 샤딩을 모두 켠 상태에서 **캐시 보관 경로만 Pod 임시 공간으로 되돌려** 전체 실행합니다. 공급을 개선하는 설정이 있어도 Pod 교체 시 캐시 손실로 로더가 실패하는지 확인하세요. 이후 다시 **PVC로 연결한 볼륨**을 선택하고 성공 실행을 끝까지 관찰합니다.
+
+실패·성공 비교 기록을 보고 다음 세 가지를 정리한 뒤 실습 화면의 이해 확인과 완료 조건을 확인하세요.
+
+- **보존**: 어떤 설정을 바꾸자 Pod 교체로 인한 캐시 손실이 해결되었나요?
+- **공급**: 어떤 설정을 바꾸자 GPU의 데이터 대기가 줄었나요?
+- **보관**: 원본·캐시·완성 모델은 각각 어디에 있으며 어떤 수명이 필요한가요?
+
+노드 실행은 보존과 공급의 차이를 보여 주는 모의 실습입니다. 실제 Kubernetes의 바인딩·마운트, 노드 장애 복구, 다중 노드 공유나 백업까지 검증한 결과는 아닙니다. PVC는 저장 공간을 연결하는 요청이며 백업을 대신하지 않습니다.
+
 <LessonSummary>
 
-원본은 실행 작업보다 오래 보존할 저장소에 두고, 로더와 캐시가 GPU에 배치를 공급하게 구성합니다. Pod 교체 때 사라지는 캐시와 다시 가져올 수 있는 원본을 구분합니다.
+파일 수명과 공유 조건으로 필요한 저장 공간을 판단하고, 원본과 완성 모델은 Object Storage에 보관합니다. PV·PVC는 로더가 사용할 캐시 볼륨을 연결하며, 캐시와 샤딩은 GPU로 보내는 데이터 공급을 개선합니다.
 
-- **다시 판단해 보기** — 초당 30배치 공급으로는 초당 100배치를 소비하는 GPU를 계속 채울 수 없습니다. 자료 보존 경로를 확인한 뒤 실제 공급 병목을 개선하고 다시 측정합니다.
+- 원본 → 로더 → GPU → 모델 보관은 데이터가 이동하는 흐름입니다.
+- PV → PVC → 로더는 캐시를 보관할 공간을 연결하는 관계입니다.
+- 선을 연결한 뒤에도 보존 경로와 공급 설정을 각각 실행해 확인해야 합니다. 파일이 남는 것과 GPU가 기다리지 않는 것은 서로 다른 성공 조건입니다.
 
 </LessonSummary>
 
