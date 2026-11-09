@@ -5,11 +5,11 @@ export default defineMdxLesson({
   id: 'dvc-restore',
   unit: 3,
   order: 6,
-  title: '과거 코드와 데이터를 함께 복원',
-  summary: 'Git 포인터 변경과 작업 공간의 데이터 복원을 구분합니다.',
+  title: '과거 코드와 데이터를 함께 되돌리기',
+  summary: 'Git 포인터 선택, 로컬 캐시 복원, 데이터 원격 다운로드를 구분합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['Git 버전', 'DVC 캐시', '작업 공간 데이터'],
+    'Git을 과거 버전으로 바꾼 뒤 DVC 캐시와 원격 저장소에서 같은 버전의 실제 데이터도 복원해 보세요.',
+  concepts: ['Git 포인터 버전', 'dvc checkout', 'dvc pull', '로컬 캐시', '작업 공간'],
   assessment: {
     question: 'Git 이동 후 데이터가 그대로라면?',
     options: ['Git 포인터를 읽었으므로 이미 복원된 것이다', 'DVC로 해당 데이터 버전을 복원한다'],
@@ -18,12 +18,12 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
+      title: '심화 · 데이터 복원과 실험 재현의 차이',
       body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
     },
   ],
   caution: '메타데이터와 실제 파일 상태를 둘 다 확인합니다.',
-  reflection: 'Git 이동 후 데이터가 그대로라면?',
+  reflection: 'Git을 과거 커밋으로 이동한 뒤 작업 데이터가 그대로라면 무엇을 확인해야 할까요?',
   references: [
     {
       title: '원문 · MLOps 5주차 · 실제 도구 실습',

@@ -5,11 +5,11 @@ export default defineMdxLesson({
   id: 'dvc-architecture',
   unit: 3,
   order: 5,
-  title: 'DVC의 Git·캐시·원격 저장소',
-  summary: '코드·메타데이터와 실제 데이터의 저장 경로를 나눕니다.',
+  title: 'DVC는 데이터 버전을 어떻게 관리할까?',
+  summary: 'Git의 .dvc 메타데이터와 내용 해시로 관리되는 실제 데이터 경로를 나눕니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['Git 코드·포인터', 'DVC 로컬 캐시', '데이터 원격 저장소', '작업 공간'],
+    'Git에는 데이터 정보만 남기고 실제 데이터는 캐시와 원격 저장소에 보관하는 DVC의 구조를 알아보세요.',
+  concepts: ['.dvc 메타데이터', '내용 해시', 'DVC 로컬 캐시', '데이터 원격', '작업 공간'],
   assessment: {
     question: 'Git에 커밋하는 DVC 관련 정보는?',
     options: ['데이터 식별 정보를 담은 메타데이터', '항상 전체 데이터셋 바이너리'],
@@ -18,12 +18,12 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
+      title: '심화 · Git 원격과 DVC 원격의 독립성',
       body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
     },
   ],
   caution: '실제 데이터는 캐시와 원격 저장소가 담당합니다.',
-  reflection: 'Git에 커밋하는 DVC 관련 정보는?',
+  reflection: 'Git에 .dvc 파일만 커밋했을 때 실제 데이터를 다른 컴퓨터에서 받을 수 있을까요?',
   references: [
     {
       title: '원문 · MLOps 5주차 · 실제 도구 실습',

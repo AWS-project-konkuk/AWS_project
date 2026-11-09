@@ -5,11 +5,11 @@ export default defineMdxLesson({
   id: 'git-large',
   unit: 3,
   order: 3,
-  title: 'Git에 큰 파일을 계속 넣으면',
-  summary: '이력과 저장 용량의 관계를 관찰합니다.',
+  title: '큰 데이터 파일을 Git에 넣으면 어떻게 될까?',
+  summary: 'Git blob과 커밋 이력에 큰 데이터 버전이 누적되는 이유를 이해합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['코드·데이터', 'Git 이력', '원격 저장소'],
+    '10GB 데이터셋을 Git에 반복해서 저장하면 왜 저장소가 무거워지는지 확인하고 코드와 실제 데이터의 저장 위치를 나누어 보세요.',
+  concepts: ['Git blob', '인덱스와 커밋', '대용량 데이터 이력', '코드·데이터 분리'],
   assessment: {
     question: '현재 버전에서 큰 파일을 삭제하면?',
     options: [
@@ -21,12 +21,12 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
+      title: '심화 · 현재 파일 삭제와 과거 객체 보존',
       body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
     },
   ],
   caution: '현재 파일 목록과 저장소 전체 이력은 다릅니다.',
-  reflection: '현재 버전에서 큰 파일을 삭제하면?',
+  reflection: '현재 버전에서 큰 파일을 삭제해도 저장소 크기가 바로 줄지 않는 이유는 무엇일까요?',
   references: [
     {
       title: '원문 · MLOps 5주차 · 실제 도구 실습',

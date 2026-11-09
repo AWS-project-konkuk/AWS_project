@@ -5,11 +5,11 @@ export default defineMdxLesson({
   id: 'git-lfs',
   unit: 3,
   order: 4,
-  title: 'Git LFS는 큰 파일을 포인터로 추적',
-  summary: 'Git의 포인터와 별도 서버의 실제 파일을 구분합니다.',
+  title: 'Git LFS로 큰 파일을 따로 저장하기',
+  summary: 'Git에 남는 포인터와 LFS 저장소에 보관되는 대용량 객체를 구분합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['Git 포인터', 'LFS 저장소', '실제 파일'],
+    'Git에는 작은 포인터만 남기고 큰 모델 파일은 별도 저장소에 보관하는 과정을 이해해 보세요.',
+  concepts: ['LFS 포인터', '내용 식별자', 'LFS 객체 저장소', 'DVC와의 차이'],
   assessment: {
     question: 'Git LFS를 쓰면 실제 대용량 파일은?',
     options: ['포인터로 바뀌며 내용이 필요 없어지는 것이다', '별도 저장소에 보관된다'],
@@ -18,12 +18,12 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
+      title: '심화 · 포인터 커밋과 객체 업로드',
       body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
     },
   ],
   caution: '포인터는 파일의 식별 정보이며 실제 내용을 대체하는 데이터 자체는 아닙니다.',
-  reflection: 'Git LFS를 쓰면 실제 대용량 파일은?',
+  reflection: 'LFS 포인터만 Git에 커밋하고 실제 객체를 업로드하지 않으면 어떤 일이 생길까요?',
   references: [
     {
       title: '원문 · MLOps 5주차 · 실제 도구 실습',
