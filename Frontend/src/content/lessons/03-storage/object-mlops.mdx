@@ -11,10 +11,15 @@
 
 그렇다면 데이터셋과 모델을 학습 서버의 수명과 분리해 공통으로 보관할 수는 없을까요?
 
-
 Object Storage를 사용하면 학습 서버가 교체되어도 버킷과 객체 키를 이용해 같은 데이터를 다시 찾을 수 있습니다.
 
 **이번 학습에서는 Object Storage가 MLOps에서 어떤 역할을 담당하며, 데이터 보관과 빠른 학습 공급이 왜 다른 문제인지 알아봅니다.**
+
+<Figure
+  src="/images/lessons/03-storage/object-mlops/sagemaker_training_diagram.svg"
+  alt="객체 저장소의 데이터셋을 학습 작업이 읽고 결과 모델을 다시 저장하는 흐름"
+  caption="MLOps에서의 Object Storage 사용"
+/>
 
 ## 개념과 동작 원리
 
@@ -52,12 +57,6 @@ models/cat-classifier/run-42/model.pt
 3. GPU가 전달받은 배치로 모델을 학습합니다.
 4. 학습 작업의 체크포인트와 최종 모델을 다시 저장합니다.
 5. 평가나 배포 작업에서 객체 키를 이용해 모델을 가져옵니다.
-
-<Figure
-  src="/images/lessons/03-storage/object-mlops/sagemaker_training_diagram.svg"
-  alt="객체 저장소의 데이터셋을 학습 작업이 읽고 결과 모델을 다시 저장하는 흐름"
-  caption="MLops에서의 object storage 사용"
-/>
 
 <Activity />
 
@@ -103,9 +102,11 @@ Object Storage는 **데이터를 오래 보관하는 경로**를 담당합니다
 >
 > “이 데이터와 모델을 어떤 버킷·객체 키·버전 ID로 다시 찾을 수 있을까?”
 
-## 핵심 정리
+<LessonSummary>
 
 Object Storage는 학습 서버와 데이터의 수명을 분리하여 **데이터셋, 체크포인트, 모델 아티팩트의 공통 보관소**를 제공합니다. 같은 실험을 다시 찾으려면 객체 키와 버전뿐 아니라 코드·설정·실행 ID의 관계도 함께 기록해야 합니다.
+
+</LessonSummary>
 
 <Quiz />
 

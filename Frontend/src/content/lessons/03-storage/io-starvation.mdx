@@ -1,26 +1,3 @@
-import { useEffect } from 'react';
-import { useLearningStore } from '../../../learning/LearningStore';
-
-export function IoNodePractice({ children }) {
-  const key = '_inline:storage-cpu-gpu';
-  const saved = useLearningStore((state) => state.data.lessons['io-starvation']?.answers[key]);
-  const edit = useLearningStore((state) => state.edit);
-  useEffect(() => {
-    if (saved !== undefined) return;
-    edit('io-starvation', (lab) => {
-      if (lab.answers[key] !== undefined) return lab;
-      return {
-        ...lab,
-        answers: {
-          ...lab.answers,
-          [key]: JSON.stringify({ mode: 'practice', links: [], extra: [] }),
-        },
-      };
-    }, false);
-  }, [saved, edit]);
-  return saved === undefined ? null : children;
-}
-
 ## 문제 상황
 
 고성능 GPU로 모델을 학습하고 있지만 예상보다 학습 시간이 오래 걸립니다. 모니터링 결과 GPU 사용률이 계속 높게 유지되지 않고, 계산을 멈춘 채 기다리는 구간이 반복됩니다.
@@ -66,9 +43,7 @@ GPU 자체에 문제가 있는 것일까요?
 
 원본 파일을 읽어 배치로 만드는 곳과, 완성된 배치로 모델을 계산하는 곳은 어디일까요?
 
-<IoNodePractice>
-  <NodeExample />
-</IoNodePractice>
+<NodeExample practice />
 
 ### 2. 어디에서 병목이 생길까요?
 
@@ -116,10 +91,10 @@ worker가 준비한 배치는 먼저 CPU가 사용하는 메모리인 **호스�
 
 GPU로 보내기 전에 배치를 올려 두는 **전송용 대기 공간**이라고 생각하면 됩니다. 이 설정만으로 GPU에 데이터가 옮겨지지는 않으며, 실제 전송은 코드에서 `.to("cuda")`로 요청합니다. 디스크 읽기를 빠르게 하는 옵션은 아니고, 고정 메모리를 과도하게 사용하면 시스템 메모리에 부담이 됩니다.
 
-| 옵션 | 작용하는 구간 | 쉽게 기억하기 |
-| --- | --- | --- |
-| `num_workers` | 저장소 읽기 → CPU 전처리 → 배치 준비 | 준비할 작업자를 몇 명 둘까? |
-| `pin_memory` | 호스트 메모리 → CUDA GPU로 보내기 전 | 전송할 배치를 RAM에 고정해 둘까? |
+| 옵션          | 작용하는 구간                        | 쉽게 기억하기                    |
+| ------------- | ------------------------------------ | -------------------------------- |
+| `num_workers` | 저장소 읽기 → CPU 전처리 → 배치 준비 | 준비할 작업자를 몇 명 둘까?      |
+| `pin_memory`  | 호스트 메모리 → CUDA GPU로 보내기 전 | 전송할 배치를 RAM에 고정해 둘까? |
 
 #### 코드에서 두 옵션 연결하기
 
@@ -169,9 +144,11 @@ Object Storage는 원본 데이터를 보관하지만 GPU에 배치를 자동으
 >
 > “GPU가 기다리는 시간은 저장소 읽기, CPU 전처리, 데이터 전송 중 어디에서 발생할까?”
 
-## 핵심 정리
+<LessonSummary>
 
 GPU의 계산 속도보다 데이터 공급 속도가 느리면 **I/O starvation**이 발생합니다. GPU를 늘리기 전에 배치 대기 시간을 측정하고, 저장소 읽기·작은 파일 요청·CPU 전처리·GPU 전송 중 가장 느린 단계를 찾아 개선해야 합니다.
+
+</LessonSummary>
 
 <Quiz />
 

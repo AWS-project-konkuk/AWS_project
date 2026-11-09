@@ -30,7 +30,7 @@ const connected = (id: string, changes: Record<string, Answer> = {}): LabState =
 describe('개념과 주차 종합 과정 분리', () => {
   it('기존 주소와 독립된 피처·검색 실습을 제공한다', () => {
     expect(lessons).toHaveLength(53);
-    expect(lessons.filter((l) => l.activity)).toHaveLength(32);
+    expect(lessons.filter((l) => l.activity)).toHaveLength(30);
     expect(lessonById['feature-workflow'].week).toBe(5);
     expect(lessonById['rag-workflow'].week).toBe(6);
     expect(lessonById['pipeline-capstone'].week).toBe(9);
@@ -130,6 +130,13 @@ describe('자료 종류·입출력·차단', () => {
   });
 });
 describe('학습 증거·포트 저장·이전 진행 복구', () => {
+  it('3단원 종합 실습은 실패 비교를 완료 조건으로 요구하지 않는다', () => {
+    const goals = workflowGoals(
+      lessonById['week3-workflow'],
+      connected('week3-workflow', fixes['week3-workflow']),
+    );
+    expect(goals.some((goal) => goal.id === 'compare')).toBe(false);
+  });
   it('현재 성공을 끝까지 관찰하고 실패 비교·정답이 있어야 완료한다', () => {
     const id = 'pipeline-capstone',
       lesson = lessonById[id],

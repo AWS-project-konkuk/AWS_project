@@ -144,7 +144,7 @@ export default defineMdxLesson({
   references: [
     {
       title: '원문 · MLOps 4주차 · 실제 도구 실습',
-      url: 'https://cool-candle-658.notion.site/MLOps-4-02eebb1cb38a82a5b14d811093182c3f',
+      url: 'https://www.notion.so/02eebb1cb38a82a5b14d811093182c3f',
     },
     {
       title: 'AWS 공식 · EKS AI/ML 스토리지 최적화',
