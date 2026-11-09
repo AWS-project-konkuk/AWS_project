@@ -1,3 +1,26 @@
+import { useEffect } from 'react';
+import { useLearningStore } from '../../../learning/LearningStore';
+
+export function IoNodePractice({ children }) {
+  const key = '_inline:storage-cpu-gpu';
+  const saved = useLearningStore((state) => state.data.lessons['io-starvation']?.answers[key]);
+  const edit = useLearningStore((state) => state.edit);
+  useEffect(() => {
+    if (saved !== undefined) return;
+    edit('io-starvation', (lab) => {
+      if (lab.answers[key] !== undefined) return lab;
+      return {
+        ...lab,
+        answers: {
+          ...lab.answers,
+          [key]: JSON.stringify({ mode: 'practice', links: [], extra: [] }),
+        },
+      };
+    }, false);
+  }, [saved, edit]);
+  return saved === undefined ? null : children;
+}
+
 ## 문제 상황
 
 고성능 GPU로 모델을 학습하고 있지만 예상보다 학습 시간이 오래 걸립니다. 모니터링 결과 GPU 사용률이 계속 높게 유지되지 않고, 계산을 멈춘 채 기다리는 구간이 반복됩니다.
@@ -7,7 +30,7 @@ GPU 자체에 문제가 있는 것일까요?
 모델 학습에서는 GPU가 계산을 시작하기 전에 다음 배치가 준비되어야 합니다. 저장소에서 데이터를 읽고 CPU에서 전처리한 뒤 GPU 메모리로 전달하는 과정이 느리면 GPU는 계산할 데이터가 없어 기다리게 됩니다.
 
 <Figure
-  src="/images/lessons/03-storage/io-starvation/io-bottleneck.svg"
+  src="/images/lessons/03-storage/io-starvation/gpu_pipeline_numbers_adjusted.svg"
   alt="저장소 읽기, CPU 전처리, GPU 계산으로 이어지는 데이터 공급 과정"
   caption="저장소 읽기 · 전처리 로더 · GPU 계산"
 />
@@ -32,10 +55,20 @@ GPU 자체에 문제가 있는 것일까요?
 이 단계들은 하나의 공급 사슬처럼 이어집니다. 어느 한 단계라도 느리면 뒤의 단계는 기다리게 됩니다.
 
 <Figure
-  src="/images/lessons/03-storage/io-starvation/mechanism.svg"
+  src="/images/lessons/03-storage/io-starvation/data_loading_cpu_gpu_editable.svg"
   alt="저장소와 데이터 로더를 거쳐 GPU로 배치가 전달되는 과정"
   caption="가장 느린 단계가 전체 데이터 공급 속도를 제한합니다."
 />
+
+#### 직접 연결하기: 데이터는 어디로 이동할까요?
+
+저장소·CPU·GPU가 각각 맡은 일을 떠올리며 데이터 공급 경로를 직접 구성해 보세요. 처음에는 연결선 없이 시작합니다. 데이터를 보내는 노드의 출력에서 받는 노드의 입력으로 선을 연결하고, **연결 확인**으로 결과를 확인하세요. 다시 연결하려면 **직접 연결해 보기**를 누르세요.
+
+원본 파일을 읽어 배치로 만드는 곳과, 완성된 배치로 모델을 계산하는 곳은 어디일까요?
+
+<IoNodePractice>
+  <NodeExample />
+</IoNodePractice>
 
 ### 2. 어디에서 병목이 생길까요?
 
@@ -62,21 +95,48 @@ GPU 사용률만 확인해서는 정확한 원인을 알기 어렵습니다. 각
 
 ### 4. PyTorch DataLoader 옵션 이해하기
 
-`num_workers=0`이면 메인 프로세스에서 데이터를 로딩합니다. 양수로 지정하면 별도 worker 프로세스가 읽기와 전처리를 담당해 GPU가 현재 배치를 계산하는 동안 다음 배치를 준비할 수 있습니다. 저장소 처리량 자체가 부족하면 worker만 늘려도 해결되지 않으며 CPU·메모리 경쟁이 심해질 수 있습니다.
+앞에서 살펴본 데이터 공급 과정을 PyTorch 코드에서는 어떻게 구현할까요? **DataLoader는 Dataset에서 샘플을 가져와 학습에 사용할 배치로 묶어 주는 도구**입니다. 이미지 학습이라면 이미지 읽기와 크기 조정 등을 거친 샘플을 모아 한 배치씩 학습 코드에 전달합니다.
 
-`pin_memory=True`는 배치를 페이지가 고정된 호스트 메모리에 준비해 CPU에서 CUDA GPU로 전송할 때 도움을 줍니다. **디스크 읽기 속도를 높이거나 가상 주소 변환을 없애는 옵션은 아닙니다.** 고정 메모리를 과도하게 사용하면 시스템 메모리에 부담을 줄 수 있습니다.
+여기서는 **배치를 준비하는 일**과 **준비된 배치를 GPU로 보내는 일**을 나누어 생각하면 두 옵션을 이해하기 쉽습니다.
 
-아래는 `dataset`이 `(입력 텐서, 정답 텐서)`를 반환하고 CUDA GPU를 사용하는 경우의 예입니다. Windows에서 worker를 사용한다면 실행 코드를 메인 가드 안에 두고, Dataset 클래스는 모듈 최상위에 정의합니다.
+#### num_workers: 데이터를 준비할 CPU 작업자 수
+
+학습을 진행하는 메인 프로세스가 파일 읽기와 전처리까지 혼자 맡으면 다음 배치 준비가 늦어질 수 있습니다. 이 일을 별도 작업자에게 나누어 맡기는 것이 **CPU 멀티프로세싱**입니다. 여기서 worker는 데이터를 읽고 전처리하는 별도 프로세스를 뜻합니다.
+
+- `num_workers=0`: 별도 작업자 없이 메인 프로세스가 배치를 준비합니다.
+- `num_workers=4`: worker 프로세스 4개가 데이터 준비를 나누어 맡습니다. GPU가 현재 배치를 계산하는 동안 다음 배치를 미리 준비할 수 있습니다.
+
+앞서 배운 **병렬 데이터 로더와 Prefetch를 활용하는 설정**이라고 생각하면 됩니다. 이 숫자는 GPU 개수가 아니라 CPU 쪽 작업자 수입니다. 다만 저장소가 이미 읽기 한계에 도달했다면 작업자를 늘려도 효과가 작고, 너무 많이 늘리면 CPU·메모리 경쟁이 커집니다.
+
+#### pin_memory: GPU로 보낼 배치를 RAM에 고정해 두기
+
+worker가 준비한 배치는 먼저 CPU가 사용하는 메모리인 **호스트 메모리(RAM)**에 놓입니다. CUDA GPU가 계산하려면 이 배치를 GPU 메모리로 한 번 더 옮겨야 합니다.
+
+운영체제는 일반 메모리의 일부를 필요에 따라 디스크로 내보낼 수 있습니다. **Pinned memory는 그렇게 내보내지 않도록 RAM에 고정한 메모리**입니다. `pin_memory=True`는 배치의 텐서를 이 메모리에 준비해 CUDA GPU로 더 빠르게 전송할 수 있도록 돕습니다.
+
+GPU로 보내기 전에 배치를 올려 두는 **전송용 대기 공간**이라고 생각하면 됩니다. 이 설정만으로 GPU에 데이터가 옮겨지지는 않으며, 실제 전송은 코드에서 `.to("cuda")`로 요청합니다. 디스크 읽기를 빠르게 하는 옵션은 아니고, 고정 메모리를 과도하게 사용하면 시스템 메모리에 부담이 됩니다.
+
+| 옵션 | 작용하는 구간 | 쉽게 기억하기 |
+| --- | --- | --- |
+| `num_workers` | 저장소 읽기 → CPU 전처리 → 배치 준비 | 준비할 작업자를 몇 명 둘까? |
+| `pin_memory` | 호스트 메모리 → CUDA GPU로 보내기 전 | 전송할 배치를 RAM에 고정해 둘까? |
+
+#### 코드에서 두 옵션 연결하기
+
+아래는 `dataset`이 `(입력 텐서, 정답 텐서)`를 반환하는 학습 함수 예시입니다. `model`은 미리 CUDA GPU로 옮기고, 그 모델의 파라미터로 `optimizer`를 만든 뒤 전달합니다.
 
 ```python
 from torch.utils.data import DataLoader
 
 def train(dataset, model, optimizer, loss_fn):
     loader = DataLoader(
-        dataset, batch_size=64, num_workers=4, pin_memory=True
+        dataset,
+        batch_size=64,     # 샘플 64개를 한 배치로 묶기
+        num_workers=4,    # CPU 작업자 4개가 읽기·전처리 담당
+        pin_memory=True,  # GPU 전송을 위해 배치를 고정 메모리에 준비
     )
-    model = model.to("cuda")
     for inputs, targets in loader:
+        # 준비된 배치를 실제 GPU 메모리로 전송
         inputs = inputs.to("cuda", non_blocking=True)
         targets = targets.to("cuda", non_blocking=True)
         optimizer.zero_grad()
@@ -85,7 +145,11 @@ def train(dataset, model, optimizer, loss_fn):
         optimizer.step()
 ```
 
-`non_blocking=True`는 전송 시 CPU의 대기를 줄이는 데 활용할 수 있지만, GPU 전송과 계산이 항상 겹쳐 실행된다는 보장은 아닙니다. 같은 데이터로 worker 수를 0, 2, 4 등으로 바꾸며 배치 대기 시간·초당 샘플 수·CPU 및 메모리 사용량을 비교하세요. 옵션의 의미는 [PyTorch DataLoader 문서](https://docs.pytorch.org/docs/stable/data.html)를 참고하세요.
+함께 사용한 `non_blocking=True`는 전송 완료를 기다리는 CPU의 대기를 줄이는 데 도움을 줍니다. 다만 GPU 전송과 계산이 항상 동시에 실행된다는 뜻은 아닙니다.
+
+먼저 같은 데이터로 `num_workers`를 0, 2, 4로 바꾸어 배치 대기 시간과 초당 샘플 수를 비교하세요. 그다음 worker 수를 고정하고 `pin_memory`를 켜고 끄며 전송 시간과 메모리 사용량을 비교하면 어느 단계에서 효과가 있는지 알기 쉽습니다.
+
+Windows에서 worker를 사용한다면 Dataset 클래스는 모듈 최상위에 정의하고, 데이터·모델 생성과 `train(...)` 호출은 `if __name__ == "__main__":` 블록 안에 둡니다. 옵션의 자세한 의미는 [PyTorch DataLoader 문서](https://docs.pytorch.org/docs/stable/data.html)를 참고하세요.
 
 ### 5. 작은 파일 묶기와 압축은 다릅니다
 
@@ -93,11 +157,9 @@ def train(dataset, model, optimizer, loss_fn):
 
 ## 비교와 한계
 
-- GPU를 늘리면 데이터 소비 능력도 커져 기존 공급 병목이 더 심해질 수 있습니다.
 - 캐시 적중률이 낮으면 저장 공간만 사용하고 성능 이득은 작을 수 있습니다.
 - shard는 요청 수를 줄이지만 일부 샘플만 임의로 읽는 작업은 불편해질 수 있습니다.
 - 병렬 로더를 늘릴 때는 CPU, 메모리와 저장소가 감당할 수 있는지도 확인해야 합니다.
-- 활동의 공급 속도는 개념 비교용 값이며 실제 개선 폭을 의미하지 않습니다.
 
 ## 전체 과정과 연결
 

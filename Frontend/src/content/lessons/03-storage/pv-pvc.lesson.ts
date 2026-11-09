@@ -95,50 +95,6 @@ export default defineMdxLesson({
     kind: '구성 관계',
     afterSection: 1,
   },
-  activity: {
-    kind: 'volume',
-    fields: [
-      {
-        id: 'persistent',
-        label: '저장 경로',
-        initial: 'ephemeral',
-        options: [
-          {
-            value: 'ephemeral',
-            label: 'Pod 임시 저장',
-          },
-          {
-            value: 'pv',
-            label: 'PVC로 연결한 영구 볼륨',
-          },
-        ],
-        help: '선택을 바꾸고 결과를 비교하세요.',
-      },
-    ],
-    question: 'Pod 교체 후에도 기록 파일을 유지하려면?',
-    options: [
-      {
-        value: 'b',
-        label: '같은 Pod 이름을 다시 사용하면 충분하다',
-      },
-      {
-        value: 'a',
-        label: '조건에 맞게 연결한 영구 볼륨을 사용한다',
-      },
-      {
-        value: 'c',
-        label: '새 Pod의 컨테이너 안에 같은 이름의 폴더만 만든다',
-      },
-      {
-        value: 'd',
-        label: 'PVC를 생성하기만 하고 Pod의 볼륨과 마운트 설정은 생략한다',
-      },
-    ],
-    correct: 'a',
-    explanation:
-      'Pod 이름을 재사용해도 컨테이너의 임시 파일은 이어지지 않습니다. Pod와 수명이 분리된 볼륨을 PVC로 참조해야 합니다.',
-    task: '임시 저장과 영구 볼륨의 Pod 교체 결과를 비교하세요.',
-  },
   practice: 'interactive',
   experiment: '흐름 확인',
   nodes: [

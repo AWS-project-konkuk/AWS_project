@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d86df"/>
+      <stop offset="100%" stop-color="#1f58bf"/>
+    </linearGradient>
+    <linearGradient id="cylTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9fc4f0"/>
+      <stop offset="100%" stop-color="#7aa8e2"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b7aa0" />
+    </marker>
+    <style>
+      .titlebox { fill:#eef2f6; rx:18; ry:18; }
+      .numbadge { fill:#36597c; }
+      .numtext { font: 700 34px 'Arial','Apple SD Gothic Neo','Malgun Gothic',sans-serif; fill:white; dominant-baseline:middle; text-anchor:middle; }
+      .label { font: 700 34px 'Arial','Apple SD Gothic Neo','Malgun Gothic',sans-serif; fill:#0f2747; text-anchor:middle; }
+      .small { font: 600 26px 'Arial','Apple SD Gothic Neo','Malgun Gothic',sans-serif; fill:#0f2747; text-anchor:middle; }
+      .boxlabel { font: 700 44px 'Arial','Apple SD Gothic Neo','Malgun Gothic',sans-serif; fill:white; text-anchor:middle; dominant-baseline:middle; }
+      .arrow { fill:none; stroke:#5b7aa0; stroke-width:5; stroke-linecap:round; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+<rect class="titlebox" x="120" y="55" width="290" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="130" cy="62" r="28"/>
+<text class="numtext" x="130" y="64">1</text>
+<text class="label" x="285.0" y="105">저장소에서</text>
+<text class="small" x="285.0" y="145">데이터 읽기</text>
+<rect class="titlebox" x="500" y="55" width="315" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="510" cy="62" r="28"/>
+<text class="numtext" x="510" y="64">2</text>
+<text class="label" x="677.5" y="105">디코딩·전처리</text>
+<text class="small" x="677.5" y="145">(배치 생성)</text>
+<rect class="titlebox" x="905" y="55" width="325" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="915" cy="62" r="28"/>
+<text class="numtext" x="915" y="64">3</text>
+<text class="label" x="1087.5" y="105">GPU 메모리로</text>
+<text class="small" x="1087.5" y="145">데이터 전송</text>
+<rect class="titlebox" x="1300" y="55" width="250" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="1310" cy="62" r="28"/>
+<text class="numtext" x="1310" y="64">4</text>
+<text class="label" x="1445.0" y="105">모델 학습</text>
+<text class="small" x="1445.0" y="145">(순전파·역전파)</text>
+<g filter="url(#shadow)">
+<rect x="90" y="284" width="250" height="272" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2"/>
+<ellipse cx="215.0" cy="284" rx="125.0" ry="34" fill="url(#cylTop)" stroke="#205bbc" stroke-width="2"/>
+<ellipse cx="215.0" cy="556" rx="125.0" ry="34" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" opacity="0.95"/>
+</g>
+<text class="boxlabel" x="215.0" y="435">저장소</text>
+<text class="boxlabel" x="215.0" y="495" font-size="38">(데이터)</text>
+<rect x="610" y="310" width="260" height="240" rx="10" ry="10" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" filter="url(#shadow)"/>
+<text class="boxlabel" x="740.0" y="435.0" font-size="54">CPU</text>
+<rect x="1080" y="310" width="120" height="110" rx="8" ry="8" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" filter="url(#shadow)"/>
+<text class="boxlabel" x="1140.0" y="367.0" font-size="36">GPU</text>
+<rect x="1234" y="310" width="120" height="110" rx="8" ry="8" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" filter="url(#shadow)"/>
+<text class="boxlabel" x="1294.0" y="367.0" font-size="36">GPU</text>
+<rect x="1080" y="454" width="120" height="110" rx="8" ry="8" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" filter="url(#shadow)"/>
+<text class="boxlabel" x="1140.0" y="511.0" font-size="36">GPU</text>
+<rect x="1234" y="454" width="120" height="110" rx="8" ry="8" fill="url(#blueGrad)" stroke="#205bbc" stroke-width="2" filter="url(#shadow)"/>
+<text class="boxlabel" x="1294.0" y="511.0" font-size="36">GPU</text>
+<path class="arrow" d="M 350 300 C 430 180, 540 180, 610 300"/>
+<path class="arrow" d="M 915 300 C 985 180, 1090 180, 1140 300"/>
+<path class="arrow" d="M 1145 565 C 1095 675, 985 675, 895 575"/>
+<path class="arrow" d="M 610 565 C 560 685, 430 685, 350 585"/>
+<rect class="titlebox" x="220" y="690" width="430" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="228" cy="697" r="28"/>
+<text class="numtext" x="228" y="699">6</text>
+<text class="label" x="453.0" y="738" font-size="30">통계·체크포인트 저장</text>
+<text class="small" x="453.0" y="778">(주기적)</text>
+<rect class="titlebox" x="910" y="690" width="360" height="110" rx="18" ry="18"/>
+<circle class="numbadge" cx="918" cy="697" r="28"/>
+<text class="numtext" x="918" y="699">5</text>
+<text class="label" x="1108.0" y="738" font-size="30">결과/가중치 전달</text>
+<text class="small" x="1108.0" y="778">(주기적)</text>
+</svg>

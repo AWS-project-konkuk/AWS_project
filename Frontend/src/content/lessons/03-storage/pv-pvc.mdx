@@ -1,15 +1,45 @@
+import { useEffect } from 'react';
+import { useLearningStore } from '../../../learning/LearningStore';
+
+export function PvPvcNodePractice({ children }) {
+  const key = '_inline:volume-binding';
+  const saved = useLearningStore((state) => state.data.lessons['pv-pvc']?.answers[key]);
+  const edit = useLearningStore((state) => state.edit);
+
+  useEffect(() => {
+    if (saved !== undefined) return;
+    edit(
+      'pv-pvc',
+      (lab) => {
+        if (lab.answers[key] !== undefined) return lab;
+        return {
+          ...lab,
+          answers: {
+            ...lab.answers,
+            [key]: JSON.stringify({ mode: 'practice', links: [], extra: [] }),
+          },
+        };
+      },
+      false,
+    );
+  }, [saved, edit]);
+
+  return saved === undefined ? null : children;
+}
+
 ## 문제 상황
 
-Kubernetes에서 모델을 학습하는 Pod가 체크포인트를 `/checkpoints`에 저장하고 있습니다.
+Kubernetes에서 모델을 학습하는 Pod가 임시 저장 공간인 **`emptyDir` 볼륨을 컨테이너의 `/checkpoints` 경로에 마운트**하고, 여기에 체크포인트를 저장하고 있습니다. `/checkpoints`는 파일을 읽고 쓰는 경로이며, 실제 파일은 그 경로에 연결된 `emptyDir`에 저장됩니다.
 
-학습 도중 Pod에 문제가 생겨 새 Pod가 생성되자 기존 체크포인트가 사라졌습니다. 같은 이름의 Pod를 다시 만들었지만 이전 파일은 돌아오지 않았습니다.
+학습 도중 문제가 생겨 기존 Pod를 삭제하고 새 Pod를 만들었습니다. 이때 기존 Pod의 `emptyDir`도 함께 삭제되어 체크포인트가 사라졌습니다. 같은 이름의 Pod를 다시 만들어도 새로운 빈 `emptyDir`이 생성되므로 이전 파일은 돌아오지 않습니다.
+
+`emptyDir`은 **같은 Pod 안에서 컨테이너만 재시작할 때는 유지되지만, Pod가 삭제되면 함께 사라집니다.** 이 상황은 컨테이너 재시작이 아니라 Pod 자체가 교체된 경우입니다.
 
 Pod가 교체되어도 데이터를 계속 사용하려면 Pod와 독립적으로 관리되는 저장 공간을 연결해야 합니다.
 
 <Figure
-  src="/images/lessons/03-storage/pv-pvc/volume-binding.svg"
-  alt="Pod가 PVC를 참조하고 PVC가 조건에 맞는 PV와 연결되는 모습"
-  caption="Pod · PersistentVolumeClaim · PersistentVolume"
+  src="/images/lessons/03-storage/pv-pvc/emptydir_pvc_official_style.svg"
+  caption="비교"
 />
 
 그렇다면 Pod는 실제 저장소의 위치와 종류를 모두 알고 있어야 할까요?
@@ -37,11 +67,19 @@ PVC는 애플리케이션이 필요한 저장 조건을 작성한 **요청서**�
 
 PVC는 조건이 맞는 기존 PV와 연결되거나, StorageClass와 provisioner를 통해 새로운 볼륨을 동적으로 만들 수 있습니다.
 
+<Figure
+  src="/images/lessons/03-storage/pv-pvc/pod_pvc_pv_storageclass.svg"
+  alt="Pod가 PVC를 참조하고 PVC가 조건에 맞는 PV와 연결되는 모습"
+  caption="Pod · PersistentVolumeClaim · PersistentVolume"
+/>
+
 ### 3. Pod
 
 Pod는 실제 PV를 직접 고르는 대신 PVC의 이름을 참조합니다. 그리고 `volumeMounts`를 이용해 컨테이너 안의 경로에 볼륨을 연결합니다.
 
-<NodeExample />
+<PvPvcNodePractice>
+  <NodeExample />
+</PvPvcNodePractice>
 
 아래 PVC는 10GiB의 저장 공간을 요청합니다.
 
@@ -104,7 +142,6 @@ RWO는 항상 하나의 Pod만 사용할 수 있다는 뜻이 아닙니다. 같�
 
 접근 모드는 볼륨의 연결 능력을 나타내며 파일 잠금이나 모든 쓰기 차단을 대신하지 않습니다. 읽기 전용 사용에는 Pod의 마운트 설정과 저장소 권한도 확인합니다. [PV 접근 모드 문서](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes)를 참고하세요.
 
-<Activity />
 
 ## 문제가 생겼을 때 확인하기
 
@@ -116,20 +153,11 @@ PVC가 `Pending` 상태라면 다음 항목을 확인합니다.
 4. Pod가 올바른 `claimName`을 참조하는가?
 5. `volumes`와 `volumeMounts`의 이름이 일치하는가?
 
-```bash
-kubectl get pv
-kubectl get pvc
-kubectl get storageclass
-kubectl describe pvc training-checkpoints
-kubectl describe pod <pod-name>
-```
-
-PVC의 이벤트에서 용량·클래스·접근 모드 불일치를 확인하고, Pod 이벤트에서 스케줄링·연결·마운트 오류를 확인합니다. `WaitForFirstConsumer` 방식은 Pod의 배치 조건이 정해질 때까지 바인딩을 기다릴 수 있으므로 `Pending` 자체가 항상 오류는 아닙니다. 마운트 후 권한 오류라면 컨테이너의 사용자·그룹과 볼륨 디렉터리 권한을 확인합니다.
 
 ## 비교와 한계
 
 - PVC는 저장 공간을 요청하고 연결하는 객체이며 백업 기능이 아닙니다.
-- 일반적인 PVC 볼륨은 Pod만 삭제해도 PVC와 PV가 남습니다. PVC까지 삭제할 때는 PV의 회수 정책을 확인해야 합니다. `Retain`은 저장 자원을 남겨 수동 처리를 요구하고, 지원되는 저장소에서 `Delete`는 실제 저장 자원도 삭제할 수 있습니다.
+- 일반적인 PVC 볼륨은 Pod만 삭제해도 PVC와 PV가 남습니다. PVC까지 삭제할 때는 PV의 회수 정책을 확인해야 합니다.
 - 여러 Pod가 볼륨을 마운트할 수 있어도 같은 파일을 안전하게 수정하는 것은 별도 문제입니다.
 - S3 버킷은 일반적인 PV와 같은 방식으로 자동 연결되지 않습니다. 필요한 드라이버나 애플리케이션 접근 방식을 확인해야 합니다.
 
@@ -143,7 +171,7 @@ PV와 PVC는 Pod가 사용할 저장 공간을 Kubernetes에서 연결하는 방
 
 ## 핵심 정리
 
-**PV는 클러스터의 저장 자원**, **PVC는 애플리케이션의 저장 요청**, **Pod는 PVC를 참조해 볼륨을 마운트하는 실행 단위**입니다. PVC와 PV가 연결되어도 백업과 동시 쓰기 안전성이 자동으로 보장되지는 않습니다.
+**PV는 클러스터의 저장 자원**, **PVC는 애플리케이션의 저장 요청**, PVC와 PV가 연결되어도 백업과 동시 쓰기 안전성이 자동으로 보장되지는 않습니다.
 
 <Quiz />
 
