@@ -1,111 +1,444 @@
 import { createElement as h, useState } from 'react';
 import { defineMdxLesson } from '../../defineLesson';
 
-const comparisons = [
+const ioMethods = [
   {
+    id: 'parallel',
     title: '병렬 데이터 로더',
-    summary: '여러 배치를 동시에 읽고 전처리',
-    before: ['로더 1: [A 준비] → [B 준비]'],
-    after: ['로더 1: [A 준비]', '로더 2: [B 준비]'],
-    effect: '여러 작업자가 배치를 나눠 준비합니다.',
+    short: '여러 배치를 동시에 준비',
+    focus: '작업자 수',
+    action: '여러 worker가 A·B·C를 동시에 읽고 전처리',
+    result: '배치 준비 처리량 증가',
+    color: '#7c5ce5',
   },
   {
+    id: 'prefetch',
     title: 'Prefetch',
-    summary: '현재 계산 중에 다음 배치를 준비',
-    before: ['[A 계산] → [B 준비] → [B 계산]'],
-    after: ['GPU:  [A 계산] → [B 계산]', '로더: [B 준비] → [C 준비]'],
-    effect: '위아래 같은 칸의 계산과 준비가 겹칩니다.',
+    short: '계산과 다음 준비를 겹침',
+    focus: '시간 겹치기',
+    action: 'GPU가 A를 계산할 때 로더가 B를 미리 준비',
+    result: 'GPU 대기 시간 감소',
+    color: '#1b8f74',
   },
   {
+    id: 'cache',
     title: 'Cache',
-    summary: '반복 데이터는 가까운 곳에서 재사용',
-    before: ['첫 읽기: 원격 저장소 → GPU', '재사용: 원격 저장소 → GPU'],
-    after: ['첫 읽기: 원격 → 로컬 캐시 → GPU', '재사용: 로컬 캐시 → GPU'],
-    effect: '다시 읽을 때 원격 저장소까지 가지 않습니다.',
+    short: '가까운 데이터 재사용',
+    focus: '읽는 위치',
+    action: '첫 읽기 뒤 원격 저장소 대신 로컬 복사본 사용',
+    result: '반복 읽기 지연 감소',
+    color: '#d37816',
   },
   {
+    id: 'sharding',
     title: 'Sharding',
-    summary: '작은 파일을 묶어 읽기 요청 감소',
-    before: ['[A]   [B]   [C]   [D]', '요청① 요청② 요청③ 요청④'],
-    after: ['[ 묶음: A · B · C · D ]', '묶음 단위 읽기 → 요청①'],
-    effect: '이 예시에서는 요청 4번이 1번으로 줄어듭니다.',
+    short: '작은 파일을 묶어 요청',
+    focus: '요청 단위',
+    action: 'A·B·C·D 파일을 하나의 큰 shard로 구성',
+    result: '요청·메타데이터 작업 감소',
+    color: '#3274c8',
   },
-];
+] as const;
 
-function IoComparison() {
-  const [enabled, setEnabled] = useState([true, true, true, true]);
+function IoFlowComparison() {
+  const [selected, setSelected] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const method = ioMethods[selected];
+
+  const parallelScene = h(
+    'span',
+    {
+      className: 'io-scene parallel-scene',
+      'aria-label': '세 개의 데이터 로더가 동시에 배치를 읽는 흐름',
+    },
+    h(
+      'span',
+      { className: 'scene-caption' },
+      '한 줄씩 기다리지 않고 worker 3개가 동시에 출발합니다.',
+    ),
+    h(
+      'span',
+      { className: 'parallel-grid' },
+      h(
+        'span',
+        { className: 'source-stack' },
+        h('strong', null, '저장소'),
+        h('small', null, 'A · B · C 배치'),
+      ),
+      h(
+        'span',
+        { className: 'worker-stack' },
+        ...['A', 'B', 'C'].map((batch, index) =>
+          h(
+            'span',
+            { className: 'worker-row', key: batch },
+            h('span', { className: `moving-batch batch-${index + 1}`, 'aria-hidden': true }, batch),
+            h('span', { className: 'worker-box' }, `worker ${index + 1}`),
+          ),
+        ),
+      ),
+      h(
+        'span',
+        { className: 'ready-stack' },
+        h('strong', null, '준비 완료'),
+        h('small', null, 'A · B · C'),
+      ),
+    ),
+    h(
+      'span',
+      { className: 'scene-result' },
+      h('strong', null, '동시에 3개 준비'),
+      '읽기·전처리 작업 자체를 여러 worker로 나눕니다.',
+    ),
+  );
+
+  const prefetchScene = h(
+    'span',
+    {
+      className: 'io-scene prefetch-scene',
+      'aria-label': 'GPU 계산과 다음 배치 준비가 겹치는 흐름',
+    },
+    h(
+      'span',
+      { className: 'scene-caption' },
+      '같은 세로 칸에서 위쪽 준비와 아래쪽 계산이 동시에 진행됩니다.',
+    ),
+    h(
+      'span',
+      { className: 'timeline' },
+      h('span', { className: 'lane-label' }, '로더'),
+      h('span', { className: 'time-cell load-cell phase-1' }, 'A 준비'),
+      h('span', { className: 'time-cell load-cell phase-2' }, 'B 준비'),
+      h('span', { className: 'time-cell load-cell phase-3' }, 'C 준비'),
+      h('span', { className: 'time-cell load-cell phase-4' }, 'D 준비'),
+      h('span', { className: 'lane-label' }, 'GPU'),
+      h('span', { className: 'time-cell idle-cell' }, '첫 대기'),
+      h('span', { className: 'time-cell gpu-cell phase-2' }, 'A 계산'),
+      h('span', { className: 'time-cell gpu-cell phase-3' }, 'B 계산'),
+      h('span', { className: 'time-cell gpu-cell phase-4' }, 'C 계산'),
+      h('span', { className: 'lane-label axis-label' }, '시간'),
+      ...['①', '②', '③', '④'].map((value) =>
+        h('small', { className: 'axis-tick', key: value }, value),
+      ),
+    ),
+    h(
+      'span',
+      { className: 'overlap-note' },
+      h('span', { className: 'overlap-bracket', 'aria-hidden': true }),
+      h('strong', null, 'B 준비 ↕ A 계산'),
+      '서로 다른 작업을 같은 시간에 겹칩니다.',
+    ),
+  );
+
+  const cacheScene = h(
+    'span',
+    {
+      className: 'io-scene cache-scene',
+      'aria-label': '원격에서 읽은 반복 데이터를 가까운 캐시에 저장하고 재사용하는 흐름',
+    },
+    h(
+      'span',
+      { className: 'scene-caption' },
+      '처음 한 번만 원격에서 읽고, 반복해서 쓰는 데이터는 가까운 Cache에 저장합니다.',
+    ),
+    h(
+      'span',
+      { className: 'cache-flow' },
+      h(
+        'span',
+        { className: 'cache-node remote-node' },
+        h('strong', null, '원격 저장소'),
+        h('small', null, '첫 읽기'),
+      ),
+      h(
+        'span',
+        { className: 'cache-track fill-track' },
+        h('small', null, '① 처음 가져오기'),
+        h('span', { className: 'cache-dot fill-dot', 'aria-hidden': true }, 'A'),
+      ),
+      h(
+        'span',
+        { className: 'cache-node local-node' },
+        h('strong', null, '가까운 Cache'),
+        h('small', null, '반복 데이터 저장'),
+        h(
+          'span',
+          { className: 'cached-copies', 'aria-hidden': true },
+          h('i', null, 'A'),
+          h('i', null, 'A'),
+          h('i', null, 'A'),
+        ),
+      ),
+      h(
+        'span',
+        { className: 'cache-track reuse-track' },
+        h('small', null, '② 가까이서 반복 사용'),
+        h('span', { className: 'cache-dot reuse-dot reuse-1', 'aria-hidden': true }, 'A'),
+        h('span', { className: 'cache-dot reuse-dot reuse-2', 'aria-hidden': true }, 'A'),
+        h('span', { className: 'cache-dot reuse-dot reuse-3', 'aria-hidden': true }, 'A'),
+      ),
+      h(
+        'span',
+        { className: 'cache-node gpu-target' },
+        h('strong', null, 'GPU'),
+        h('small', null, '반복 계산'),
+      ),
+    ),
+    h(
+      'span',
+      { className: 'scene-result' },
+      h('strong', null, '원격 읽기 1회'),
+      '같은 데이터를 다시 쓸 때는 가까운 Cache에서 바로 가져옵니다.',
+    ),
+  );
+
+  const smallFiles = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const shardingScene = h(
+    'span',
+    {
+      className: 'io-scene sharding-scene',
+      'aria-label': '작은 파일의 많은 요청과 큰 shard의 적은 요청 비교',
+    },
+    h(
+      'span',
+      { className: 'scene-caption' },
+      '같은 양의 데이터를 가져와도 파일 묶음 크기에 따라 요청 횟수가 달라집니다.',
+    ),
+    h(
+      'span',
+      { className: 'shard-compare' },
+      h(
+        'span',
+        { className: 'request-case many-case' },
+        h('strong', null, '작은 파일 8개'),
+        h(
+          'span',
+          { className: 'file-row' },
+          ...smallFiles.map((fileName, index) =>
+            h(
+              'span',
+              { className: `tiny-file file-${index + 1}`, key: fileName },
+              fileName,
+              h('i', { className: 'request-pulse', 'aria-hidden': true }),
+            ),
+          ),
+        ),
+        h('span', { className: 'request-count' }, '요청 × 8'),
+        h('small', null, '파일마다 열고 읽기'),
+      ),
+      h('span', { className: 'versus' }, 'VS'),
+      h(
+        'span',
+        { className: 'request-case one-case' },
+        h('strong', null, '큰 Shard 1개'),
+        h(
+          'span',
+          { className: 'large-shard' },
+          h('span', null, 'A'),
+          h('span', null, 'B'),
+          h('span', null, 'C'),
+          h('span', null, 'D'),
+          h('span', null, 'E'),
+          h('span', null, 'F'),
+          h('span', null, 'G'),
+          h('span', null, 'H'),
+          h('i', { className: 'request-pulse', 'aria-hidden': true }),
+        ),
+        h('span', { className: 'request-count' }, '요청 × 1'),
+        h('small', null, '한 번 열어 연속 읽기'),
+      ),
+    ),
+    h(
+      'span',
+      { className: 'scene-result' },
+      h('strong', null, '8회 → 1회'),
+      'Sharding은 데이터의 양보다 파일을 요청하는 횟수를 줄입니다.',
+    ),
+  );
+
+  const scenes = [parallelScene, prefetchScene, cacheScene, shardingScene];
+
   return h(
     'span',
-    { className: 'io-comparison' },
+    {
+      className: `io-flow ${isPlaying ? 'is-playing' : ''}`,
+      style: { '--io-color': method.color } as React.CSSProperties,
+    },
     h(
       'style',
       null,
       `
-      /* 이 강의에서만 공통 입력·재생·결과 영역을 카드 활동으로 대체합니다. */
-      section[data-testid="inline-activity"]:has(.io-comparison) > :not(header),
-      section[data-testid="inline-activity"]:has(.io-comparison) > header > :not(h3) { display: none; }
-      .io-comparison { display: block; font-weight: 400; }
-      .io-comparison .io-intro { display: block; margin: 8px 0 16px; font-size: 14px; }
-      .io-comparison .io-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-      .io-comparison .io-card {
-        display: flex; flex-direction: column; gap: 10px; min-width: 0;
-        padding: 16px; border: 1px solid var(--border); border-radius: 12px;
-        background: var(--page); font-size: 14px;
+      section[data-testid="inline-activity"]:has(.io-flow) > :not(header),
+      section[data-testid="inline-activity"]:has(.io-flow) > header > :not(h3) { display: none; }
+      .io-flow { display: block; font-weight: 400; }
+      .io-flow * { box-sizing: border-box; }
+      .io-flow .io-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .io-flow .io-heading strong { font-size: 18px; }
+      .io-flow button { color: inherit; font: inherit; cursor: pointer; }
+      .io-flow button:focus-visible { outline: 2px solid var(--io-color); outline-offset: 3px; }
+      .io-flow .io-play { flex: none; padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--page); }
+      .io-flow .io-intro { display: block; margin: 7px 0 16px; color: var(--muted); font-size: 14px; }
+      .io-flow .io-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+      .io-flow .io-tab { min-width: 0; padding: 10px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--page); text-align: left; }
+      .io-flow .io-tab strong, .io-flow .io-tab small { display: block; }
+      .io-flow .io-tab strong { margin-bottom: 3px; font-size: 13px; }
+      .io-flow .io-tab small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+      .io-flow .io-tab[aria-selected="true"] { border-color: var(--io-color); background: color-mix(in srgb, var(--io-color) 10%, var(--page)); box-shadow: inset 0 -3px var(--io-color); }
+      .io-flow .io-stage { display: block; margin-top: 12px; padding: 16px; border: 1px solid color-mix(in srgb, var(--io-color) 45%, var(--border)); border-radius: 14px; background: color-mix(in srgb, var(--io-color) 4%, var(--page)); overflow: hidden; }
+      .io-flow .io-stage-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+      .io-flow .io-stage-title strong { color: var(--io-color); font-size: 17px; }
+      .io-flow .io-stage-title small { color: var(--muted); }
+      .io-flow .io-scene { display: block; }
+      .io-flow .scene-caption { display: block; margin-bottom: 16px; font-size: 13px; }
+      .io-flow .scene-result { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--io-color) 10%, var(--page)); font-size: 13px; }
+      .io-flow .scene-result strong { flex: none; color: var(--io-color); }
+
+      .io-flow .parallel-grid { display: grid; grid-template-columns: 105px 1fr 105px; gap: 24px; align-items: center; min-height: 170px; }
+      .io-flow .source-stack, .io-flow .ready-stack { display: flex; min-height: 82px; padding: 10px; border: 2px solid var(--border); border-radius: 12px; background: var(--page); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+      .io-flow .source-stack small, .io-flow .ready-stack small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+      .io-flow .ready-stack { border-color: var(--io-color); }
+      .io-flow .worker-stack { display: grid; gap: 9px; }
+      .io-flow .worker-row { position: relative; display: flex; align-items: center; justify-content: center; height: 42px; border-radius: 9px; background: color-mix(in srgb, var(--io-color) 7%, var(--panel)); }
+      .io-flow .worker-row::before, .io-flow .worker-row::after { content: ''; position: absolute; top: 50%; width: 26%; height: 2px; background: color-mix(in srgb, var(--io-color) 45%, var(--border)); }
+      .io-flow .worker-row::before { left: -24px; }
+      .io-flow .worker-row::after { right: -24px; }
+      .io-flow .worker-box { position: relative; z-index: 2; padding: 5px 10px; border: 1px solid var(--io-color); border-radius: 7px; background: var(--page); color: var(--io-color); font-size: 11px; font-weight: 700; }
+      .io-flow .moving-batch { position: absolute; z-index: 3; left: -16px; display: grid; width: 25px; height: 25px; border-radius: 50%; background: var(--io-color); color: #fff; place-items: center; font-size: 10px; font-weight: 800; opacity: 0; }
+      .io-flow.is-playing .moving-batch { animation: parallel-read 2.5s ease-in-out infinite; }
+      @keyframes parallel-read { 0% { left: -16px; opacity: 0; } 10%, 88% { opacity: 1; } 48% { left: calc(50% - 12px); } 100% { left: calc(100% - 8px); opacity: 0; } }
+
+      .io-flow .timeline { display: grid; grid-template-columns: 44px repeat(4, minmax(0, 1fr)); gap: 4px; width: 100%; }
+      .io-flow .lane-label { display: flex; align-items: center; font-size: 12px; font-weight: 800; }
+      .io-flow .time-cell { position: relative; display: grid; height: 48px; border-radius: 8px; overflow: hidden; place-items: center; font-size: 11px; font-weight: 700; }
+      .io-flow .load-cell { background: #f7cf6b; color: #5b3b00; }
+      .io-flow .gpu-cell { background: var(--io-color); color: #fff; }
+      .io-flow .idle-cell { border: 1px dashed var(--border); color: var(--muted); }
+      .io-flow .time-cell::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.34); transform: translateX(-105%); }
+      .io-flow.is-playing .time-cell.phase-1::after { animation: cell-run 3.2s linear infinite; }
+      .io-flow.is-playing .time-cell.phase-2::after { animation: cell-run 3.2s .8s linear infinite; }
+      .io-flow.is-playing .time-cell.phase-3::after { animation: cell-run 3.2s 1.6s linear infinite; }
+      .io-flow.is-playing .time-cell.phase-4::after { animation: cell-run 3.2s 2.4s linear infinite; }
+      .io-flow .axis-label { color: var(--muted); }
+      .io-flow .axis-tick { text-align: center; color: var(--muted); }
+      .io-flow .overlap-note { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 12px; }
+      .io-flow .overlap-note strong { color: var(--io-color); }
+      .io-flow .overlap-bracket { width: 20px; height: 26px; border-top: 2px solid var(--io-color); border-bottom: 2px solid var(--io-color); border-left: 2px solid var(--io-color); }
+      @keyframes cell-run { 0%, 8% { transform: translateX(-105%); } 80%, 100% { transform: translateX(105%); } }
+
+      .io-flow .cache-flow { display: grid; grid-template-columns: 96px minmax(38px, 1fr) 108px minmax(38px, 1fr) 74px; gap: 6px; width: 100%; align-items: center; min-height: 145px; }
+      .io-flow .cache-node { display: flex; min-height: 88px; padding: 8px; border: 2px solid var(--border); border-radius: 12px; background: var(--page); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+      .io-flow .cache-node small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+      .io-flow .local-node { border-color: var(--io-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--io-color) 10%, transparent); }
+      .io-flow .gpu-target { border-color: color-mix(in srgb, var(--io-color) 60%, var(--border)); }
+      .io-flow .cache-track { position: relative; display: block; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--io-color) 38%, var(--border)); }
+      .io-flow .cache-track::after { content: '→'; position: absolute; right: -5px; top: -13px; color: var(--io-color); font-size: 18px; }
+      .io-flow .cache-track small { position: absolute; left: 50%; bottom: 10px; width: 105px; transform: translateX(-50%); color: var(--muted); text-align: center; font-size: 9px; }
+      .io-flow .cache-dot { position: absolute; z-index: 2; top: -11px; left: -7px; display: grid; width: 26px; height: 26px; border: 3px solid var(--page); border-radius: 50%; background: var(--io-color); color: #fff; place-items: center; font-size: 9px; font-weight: 800; opacity: 0; }
+      .io-flow.is-playing .fill-dot { animation: cache-fill 4.8s ease-in-out infinite; }
+      .io-flow.is-playing .reuse-dot { animation: cache-reuse 4.8s ease-in-out infinite; }
+      .io-flow.is-playing .reuse-2 { animation-delay: .55s; }
+      .io-flow.is-playing .reuse-3 { animation-delay: 1.1s; }
+      .io-flow .cached-copies { display: flex; gap: 3px; margin-top: 8px; }
+      .io-flow .cached-copies i { display: grid; width: 20px; height: 20px; border-radius: 5px; background: color-mix(in srgb, var(--io-color) 16%, var(--panel)); color: var(--io-color); place-items: center; font-size: 9px; font-style: normal; font-weight: 800; }
+      .io-flow.is-playing .cached-copies { animation: cache-store 4.8s ease-in-out infinite; }
+      @keyframes cache-fill { 0%, 5% { left: -7px; opacity: 0; } 10%, 30% { opacity: 1; } 36% { left: calc(100% - 18px); opacity: 0; } 100% { opacity: 0; } }
+      @keyframes cache-reuse { 0%, 43% { left: -7px; opacity: 0; } 48%, 80% { opacity: 1; } 88%, 100% { left: calc(100% - 18px); opacity: 0; } }
+      @keyframes cache-store { 0%, 28% { opacity: .15; transform: scale(.9); } 40%, 92% { opacity: 1; transform: scale(1); } 100% { opacity: .15; } }
+
+      .io-flow .shard-compare { display: grid; grid-template-columns: 1fr 36px 1fr; gap: 12px; align-items: center; }
+      .io-flow .request-case { display: flex; min-height: 180px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--page); align-items: center; flex-direction: column; }
+      .io-flow .file-row { display: grid; grid-template-columns: repeat(4, 30px); gap: 7px; margin: 16px 0; }
+      .io-flow .tiny-file { position: relative; display: grid; width: 30px; height: 34px; border: 1px solid var(--border); border-radius: 5px; background: var(--panel); place-items: center; font-size: 10px; }
+      .io-flow .large-shard { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); width: 150px; height: 76px; margin: 16px 0; border: 2px solid var(--io-color); border-radius: 9px; overflow: hidden; }
+      .io-flow .large-shard span { display: grid; border: 1px solid color-mix(in srgb, var(--io-color) 25%, var(--border)); place-items: center; font-size: 9px; }
+      .io-flow .request-pulse { position: absolute; inset: -4px; border: 2px solid var(--io-color); border-radius: inherit; opacity: 0; }
+      .io-flow.is-playing .tiny-file .request-pulse { animation: request-many 3.2s infinite; }
+      .io-flow.is-playing .file-2 .request-pulse { animation-delay: .4s; }
+      .io-flow.is-playing .file-3 .request-pulse { animation-delay: .8s; }
+      .io-flow.is-playing .file-4 .request-pulse { animation-delay: 1.2s; }
+      .io-flow.is-playing .file-5 .request-pulse { animation-delay: 1.6s; }
+      .io-flow.is-playing .file-6 .request-pulse { animation-delay: 2s; }
+      .io-flow.is-playing .file-7 .request-pulse { animation-delay: 2.4s; }
+      .io-flow.is-playing .file-8 .request-pulse { animation-delay: 2.8s; }
+      .io-flow.is-playing .large-shard .request-pulse { animation: request-one 3.2s infinite; }
+      .io-flow .request-count { padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--io-color) 12%, var(--panel)); color: var(--io-color); font-size: 12px; font-weight: 800; }
+      .io-flow .request-case small { margin-top: 7px; color: var(--muted); font-size: 10px; }
+      .io-flow .versus { color: var(--muted); text-align: center; font-size: 11px; font-weight: 800; }
+      @keyframes request-many { 0%, 75% { transform: scale(.85); opacity: 0; } 82% { opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
+      @keyframes request-one { 0%, 15% { transform: scale(.94); opacity: 0; } 30% { opacity: 1; } 60%, 100% { transform: scale(1.08); opacity: 0; } }
+
+      @media (max-width: 660px) {
+        .io-flow .io-tabs { grid-template-columns: repeat(2, 1fr); }
+        .io-flow .io-stage-title { align-items: flex-start; flex-direction: column; }
+        .io-flow .parallel-grid { grid-template-columns: 82px 1fr 82px; gap: 15px; min-width: 430px; }
+        .io-flow .scene-scroll { display: block; overflow-x: auto; padding-bottom: 5px; }
+        .io-flow .timeline { grid-template-columns: 38px repeat(4, minmax(0, 1fr)); }
+        .io-flow .time-cell { font-size: 10px; }
+        .io-flow .cache-flow { grid-template-columns: 60px minmax(20px, 1fr) 74px minmax(20px, 1fr) 48px; gap: 4px; }
+        .io-flow .cache-node { min-height: 74px; padding: 4px; font-size: 10px; }
+        .io-flow .cache-node small { font-size: 8px; }
+        .io-flow .cached-copies { gap: 2px; }
+        .io-flow .cached-copies i { width: 16px; height: 16px; font-size: 8px; }
+        .io-flow .cache-track small { display: none; }
+        .io-flow .shard-compare { grid-template-columns: 190px 30px 190px; min-width: 440px; }
+        .io-flow .scene-result { align-items: flex-start; flex-direction: column; }
       }
-      .io-comparison .io-title { font-size: 17px; }
-      .io-comparison .io-diagram {
-        display: block; padding: 12px; border-left: 4px solid var(--soft);
-        background: var(--panel); min-height: 108px; overflow-x: auto;
+      @media (prefers-reduced-motion: reduce) {
+        .io-flow.is-playing .moving-batch, .io-flow.is-playing .time-cell::after,
+        .io-flow.is-playing .cache-dot, .io-flow.is-playing .cached-copies,
+        .io-flow.is-playing .request-pulse { animation: none; }
       }
-      .io-comparison .io-diagram[data-enabled="true"] { border-color: var(--accent); }
-      .io-comparison .io-line { display: block; white-space: pre; font-family: monospace; font-size: 12px; }
-      .io-comparison .io-effect { display: block; min-height: 44px; }
-      .io-comparison button { margin-top: auto; padding: 8px 12px; cursor: pointer; }
-      .io-comparison button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-      @media (max-width: 680px) { .io-comparison .io-grid { grid-template-columns: 1fr; } }
     `,
     ),
-    h('strong', null, '데이터를 빨리 준비하는 네 가지 방법'),
+    h(
+      'span',
+      { className: 'io-heading' },
+      h('strong', null, 'I/O 병목을 줄이는 네 가지 흐름'),
+      h(
+        'button',
+        {
+          className: 'io-play',
+          type: 'button',
+          'aria-pressed': isPlaying,
+          onClick: () => setIsPlaying((current) => !current),
+        },
+        isPlaying ? '⏸ 일시정지' : '▶ 재생',
+      ),
+    ),
     h(
       'span',
       { className: 'io-intro' },
-      '네 방식의 차이를 비교하세요. 각 카드의 버튼을 누르면 개선 전·후가 바뀝니다.',
+      '방법을 선택하면 각 방식이 실제로 바꾸는 데이터 흐름을 애니메이션으로 비교할 수 있습니다.',
     ),
     h(
       'span',
-      { className: 'io-grid' },
-      comparisons.map((item, index) =>
+      { className: 'io-tabs', role: 'tablist', 'aria-label': 'I/O 개선 방법' },
+      ...ioMethods.map((item, index) =>
         h(
-          'span',
-          { className: 'io-card', key: item.title },
-          h('strong', { className: 'io-title' }, item.title),
-          h('span', null, item.summary),
-          h(
-            'span',
-            { className: 'io-diagram', 'data-enabled': enabled[index], 'aria-live': 'polite' },
-            h('strong', null, enabled[index] ? '개선 후' : '개선 전'),
-            ...(enabled[index] ? item.after : item.before).map((line) =>
-              h('span', { className: 'io-line', key: line }, line),
-            ),
-          ),
-          h('span', { className: 'io-effect' }, item.effect),
-          h(
-            'button',
-            {
-              type: 'button',
-              'aria-label': `${item.title} ${enabled[index] ? '개선 전' : '개선 후'} 보기`,
-              onClick: () =>
-                setEnabled((current) => current.map((value, i) => (i === index ? !value : value))),
-            },
-            enabled[index] ? '개선 전 보기' : '개선 후 보기',
-          ),
+          'button',
+          {
+            className: 'io-tab',
+            type: 'button',
+            role: 'tab',
+            'aria-selected': selected === index,
+            key: item.id,
+            onClick: () => setSelected(index),
+          },
+          h('strong', null, item.title),
+          h('small', null, item.short),
         ),
       ),
     ),
     h(
-      'small',
-      { style: { display: 'block', marginTop: 12 } },
-      '동작 원리를 단순화한 예시입니다. 네 방식은 함께 사용할 수 있으며 실제 속도는 작업 조건에 따라 달라집니다.',
+      'span',
+      { className: 'io-stage', key: method.id },
+      h(
+        'span',
+        { className: 'io-stage-title' },
+        h('strong', null, method.title),
+        h('small', null, method.action),
+      ),
+      h('span', { className: 'scene-scroll' }, scenes[selected]),
     ),
   );
 }
@@ -236,7 +569,7 @@ export default defineMdxLesson({
       '정답은 Prefetch입니다. 병렬 데이터 로더의 핵심은 여러 배치의 읽기·전처리를 동시에 수행하는 것이고, Prefetch의 핵심은 현재 계산과 다음 배치 준비를 겹치는 것입니다. Cache는 가까운 저장 공간의 데이터를 재사용하고, Sharding은 작은 파일을 묶어 요청 횟수를 줄입니다. 네 방식은 함께 사용할 수도 있습니다.',
     // 공통 Activity는 task를 React 자식으로 렌더링합니다. 다른 파일을 변경하지
     // 않고 이 강의에만 카드를 표시하도록 문자열 타입과의 경계를 여기로 한정합니다.
-    task: h(IoComparison) as unknown as string,
+    task: h(IoFlowComparison) as unknown as string,
   },
   practice: 'interactive',
   experiment: '흐름 확인',
