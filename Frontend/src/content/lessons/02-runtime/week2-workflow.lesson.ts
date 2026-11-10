@@ -1,38 +1,57 @@
 import { defineMdxLesson } from '../../defineLesson';
 
-// 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
+// 본문과 실습 안내는 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'week2-workflow',
   unit: 1,
-  order: 7,
-  title: '같은 이미지로 서비스를 복구하기',
+  order: 8,
+  title: '실습',
+  minutes: 30,
   summary:
-    '주차 종합 실습 · 이미지는 실행 템플릿, Pod는 실행 단위, Deployment는 원하는 수를 유지하는 관리자, Service는 요청 경로입니다.',
-  minutes: 18,
+    '이미지 버전과 장애 복구 설정을 하나씩 바꿔 서비스를 복구하고, 로컬 추가 실습에서 실행본과 응답을 확인합니다.',
   scenario:
-    '이미지·원하는 상태·실제 요청을 구분해 연결하세요. 버전 불일치와 장애 상태를 관찰한 뒤 같은 이미지로 두 Pod를 준비하고 응답을 확인하세요.',
-  concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
-  advanced: [
-    {
-      title: '심화 · GPU 배치 조건',
-      body: 'nodeSelector·Affinity는 실행 위치 조건을, Taints·Tolerations는 배치 허용 조건을 표현합니다. Toleration이 있다고 특정 노드에 반드시 배치되는 것은 아닙니다. GPU 장치 플러그인과 자원 요청도 확인합니다.',
-    },
-  ],
+    '이미지·관리 선언·요청 경로를 나누어 연결하고, 버전 불일치와 장애를 각각 수정한 뒤 응답을 비교합니다.',
+  concepts: ['노드 종합 실습', '이미지 버전', 'Pod 교체', '요청·응답 확인'],
   caution:
-    '컨테이너는 호스트 커널을 공유하고, Deployment는 이미지 버전과 복제본의 실행 상태를 관리합니다.',
-  reflection: 'Deployment에 이미지 태그를 지정하면 어떤 역할을 하나요?',
+    '브라우저는 교육용 모형입니다. 실제 실습에서는 컨테이너 재시작과 Pod 교체, Service 경로와 port-forward의 검증 범위를 구분합니다.',
+  reflection:
+    '새 이미지를 만드는 일, 배포 이미지를 바꾸는 일, 요청이 도착하는 일을 각각 어떻게 확인했나요?',
   references: [
     {
-      title: '원문 · MLOps 2주차 · 실제 도구 실습',
+      title: '원문 · MLOps 2주차 · 컨테이너 원리와 Kubernetes 실습',
       url: 'https://www.notion.so/f14ebb1cb38a82d6b28501d3693fd20e',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://kubernetes.io/docs/concepts/overview/components/',
+      title: '원문 · DevOps 6차시 · Docker와 AWS 컨테이너 서비스',
+      url: 'https://www.notion.so/392ebb1cb38a8286b9b501e0da4e0fdc',
     },
     {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://docs.docker.com/get-started/docker-concepts/',
+      title: '원문 · Docker에 대한 상세 · 실행 환경과 명령',
+      url: 'https://www.notion.so/36cebb1cb38a802d8d0fec8b47a33a22',
+    },
+    {
+      title: 'Docker 공식 · 컨테이너 실행',
+      url: 'https://docs.docker.com/get-started/docker-concepts/running-containers/',
+    },
+    {
+      title: 'Minikube 공식 · 시작하기',
+      url: 'https://minikube.sigs.k8s.io/docs/start/',
+    },
+    {
+      title: 'Kubernetes 공식 · kubectl 설치',
+      url: 'https://kubernetes.io/docs/tasks/tools/',
+    },
+    {
+      title: 'Kubernetes 공식 · Deployment',
+      url: 'https://kubernetes.io/docs/concepts/workloads/controllers/deployment/',
+    },
+    {
+      title: 'Kubernetes 공식 · Service',
+      url: 'https://kubernetes.io/docs/concepts/services-networking/service/',
+    },
+    {
+      title: 'Kubernetes 공식 · port-forward',
+      url: 'https://kubernetes.io/docs/reference/kubectl/generated/kubectl_port-forward/',
     },
   ],
   sourceWeek: 2,

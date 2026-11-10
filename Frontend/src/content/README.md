@@ -31,7 +31,7 @@
 
 ## 기존 데이터와의 관계
 
-기존 53개 강의의 주소·ID와 저장 키는 유지합니다. `reading` 배열은 MDX에서 검색용으로 추출하므로 직접 작성하지 않습니다. 화면 순서는 MDX가 결정하며 `nodeExample.afterSection`은 MDX에서 사용하지 않습니다. 기존 설정에 남은 값은 이전 데이터 호환용입니다.
+기존 53개 강의의 주소·ID와 저장 키는 유지하며, 1단원 개요를 추가해 현재 54개 강의를 제공합니다. `reading` 배열은 MDX에서 검색용으로 추출하므로 직접 작성하지 않습니다. 화면 순서는 MDX가 결정하며 `nodeExample.afterSection`은 MDX에서 사용하지 않습니다. 기존 설정에 남은 값은 이전 데이터 호환용입니다.
 
 `advanced`는 `<AdvancedReadings />`로 표시합니다. `<LessonSummary>...</LessonSummary>`에는 MDX로 핵심 정리 본문을 작성합니다. 기존 빈 태그에서는 `caution`을 표시합니다. `reflection`은 `<Reflection />`, `references`는 `<References />`가 표시합니다. 본문에 이 태그를 넣지 않으면 해당 영역도 나오지 않습니다. 원한다면 심화 내용도 MDX에 직접 작성하고 `<Reveal>`로 감쌀 수 있습니다.
 

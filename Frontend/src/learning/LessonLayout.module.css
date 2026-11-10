@@ -261,7 +261,7 @@
 }
 .reflection {
   padding: var(--space-lg) 0;
-  border-block: 1px solid var(--color-rule);
+  border: 0;
 }
 .reflection > strong {
   color: var(--color-ink);
@@ -694,19 +694,6 @@
   background: var(--color-paper);
   resize: vertical;
 }
-.optionalActivity {
-  margin-block: var(--space-xl);
-  padding-block: var(--space-md);
-  padding-inline: var(--space-lg);
-  border: 1px solid var(--color-rule-2);
-  border-radius: var(--radius-card);
-  background: var(--color-paper-2);
-}
-.optionalActivity > section {
-  border: 0;
-  background: transparent;
-  padding-inline: 0;
-}
 .understanding label[data-answer-state='success'] {
   color: var(--color-success);
   background: color-mix(in oklab, var(--color-success) 7%, var(--color-paper));
@@ -714,16 +701,6 @@
 .understanding label[data-answer-state='error'] {
   color: var(--color-error);
   background: color-mix(in oklab, var(--color-error) 7%, var(--color-paper));
-}
-.optionalActivity summary {
-  padding-block: var(--space-xs);
-  cursor: pointer;
-  color: var(--color-ink);
-  font-size: 16px;
-  font-weight: 600;
-}
-.optionalActivity[open] > summary {
-  margin-bottom: var(--space-lg);
 }
 .article pre {
   overflow-x: auto;
@@ -858,11 +835,21 @@
   padding-left: var(--space-lg);
   line-height: 1.9;
 }
-.article > blockquote {
-  padding: var(--space-lg);
+.article blockquote {
+  padding: var(--space-md) var(--space-lg);
   margin-block: var(--space-lg);
-  border-block: 1px solid var(--color-rule);
+  margin-inline: 0;
+  border: 0;
+  border-inline-start: 3px solid var(--color-accent);
+  background: var(--color-accent-wash);
+  color: var(--color-ink-2);
   line-height: 1.9;
+}
+.article blockquote > :first-child {
+  margin-top: 0;
+}
+.article blockquote > :last-child {
+  margin-bottom: 0;
 }
 .article :is(button, a, summary, input, textarea, select):focus-visible,
 .main :is(button, a):focus-visible,

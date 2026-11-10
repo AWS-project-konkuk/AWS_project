@@ -29,7 +29,7 @@ const connected = (id: string, changes: Record<string, Answer> = {}): LabState =
 };
 describe('개념과 주차 종합 과정 분리', () => {
   it('기존 주소와 독립된 피처·검색 실습을 제공한다', () => {
-    expect(lessons).toHaveLength(53);
+    expect(lessons).toHaveLength(54);
     expect(lessons.filter((l) => l.activity)).toHaveLength(32);
     expect(lessonById['feature-workflow'].week).toBe(5);
     expect(lessonById['rag-workflow'].week).toBe(6);

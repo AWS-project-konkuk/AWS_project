@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import styles from './Activity.module.css';
 import machine from './MachineActivity.module.css';
 
 type Program = 'idle' | 'running' | 'interrupted' | 'complete';
@@ -90,11 +89,10 @@ export function MachineActivity() {
       };
     });
   return (
-    <section className={styles.activity} aria-label="EC2 시작과 프로그램 실행 실습">
-      <header>
-        <h3>컴퓨터를 켜면 학습도 시작될까요?</h3>
-        <small>교육용 모형 · 버튼 한 번으로 리뷰 한 묶음 계산 · 실제 AWS 실행 없음</small>
-      </header>
+    <>
+      <p className={machine.note}>
+        계산 한 단계 진행 버튼을 누를 때마다 리뷰 한 묶음을 계산합니다.
+      </p>
       <ol className={machine.instructions}>
         <li>EC2를 켜고, 프로그램도 실행 중인지 확인하세요.</li>
         <li>학습 프로그램을 실행하고 계산을 한 단계 진행한 뒤, EC2를 중지하세요.</li>
@@ -157,6 +155,6 @@ export function MachineActivity() {
       <button type="button" onClick={() => setState(initial)}>
         처음부터 다시 해보기
       </button>
-    </section>
+    </>
   );
 }
