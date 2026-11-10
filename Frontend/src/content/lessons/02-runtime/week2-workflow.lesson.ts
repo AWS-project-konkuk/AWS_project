@@ -5,17 +5,17 @@ export default defineMdxLesson({
   id: 'week2-workflow',
   unit: 1,
   order: 8,
-  title: '실습',
+  title: '실습 · 학습된 모델을 Pod 안에서 서비스하기',
   minutes: 30,
   summary:
-    '이미지 버전과 장애 복구 설정을 하나씩 바꿔 서비스를 복구하고, 로컬 추가 실습에서 실행본과 응답을 확인합니다.',
+    '검증된 모델·서빙 환경·Pod·Deployment·Service를 연결해, 학습된 모델이 사용자에게 예측을 제공하는 흐름을 만듭니다.',
   scenario:
-    '이미지·관리 선언·요청 경로를 나누어 연결하고, 버전 불일치와 장애를 각각 수정한 뒤 응답을 비교합니다.',
-  concepts: ['노드 종합 실습', '이미지 버전', 'Pod 교체', '요청·응답 확인'],
+    '모델 파일과 이미지를 두 Pod 안의 서빙 컨테이너에 전달하고, 실행 관리와 사용자 요청을 나누어 예측 응답까지 추적합니다.',
+  concepts: ['MLOps의 모델 서빙', '컨테이너 실행 환경', 'Pod 안의 추론', 'Kubernetes의 실행 관리'],
   caution:
     '브라우저는 교육용 모형입니다. 실제 실습에서는 컨테이너 재시작과 Pod 교체, Service 경로와 port-forward의 검증 범위를 구분합니다.',
   reflection:
-    '새 이미지를 만드는 일, 배포 이미지를 바꾸는 일, 요청이 도착하는 일을 각각 어떻게 확인했나요?',
+    '모델 파일만 있을 때 무엇이 부족한가요? 이미지·컨테이너·Pod·Deployment·Service의 역할로 설명해 보세요.',
   references: [
     {
       title: '원문 · MLOps 2주차 · 컨테이너 원리와 Kubernetes 실습',
@@ -60,9 +60,14 @@ export default defineMdxLesson({
   experiment: '워크플로 실행',
   nodes: [
     {
+      id: 'model',
+      title: '검증된 모델 model-v1',
+      detail: '학습·평가가 끝난 모델을 각 서빙 컨테이너가 로딩합니다.',
+    },
+    {
       id: 'image',
-      title: '이미지 빌드',
-      detail: '코드·의존성으로 실행 템플릿을 만듭니다.',
+      title: '서빙 컨테이너 이미지',
+      detail: '추론 코드·Python·라이브러리를 담은 실행 환경입니다.',
     },
     {
       id: 'controller',
@@ -81,12 +86,12 @@ export default defineMdxLesson({
     },
     {
       id: 'pod1',
-      title: 'Pod 1',
-      detail: '장애 후 같은 이미지로 교체되는 복제본입니다.',
+      title: 'Pod 1 · 서빙 컨테이너',
+      detail: '컨테이너 안의 앱이 모델 파일을 로딩하고 추론합니다.',
     },
     {
       id: 'pod2',
-      title: 'Pod 2',
+      title: 'Pod 2 · 서빙 컨테이너',
       detail: '같은 이미지로 실행하는 두 번째 복제본입니다.',
     },
     {
@@ -98,8 +103,8 @@ export default defineMdxLesson({
   fields: [
     {
       id: 'image',
-      label: '빌드한 이미지 태그',
-      initial: 'v2',
+      label: '서빙 이미지 태그',
+      initial: 'v1',
       options: [
         {
           value: 'v1',
@@ -131,7 +136,7 @@ export default defineMdxLesson({
     {
       id: 'healing',
       label: '장애 뒤 복제본 복구',
-      initial: 'off',
+      initial: 'on',
       options: [
         {
           value: 'off',
@@ -142,7 +147,7 @@ export default defineMdxLesson({
           label: '원하는 복제본 2개로 복구',
         },
       ],
-      help: 'Pod 1에 장애가 발생했다고 가정합니다.',
+      help: '기본 실습은 사용 상태로 둡니다. 확장에서 사용 안 함으로 바꾸면 Pod 1 장애를 복구하지 않는 경우를 비교합니다.',
     },
   ],
 });

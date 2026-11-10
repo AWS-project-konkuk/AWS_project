@@ -28,7 +28,7 @@
 | 5 | docker-image | 이미지와 컨테이너의 관계 | 템플릿 재사용과 실행 상태·쓰기 레이어 분리 |
 | 6 | k8s-basics | Kubernetes란? | 원하는 상태와 Pod·Deployment·Service |
 | 7 | k8s-control-traffic | Pod 배치와 요청 전달의 경로 나누기 | 제어 관계와 사용자 요청, 노드 라벨과 Pod 라벨 |
-| 8 | week2-workflow | 실습 | 버전 불일치·복구·응답을 하나씩 확인 |
+| 8 | week2-workflow | 실습 · 학습된 모델을 Pod 안에서 서비스하기 | 모델·컨테이너 환경·Pod 관리·요청을 연결해 서빙까지 추적 |
 
 ### 참고 자료와 편집 기준
 

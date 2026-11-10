@@ -14,7 +14,7 @@
 | 1    | 5    | [docker-image](lessons/02-runtime/docker-image.mdx)                           | 이미지와 컨테이너의 관계                  |
 | 1    | 6    | [k8s-basics](lessons/02-runtime/k8s-basics.mdx)                               | Kubernetes란?                             |
 | 1    | 7    | [k8s-control-traffic](lessons/02-runtime/k8s-control-traffic.mdx)             | Pod 배치와 요청 전달의 경로 나누기        |
-| 1    | 8    | [week2-workflow](lessons/02-runtime/week2-workflow.mdx)                       | 실습                                      |
+| 1    | 8    | [week2-workflow](lessons/02-runtime/week2-workflow.mdx)                       | 실습 · 학습된 모델을 Pod 안에서 서비스하기 |
 | 2    | 1    | [storage-lifecycle](lessons/03-storage/storage-lifecycle.mdx)                 | 파일의 수명과 공유 조건 판단하기          |
 | 2    | 2    | [storage-compare](lessons/03-storage/storage-compare.mdx)                     | Block·File·Object의 접근 방식             |
 | 2    | 3    | [object-mlops](lessons/03-storage/object-mlops.mdx)                           | MLOps에서 Object Storage를 쓰는 이유      |

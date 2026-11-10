@@ -4,7 +4,7 @@ import { workflowEdge } from './engine';
 
 const working: Record<string, Record<string, Answer>> = {
   'week1-workflow': { strategy: 'tensor' },
-  'week2-workflow': { deployment: 'v2', healing: 'on' },
+  'week2-workflow': { image: 'v1', deployment: 'v1', healing: 'on' },
   'week3-workflow': { cache: 'on', shard: 'on', persistent: 'volume' },
   'week4-workflow': { operation: 'pull' },
   'week5-workflow': { window: 'hour', embedding: 'same', retrieval: 'relevant' },
@@ -27,6 +27,9 @@ export function applyWorkflowPreset(
     ...lab.answers,
     ...defaults,
     ...(mode === 'example' ? working[id] : {}),
+    ...(id === 'week2-workflow' && mode === 'repair'
+      ? { image: 'v2', deployment: 'v1', healing: 'off' }
+      : {}),
     _workflowQuiz: '',
   };
   const spec = resolveScenario(id, answers);
