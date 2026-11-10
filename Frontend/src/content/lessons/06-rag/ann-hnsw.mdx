@@ -3,7 +3,7 @@
 문서 벡터가 많아지면서 모든 거리 계산을 수행하는 검색이 느려집니다. 속도를 높이되 놓치는 결과가 있는지 평가해야 합니다.
 
 <Figure
-  src="/images/lessons/07-rag/ann-hnsw/intro.svg"
+  src="/images/lessons/06-rag/ann-hnsw/intro.svg"
   alt="모든 벡터를 비교하지 않고 빨리 찾으려면? 그림에 전체 후보, 이웃 그래프, 근접 후보의 모습을 표시했습니다."
   caption="전체 후보 · 이웃 그래프 · 근접 후보"
 />
@@ -15,7 +15,7 @@
 벡터 검색에서는 거리·유사도 기준과 탐색 방식이 별개입니다. 완전 탐색은 후보를 모두 비교하고 ANN은 일부 후보를 탐색해 속도와 재현율을 교환합니다. HNSW는 여러 층의 이웃 그래프를 활용해 대략적인 위치에서 가까운 후보로 탐색을 좁힙니다.
 
 <Figure
-  src="/images/lessons/07-rag/ann-hnsw/mechanism.svg"
+  src="/images/lessons/06-rag/ann-hnsw/mechanism.svg"
   alt="전체 후보 · 이웃 그래프 · 근접 후보의 동작 관계. 본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
   caption="본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
 />

@@ -3,7 +3,7 @@
 GPU 두 장이면 모델 메모리도 절반일까요? 각 GPU가 다른 데이터를 처리하고 기울기를 동기화합니다.
 
 <Figure
-  src="/images/lessons/05-gpu/data-parallel/intro.svg"
+  src="/images/lessons/04-gpu/data-parallel/intro.svg"
   alt="GPU 두 장이면 모델 메모리도 절반일까요? 그림에 모델 복제본 A, 모델 복제본 B, 기울기 동기화의 모습을 표시했습니다."
   caption="모델 복제본 A · 모델 복제본 B · 기울기 동기화"
 />
@@ -21,7 +21,7 @@ GPU 두 장이면 모델 메모리도 절반일까요? 각 GPU가 다른 데이�
 연결을 따라가며 확인한 자료는 **기울기 g1 · 기울기 g2**입니다. 처리량을 높이는 목적과 모델을 여러 장치에 나눠 담는 목적을 구분합니다. 동기화 비용과 데이터 공급이 커지면 GPU를 추가해도 선형으로 빨라지지 않습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/data-parallel/mechanism.svg"
+  src="/images/lessons/04-gpu/data-parallel/mechanism.svg"
   alt="모델 복제본 A · 모델 복제본 B · 기울기 동기화의 비교. 각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
   caption="각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
 />

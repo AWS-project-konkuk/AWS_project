@@ -3,7 +3,7 @@
 학습 코드 한 줄을 바꿨는데 데이터 다운로드와 전처리까지 매번 다시 실행됩니다. 반대로 필요한 재학습을 건너뛰면 오래된 모델을 평가할 수 있습니다.
 
 <Figure
-  src="/images/lessons/04-reproducibility/dvc-pipeline/intro.svg"
+  src="/images/lessons/03-reproducibility/dvc-pipeline/intro.svg"
   alt="코드 한 줄을 바꾸면 어디까지 다시 실행할까요? 그림에 전처리 단계, 학습 단계, 평가 단계의 모습을 표시했습니다."
   caption="전처리 단계 · 학습 단계 · 평가 단계"
 />
@@ -15,7 +15,7 @@
 dvc.yaml은 단계의 명령(cmd), 의존 자료(deps), 결과(outs), 추적할 파라미터(params)를 정의합니다. dvc.lock은 실행에 사용한 상태를 기록합니다. DVC는 선언한 의존성을 기준으로 변경과 캐시 재사용 가능성을 판단하므로 누락한 입력은 자동으로 알아내지 못합니다.
 
 <Figure
-  src="/images/lessons/04-reproducibility/dvc-pipeline/mechanism.svg"
+  src="/images/lessons/03-reproducibility/dvc-pipeline/mechanism.svg"
   alt="전처리 단계 · 학습 단계 · 평가 단계의 동작 관계. 각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
   caption="각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
 />

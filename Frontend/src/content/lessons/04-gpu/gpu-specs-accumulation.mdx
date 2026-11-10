@@ -3,7 +3,7 @@
 배치를 늘렸더니 OOM이 발생합니다. GPU 수를 늘리기 전에 어떤 메모리가 필요한지, 배치를 나누어 계산할 수 있는지 판단합니다.
 
 <Figure
-  src="/images/lessons/05-gpu/gpu-specs-accumulation/intro.svg"
+  src="/images/lessons/04-gpu/gpu-specs-accumulation/intro.svg"
   alt="배치를 나누어 계산하면 무엇이 달라질까요? 그림에 마이크로배치, 기울기 누적, 모델 갱신의 모습을 표시했습니다."
   caption="마이크로배치 · 기울기 누적 · 모델 갱신"
 />
@@ -15,7 +15,7 @@
 VRAM 용량은 모델·활성값·그래디언트·옵티마이저 상태가 들어갈 공간을 제한하고 메모리 대역폭은 장치 안의 자료 이동에 영향을 줍니다. 정밀도별 연산 성능과 GPU 간 통신도 구분합니다. 특정 모델 크기를 VRAM 용량 하나로 고정해 추천하지 않습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/gpu-specs-accumulation/mechanism.svg"
+  src="/images/lessons/04-gpu/gpu-specs-accumulation/mechanism.svg"
   alt="마이크로배치 · 기울기 누적 · 모델 갱신의 비교. 세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
   caption="세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
 />

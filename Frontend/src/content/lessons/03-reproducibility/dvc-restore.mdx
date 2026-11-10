@@ -3,7 +3,7 @@
 코드만 v1으로 돌리면 데이터도 v1일까요? Git 포인터 변경과 작업 공간의 데이터 복원을 구분합니다.
 
 <Figure
-  src="/images/lessons/04-reproducibility/dvc-restore/intro.svg"
+  src="/images/lessons/03-reproducibility/dvc-restore/intro.svg"
   alt="코드만 v1으로 돌리면 데이터도 v1일까요? 그림에 Git 메타데이터, 로컬 캐시, 작업 파일의 모습을 표시했습니다."
   caption="Git 메타데이터 · 로컬 캐시 · 작업 파일"
 />
@@ -21,7 +21,7 @@ Git으로 과거 커밋에 이동하면 소스 코드와 DVC 메타데이터가 
 연결을 따라가며 확인한 자료는 **v1 해시 · v1 실제 파일 · v1 작업 데이터**입니다. 캐시 부재와 원격 접근 실패를 구분해 조사하세요. 같은 데이터 파일을 복원한 뒤에도 동일한 학습 결과를 비교하려면 환경·파라미터·난수 조건을 함께 기록해야 합니다.
 
 <Figure
-  src="/images/lessons/04-reproducibility/dvc-restore/mechanism.svg"
+  src="/images/lessons/03-reproducibility/dvc-restore/mechanism.svg"
   alt="Git 메타데이터 · 로컬 캐시 · 작업 파일의 동작 관계. 각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
   caption="각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
 />

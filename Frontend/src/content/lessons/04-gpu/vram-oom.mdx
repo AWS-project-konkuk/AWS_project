@@ -3,7 +3,7 @@
 가중치가 들어가는데도 왜 OOM이 날까요? 배치와 정밀도를 조절해 메모리 예산을 맞춥니다.
 
 <Figure
-  src="/images/lessons/05-gpu/vram-oom/intro.svg"
+  src="/images/lessons/04-gpu/vram-oom/intro.svg"
   alt="가중치가 들어가는데도 왜 OOM이 날까요? 그림에 모델 가중치, 활성값·기울기, 옵티마이저 상태의 모습을 표시했습니다."
   caption="모델 가중치 · 활성값·기울기 · 옵티마이저 상태"
 />
@@ -15,7 +15,7 @@
 VRAM에는 가중치뿐 아니라 활성값·기울기·옵티마이저 상태 등이 올라갑니다. 배치가 커지면 활성값을 위한 공간도 늘어납니다. 할당에 필요한 공간이 부족하면 OOM이 발생하며 GPU 사용률이 높다는 것과는 다른 문제입니다.
 
 <Figure
-  src="/images/lessons/05-gpu/vram-oom/mechanism.svg"
+  src="/images/lessons/04-gpu/vram-oom/mechanism.svg"
   alt="모델 가중치 · 활성값·기울기 · 옵티마이저 상태의 비교. 세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
   caption="세 항목은 비교·구성 요소이며 화살표로 자료 이동을 뜻하지 않습니다."
 />

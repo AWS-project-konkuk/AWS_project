@@ -3,7 +3,7 @@
 모델을 한 GPU에 담을 수 없다면? 모델의 서로 다른 부분을 GPU에 배치합니다.
 
 <Figure
-  src="/images/lessons/05-gpu/model-parallel/intro.svg"
+  src="/images/lessons/04-gpu/model-parallel/intro.svg"
   alt="모델을 한 GPU에 담을 수 없다면? 그림에 앞쪽 레이어, 중간 활성값, 뒤쪽 레이어의 모습을 표시했습니다."
   caption="앞쪽 레이어 · 중간 활성값 · 뒤쪽 레이어"
 />
@@ -15,7 +15,7 @@
 큰 모델이 한 GPU에 들어가지 않으면 모델을 나눠 여러 GPU에 배치할 수 있습니다. 여기서는 앞 레이어와 뒤 레이어를 나누는 방식을 모델 병렬의 예로 사용합니다. 중간 활성값이 GPU 사이를 이동해야 다음 부분의 계산이 진행됩니다.
 
 <Figure
-  src="/images/lessons/05-gpu/model-parallel/mechanism.svg"
+  src="/images/lessons/04-gpu/model-parallel/mechanism.svg"
   alt="앞쪽 레이어 · 중간 활성값 · 뒤쪽 레이어의 동작 관계. 본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
   caption="본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
 />

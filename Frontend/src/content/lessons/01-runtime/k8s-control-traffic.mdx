@@ -3,7 +3,7 @@
 GPU 서버에 Pod를 배치했는데 Service로 보낸 요청이 도착하지 않습니다. 올바른 노드에 배치됐다는 사실만으로 요청 대상이 되는 것은 아닙니다.
 
 <Figure
-  src="/images/lessons/02-runtime/k8s-control-traffic/intro.svg"
+  src="/images/lessons/01-runtime/k8s-control-traffic/intro.svg"
   alt="배치된 Pod에 요청이 왜 안 갈까요? 그림에 원하는 Pod 상태, 실행 노드, Service 대상의 모습을 표시했습니다."
   caption="원하는 Pod 상태 · 실행 노드 · Service 대상"
 />
@@ -15,7 +15,7 @@ GPU 서버에 Pod를 배치했는데 Service로 보낸 요청이 도착하지 �
 API Server는 객체 변경을 받고 etcd는 API 객체 상태를 저장합니다. 컨트롤러는 원하는 상태와 실제 상태의 차이를 조정하고 Scheduler는 아직 배치되지 않은 Pod의 노드를 선택합니다. kubelet과 컨테이너 런타임은 노드에서 컨테이너 실행을 담당합니다.
 
 <Figure
-  src="/images/lessons/02-runtime/k8s-control-traffic/mechanism.svg"
+  src="/images/lessons/01-runtime/k8s-control-traffic/mechanism.svg"
   alt="원하는 Pod 상태 · 실행 노드 · Service 대상의 동작 관계. 각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
   caption="각 행의 화살표 옆에서 전달 자료 또는 참조 관계를 확인하세요."
 />
