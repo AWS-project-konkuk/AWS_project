@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="555" viewBox="0 0 1000 555">
+<rect width="1000" height="555" fill="#ffffff"/>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#12617a"/></marker>
+  <style>
+    text{font-family:Arial,'Noto Sans',sans-serif} .t{fill:#fff;font-weight:700;font-size:24px;text-anchor:middle}.s{fill:#fff;font-weight:700;font-size:20px;text-anchor:middle}.orange{fill:#f47e00}.cyan{fill:#04a5d8}.navy{fill:#06516e}.lbl{font-weight:700;font-size:23px;text-anchor:middle}.dash{stroke:#376778;stroke-width:1.6;stroke-dasharray:3.5 5;fill:none}
+  </style>
+</defs>
+<!-- Pod frame -->
+<rect x="70" y="90" width="240" height="250" fill="#fff" stroke="#075671" stroke-width="2"/>
+<rect x="70" y="90" width="240" height="46" fill="#075671"/>
+<text class="t" x="190" y="122">Pod</text>
+<rect x="97" y="154" width="188" height="67" fill="#075671"/>
+<text class="s" x="191" y="184">volumeMounts:</text><text class="s" x="191" y="207">/foo</text>
+<rect x="168" y="236" width="188" height="80" fill="#075671"/>
+<text class="s" x="262" y="261">Volumes:</text><text class="s" x="262" y="284">PVC</text><text class="s" x="262" y="307">claimName</text>
+<!-- Dotted illustrative pod linkage -->
+<path class="dash" d="M 105 334 L 105 279 Q 105 277 115 277 L 167 277"/>
+<ellipse class="dash" cx="256" cy="274" rx="95" ry="46"/>
+<!-- PVC frame -->
+<rect x="415" y="146" width="241" height="214" fill="white" stroke="#ed8600" stroke-width="2"/>
+<rect x="415" y="146" width="241" height="65" fill="#fa8000"/>
+<text class="t" x="535" y="170">Persistent</text><text class="t" x="535" y="196">Volume Claim</text>
+<text x="432" y="245" fill="#e27700" font-size="22">- 100 Gi</text>
+<text x="432" y="286" fill="#e27700" font-size="22">- Selector</text>
+<text x="432" y="327" fill="#e27700" font-size="20">- StorageClassName</text>
+<ellipse class="dash" cx="545" cy="317" rx="108" ry="30"/>
+<text class="lbl orange" x="535" y="122">PVC</text>
+<!-- PV Static -->
+<rect x="727" y="40" width="238" height="141" fill="white" stroke="#58c8e8" stroke-width="2"/>
+<rect x="727" y="40" width="238" height="65" fill="#70cbe7"/>
+<text class="t" x="846" y="69">Persistent</text><text class="t" x="846" y="96">Volume</text>
+<text class="lbl cyan" x="846" y="149">Static</text>
+<text class="lbl cyan" x="846" y="26">PV</text>
+<!-- Storage class Dynamic -->
+<rect x="727" y="220" width="238" height="120" fill="white" stroke="#04a5d8" stroke-width="2"/>
+<rect x="727" y="220" width="238" height="49" fill="#04a5d8"/>
+<text class="t" x="846" y="252">StorageClass</text>
+<text class="lbl cyan" x="846" y="309">Dynamic</text>
+<!-- Connections -->
+<path d="M357 276 H404" stroke="#12617a" stroke-width="1.7" stroke-dasharray="3 5" fill="none" marker-end="url(#arrow)"/>
+<path d="M656 315 H716" stroke="#12617a" stroke-width="1.7" stroke-dasharray="3 5" fill="none" marker-end="url(#arrow)"/>
+<text x="698" y="300" fill="#07516d" font-size="21" font-weight="700" text-anchor="middle">BIND</text>
+<!-- Pod 2 -->
+<ellipse class="dash" cx="215" cy="460" rx="130" ry="84"/>
+<rect x="120" y="418" width="188" height="121" fill="white" stroke="#075671" stroke-width="2"/>
+<rect x="120" y="418" width="188" height="47" fill="#075671"/>
+<text class="t" x="214" y="449">Pod 2</text>
+</svg>

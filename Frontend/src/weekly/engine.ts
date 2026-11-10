@@ -675,15 +675,19 @@ export function workflowGoals(lesson: Lesson, lab: LabState): GoalResult[] {
       passed: !!current,
       hint: '전체 실행 또는 다음 단계로 마지막 단계까지 확인하세요.',
     },
-    {
-      id: 'compare',
-      label: '조건 실패와 개선 성공의 결과 비교',
-      passed:
-        history.some((h) => h.diagnostic && !h.success) &&
-        history.some((h) => h.success) &&
-        new Set(history.map((h) => h.signature)).size >= 2,
-      hint: '연결 오류 외에 OOM·버전 불일치·평가 미달 등 조건 실패를 한 번 관찰하고 개선하세요.',
-    },
+    ...(lesson.id === 'week3-workflow'
+      ? []
+      : [
+          {
+            id: 'compare',
+            label: '조건 실패와 개선 성공의 결과 비교',
+            passed:
+              history.some((h) => h.diagnostic && !h.success) &&
+              history.some((h) => h.success) &&
+              new Set(history.map((h) => h.signature)).size >= 2,
+            hint: '연결 오류 외에 OOM·버전 불일치·평가 미달 등 조건 실패를 한 번 관찰하고 개선하세요.',
+          },
+        ]),
     {
       id: 'explain',
       label: '왜 달라졌는지 확인 문제에 답하기',

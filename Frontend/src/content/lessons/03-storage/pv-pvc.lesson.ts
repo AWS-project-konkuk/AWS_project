@@ -8,29 +8,36 @@ export default defineMdxLesson({
   title: 'PV와 PVC로 Pod 밖의 데이터 연결',
   summary: '저장 요청과 실제 볼륨을 구분하고 Pod 교체를 관찰합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
+    '학습 Pod의 /checkpoints에 저장한 모델이 Pod 교체 후 사라졌습니다. PVC로 필요한 저장 조건을 요청하고 새 Pod가 같은 볼륨을 다시 마운트하도록 구성하세요.',
   concepts: ['Pod', 'PVC 요청', 'PV 볼륨'],
   assessment: {
     question: 'Pod 교체 후에도 기록 파일을 유지하려면?',
-    options: ['같은 Pod 이름을 다시 사용하면 충분하다', '조건에 맞게 연결한 영구 볼륨을 사용한다'],
+    options: [
+      '같은 Pod 이름을 다시 사용하면 충분하다',
+      '조건에 맞게 연결한 영구 볼륨을 사용한다',
+      '새 Pod의 컨테이너 안에 같은 이름의 폴더만 만든다',
+      'PVC를 생성하기만 하고 Pod의 볼륨과 마운트 설정은 생략한다',
+    ],
     correct: 1,
-    explanation: '이름이 같아도 새 Pod의 임시 공간은 이전 공간과 다릅니다.',
+    explanation:
+      'Pod 이름을 재사용해도 컨테이너의 임시 파일은 이어지지 않습니다. Pod와 수명이 분리된 볼륨을 PVC로 참조해야 합니다.',
   },
   advanced: [
     {
-      title: '심화 · CSI와 JuiceFS',
-      body: 'CSI는 저장소 플러그인이 볼륨 생성·연결·마운트 등을 구현하는 표준 인터페이스입니다. JuiceFS는 파일 메타데이터 엔진, 객체 저장소의 데이터, 클라이언트 캐시를 결합합니다. 캐시 적중과 최초 읽기를 구분하며 용량·일관성·장애 복구 비용도 함께 판단합니다.',
+      title: '심화 · 접근 모드와 CSI',
+      body: 'RWO는 단일 노드의 읽기·쓰기 마운트 조건이며 Pod 하나를 뜻하지 않습니다. 단일 Pod 제한에는 CSI가 지원하는 RWOP를 검토합니다. ROX·RWX 지원 여부도 드라이버마다 다르므로 PVC 요청과 실제 스토리지 기능을 함께 확인합니다.',
     },
   ],
-  caution: '이름이 같아도 새 Pod의 임시 공간은 이전 공간과 다릅니다.',
-  reflection: 'Pod 교체 후에도 기록 파일을 유지하려면?',
+  caution:
+    'PV와 PVC는 백업이 아닙니다. 실제 삭제·복구 동작은 기반 저장소와 reclaim policy에 달려 있습니다.',
+  reflection: 'PVC가 Pending 상태라면 어떤 요청 조건과 제공 조건을 비교해야 할까요?',
   references: [
     {
       title: '원문 · MLOps 4주차 · 실제 도구 실습',
       url: 'https://www.notion.so/02eebb1cb38a82a5b14d811093182c3f',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: 'Kubernetes 공식 · PersistentVolume과 PersistentVolumeClaim',
       url: 'https://kubernetes.io/docs/concepts/storage/persistent-volumes/',
     },
   ],
@@ -87,41 +94,6 @@ export default defineMdxLesson({
     nextLesson: 'week3-workflow',
     kind: '구성 관계',
     afterSection: 1,
-  },
-  activity: {
-    kind: 'volume',
-    fields: [
-      {
-        id: 'persistent',
-        label: '저장 경로',
-        initial: 'ephemeral',
-        options: [
-          {
-            value: 'ephemeral',
-            label: 'Pod 임시 저장',
-          },
-          {
-            value: 'pv',
-            label: 'PVC로 연결한 영구 볼륨',
-          },
-        ],
-        help: '선택을 바꾸고 결과를 비교하세요.',
-      },
-    ],
-    question: 'Pod 교체 후에도 기록 파일을 유지하려면?',
-    options: [
-      {
-        value: 'b',
-        label: '같은 Pod 이름을 다시 사용하면 충분하다',
-      },
-      {
-        value: 'a',
-        label: '조건에 맞게 연결한 영구 볼륨을 사용한다',
-      },
-    ],
-    correct: 'a',
-    explanation: '이름이 같아도 새 Pod의 임시 공간은 이전 공간과 다릅니다.',
-    task: '임시 저장과 영구 볼륨의 Pod 교체 결과를 비교하세요.',
   },
   practice: 'interactive',
   experiment: '흐름 확인',

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1916" height="821" viewBox="0 0 1916 821">
+  <defs>
+    <style>
+      text { font-family: Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+      .panel { fill: #ffffff; stroke: #153a6b; stroke-width: 3; }
+      .hdrtext { font-size: 44px; font-weight: 700; fill: #111111; dominant-baseline: middle; }
+      .podTitle { font-size: 48px; font-weight: 700; fill: #111111; text-anchor: middle; }
+      .podBody { font-size: 34px; font-weight: 500; fill: #222222; text-anchor: middle; }
+      .midTextRed { font-size: 48px; font-weight: 700; fill: #ff2a22; text-anchor: middle; }
+      .midTextGreen { font-size: 44px; font-weight: 700; fill: #0c7d2a; text-anchor: middle; }
+      .arrow { stroke: #153a6b; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#153a6b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1916" height="821" fill="#ffffff"/>
+
+  <!-- Left panel -->
+  <rect x="49" y="44" width="892" height="735" class="panel"/>
+  <rect x="49" y="44" width="892" height="99" fill="#f8e7e7" stroke="none"/>
+  <circle cx="112" cy="93" r="29" fill="none" stroke="#ef2f25" stroke-width="5"/>
+  <path d="M100 81 L124 105 M124 81 L100 105" stroke="#ef2f25" stroke-width="5" stroke-linecap="round"/>
+  <text x="178" y="93" class="hdrtext">문제: emptyDir</text>
+
+  <rect x="137" y="182" width="717" height="192" fill="#ffffff" stroke="#153a6b" stroke-width="3"/>
+  <rect x="137" y="182" width="717" height="74" fill="#dbe8f7" stroke="none"/>
+  <text x="495.5" y="233" class="podTitle">기존 Pod</text>
+  <text x="495.5" y="306" class="podBody">/checkpoints</text>
+  <text x="495.5" y="351" class="podBody">emptyDir</text>
+
+  <line x1="495.5" y1="386" x2="495.5" y2="425" class="arrow"/>
+  <text x="495.5" y="488" class="midTextRed">Pod 삭제 → 데이터 소실</text>
+  <line x1="495.5" y1="520" x2="495.5" y2="559" class="arrow"/>
+
+  <rect x="137" y="596" width="717" height="150" fill="#ffffff" stroke="#153a6b" stroke-width="3"/>
+  <rect x="137" y="596" width="717" height="74" fill="#dbe8f7" stroke="none"/>
+  <text x="495.5" y="647" class="podTitle">새 Pod</text>
+  <text x="495.5" y="706" class="podBody">빈 emptyDir</text>
+
+  <!-- Right panel -->
+  <rect x="975" y="44" width="892" height="735" class="panel"/>
+  <rect x="975" y="44" width="892" height="99" fill="#eaf5ea" stroke="none"/>
+  <circle cx="1038" cy="93" r="29" fill="none" stroke="#12a93c" stroke-width="5"/>
+  <path d="M1024 94 L1035 105 L1054 78" stroke="#12a93c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="1104" y="93" class="hdrtext">해결: PVC + PV</text>
+
+  <rect x="1058" y="182" width="717" height="150" fill="#ffffff" stroke="#153a6b" stroke-width="3"/>
+  <rect x="1058" y="182" width="717" height="74" fill="#dbe8f7" stroke="none"/>
+  <text x="1416.5" y="233" class="podTitle">기존 Pod</text>
+  <text x="1416.5" y="292" class="podBody">PVC 사용</text>
+
+  <line x1="1416.5" y1="347" x2="1416.5" y2="405" class="arrow"/>
+  <rect x="1048" y="426" width="737" height="88" fill="#eef7ee" stroke="#6aa56b" stroke-width="3"/>
+  <text x="1416.5" y="481" class="midTextGreen">PV — 체크포인트 유지</text>
+  <line x1="1416.5" y1="517" x2="1416.5" y2="575" class="arrow"/>
+
+  <rect x="1058" y="596" width="717" height="150" fill="#ffffff" stroke="#153a6b" stroke-width="3"/>
+  <rect x="1058" y="596" width="717" height="74" fill="#dbe8f7" stroke="none"/>
+  <text x="1416.5" y="647" class="podTitle">새 Pod</text>
+  <text x="1416.5" y="706" class="podBody">기존 데이터 재사용</text>
+</svg>

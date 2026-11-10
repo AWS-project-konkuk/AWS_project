@@ -23,12 +23,12 @@ function useLesson() {
 export function LessonMdxProvider({ lesson, children }: { lesson: Lesson; children: ReactNode }) {
   return <Context.Provider value={lesson}>{children}</Context.Provider>;
 }
-function NodeExample({ spec }: { spec?: NodeExampleSpec }) {
+function NodeExample({ spec, practice = false }: { spec?: NodeExampleSpec; practice?: boolean }) {
   const lesson = useLesson();
   const selected = spec ?? lesson.nodeExample;
   if (!selected)
     throw new Error(`${lesson.id}: NodeExample의 spec 또는 강의 설정의 nodeExample을 작성하세요.`);
-  return <InlineNodeExample lessonId={lesson.id} spec={selected} />;
+  return <InlineNodeExample lessonId={lesson.id} spec={selected} startInPractice={practice} />;
 }
 function Activity({ open = false }: { open?: boolean }) {
   const lesson = useLesson();
