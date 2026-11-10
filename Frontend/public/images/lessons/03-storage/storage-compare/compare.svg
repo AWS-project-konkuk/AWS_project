@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="330" viewBox="0 0 1050 330" role="img" aria-labelledby="title desc">
+<title id="title">Block, File, Object Storage 접근 방식 비교</title>
+<desc id="desc">블록은 주소로, 파일은 경로로, 오브젝트는 버킷과 키로 데이터에 접근한다.</desc>
+<rect width="1050" height="330" rx="18" fill="#ffffff"/>
+<g font-family="Arial, 'Noto Sans KR', 'Malgun Gothic', sans-serif" text-anchor="middle">
+<g transform="translate(20 20)">
+ <rect width="326" height="290" rx="16" fill="#F4F8FF" stroke="#D7E5FA"/>
+ <text x="163" y="49" font-size="25" font-weight="700" fill="#1F416E">Block Storage</text>
+ <g transform="translate(69 88)" stroke="#507DB8" stroke-width="2">
+  <rect width="188" height="100" rx="10" fill="#ffffff"/>
+  <rect x="10" y="10" width="51" height="37" rx="4" fill="#D4E7FF"/>
+  <rect x="68" y="10" width="51" height="37" rx="4" fill="#D4E7FF"/>
+  <rect x="126" y="10" width="51" height="37" rx="4" fill="#D4E7FF"/>
+  <rect x="10" y="54" width="51" height="36" rx="4" fill="#D4E7FF"/>
+  <rect x="68" y="54" width="51" height="36" rx="4" fill="#86B9EF"/>
+  <rect x="126" y="54" width="51" height="36" rx="4" fill="#D4E7FF"/>
+ </g>
+ <text x="163" y="226" font-size="19" font-weight="700" fill="#243449">블록 주소로 접근</text>
+ <text x="163" y="257" font-size="15" fill="#65748A">디스크처럼 사용</text>
+</g>
+<g transform="translate(362 20)">
+ <rect width="326" height="290" rx="16" fill="#F2FAF6" stroke="#D2EBDD"/>
+ <text x="163" y="49" font-size="25" font-weight="700" fill="#256B50">File Storage</text>
+ <g transform="translate(101 83)" fill="none" stroke="#479776" stroke-width="3" stroke-linejoin="round">
+  <path d="M4 26 Q4 17 14 17 H55 L70 32 H114 Q124 32 124 42 V104 Q124 114 114 114 H14 Q4 114 4 104Z" fill="#D5F3E4"/>
+  <rect x="29" y="47" width="70" height="55" rx="4" fill="white"/>
+  <path d="M40 63 H86 M40 75 H86 M40 87 H70" stroke-width="3"/>
+ </g>
+ <text x="163" y="226" font-size="19" font-weight="700" fill="#243449">파일 경로로 접근</text>
+ <text x="163" y="257" font-size="15" fill="#65748A">폴더와 파일 구조</text>
+</g>
+<g transform="translate(704 20)">
+ <rect width="326" height="290" rx="16" fill="#FFF7EE" stroke="#F4DFC8"/>
+ <text x="163" y="49" font-size="25" font-weight="700" fill="#A3682A">Object Storage</text>
+ <g transform="translate(102 84)" fill="none" stroke="#CC8B46" stroke-width="3" stroke-linejoin="round">
+  <path d="M0 21 L61 0 L122 21 L61 43 Z" fill="#FFE3BF"/>
+  <path d="M0 21 L61 43 L61 112 L0 90 Z" fill="#F5C891"/>
+  <path d="M122 21 L61 43 L61 112 L122 90 Z" fill="#FFD6A3"/>
+  <path d="M61 43 V112"/>
+  <rect x="73" y="57" width="35" height="26" rx="4" fill="white" stroke-width="2"/>
+  <path d="M80 65 H101 M80 73 H94" stroke-width="2"/>
+ </g>
+ <text x="163" y="226" font-size="19" font-weight="700" fill="#243449">버킷·키로 접근</text>
+ <text x="163" y="257" font-size="15" fill="#65748A">API로 객체 조회</text>
+</g>
+</g>
+</svg>

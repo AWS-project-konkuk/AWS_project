@@ -10,7 +10,7 @@ describe('강의 문서 작성과 자동 등록', () => {
     expect(lessonDocuments).toHaveLength(54);
     expect(lessonById['my-first-lesson']).toBeUndefined();
     expect(lessonById['ec2-compute'].reading[1].body).toContain('EC2');
-    expect(lessonDocuments.filter((document) => document.lesson.nodeExample)).toHaveLength(11);
+    expect(lessonDocuments.filter((document) => document.lesson.nodeExample)).toHaveLength(12);
   });
   it('0단원을 전체 흐름·EC2·S3 순서로 통합하고 삭제한 두 강의를 노출하지 않는다', () => {
     const foundation = lessonDocuments.filter((document) => document.lesson.week === 0);

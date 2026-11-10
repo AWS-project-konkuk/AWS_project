@@ -27,7 +27,7 @@ interface ExampleState {
   links: string[];
   extra?: Wire[];
 }
-function readState(raw: unknown, spec: NodeExampleSpec): ExampleState {
+function readState(raw: unknown, spec: NodeExampleSpec, startInPractice: boolean): ExampleState {
   try {
     const value = JSON.parse(String(raw));
     if (
@@ -54,7 +54,9 @@ function readState(raw: unknown, spec: NodeExampleSpec): ExampleState {
   } catch {
     /* Older or absent example records start with the worked example. */
   }
-  return { mode: 'example', links: spec.links.map((link) => link.id) };
+  return startInPractice
+    ? { mode: 'practice', links: [], extra: [] }
+    : { mode: 'example', links: spec.links.map((link) => link.id) };
 }
 function FitExample({
   container,
@@ -87,11 +89,19 @@ function FitExample({
   }, [container, fitView, expanded]);
   return null;
 }
-export function InlineNodeExample({ lessonId, spec }: { lessonId: string; spec: NodeExampleSpec }) {
+export function InlineNodeExample({
+  lessonId,
+  spec,
+  startInPractice = false,
+}: {
+  lessonId: string;
+  spec: NodeExampleSpec;
+  startInPractice?: boolean;
+}) {
   const key = `_inline:${spec.id}`;
   const raw = useLearningStore((state) => state.data.lessons[lessonId]?.answers[key]);
   const edit = useLearningStore((state) => state.edit);
-  const saved = useMemo(() => readState(raw, spec), [raw, spec]);
+  const saved = useMemo(() => readState(raw, spec, startInPractice), [raw, spec, startInPractice]);
   const [step, setStep] = useState(-1);
   const [feedback, setFeedback] = useState('');
   const [feedbackTone, setFeedbackTone] = useState<'success' | 'error' | 'info'>('info');
