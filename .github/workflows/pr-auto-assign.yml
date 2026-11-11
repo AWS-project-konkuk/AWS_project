@@ -1,0 +1,46 @@
+name: PR author auto assignment
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign-author:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # PR 코드는 체크아웃하거나 실행하지 않고 메타데이터만 수정합니다.
+      - name: Assign the pull request author
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            const author = pullRequest.user;
+
+            if (author.type === 'Bot') {
+              core.info('Bot authors are not assigned.');
+              return;
+            }
+
+            const { data: current } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: pullRequest.number,
+            });
+
+            if (current.assignees.some(({ login }) => login === author.login)) {
+              core.info('The author is already assigned.');
+              return;
+            }
+
+            const { data: updated } = await github.rest.issues.addAssignees({
+              ...context.repo,
+              issue_number: pullRequest.number,
+              assignees: [author.login],
+            });
+
+            if (!updated.assignees.some(({ login }) => login === author.login)) {
+              core.warning('The author is not eligible to be assigned in this repository.');
+            }
