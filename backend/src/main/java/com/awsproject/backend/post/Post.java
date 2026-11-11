@@ -1,21 +1,19 @@
 package com.awsproject.backend.post;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.time.OffsetDateTime;
 import tools.jackson.databind.JsonNode;
-
-import org.hibernate.type.SqlTypes;
-import org.hibernate.generator.EventType;
 
 @Entity
 @Table(name = "posts")
@@ -66,4 +64,38 @@ public class Post {
     @ColumnDefault("now()")
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public JsonNode getWorkflow() {
+        return workflow;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    
 }
