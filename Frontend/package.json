@@ -28,6 +28,7 @@
   "homepage": "https://github.com/AWS-project-konkuk/AWS_project#readme",
   "dependencies": {
     "@xyflow/react": "^12.12.0",
+    "axios": "1.21.1",
     "lucide-react": "^1.64.0",
     "motion": "14.9.0",
     "react": "^19.3.1",
