@@ -106,34 +106,6 @@ export default defineMdxLesson({
     kind: '구성 관계',
     afterSection: 1,
   },
-  activity: {
-    kind: 'container',
-    fields: [
-      {
-        id: 'copies',
-        label: '컨테이너 수',
-        initial: 2,
-        min: 1,
-        max: 6,
-        step: 1,
-        help: '동일 이미지에서 실행 인스턴스가 늘어납니다.',
-      },
-    ],
-    question: '이미지 하나로 가능한 것은?',
-    options: [
-      {
-        value: 'a',
-        label: '여러 컨테이너 실행',
-      },
-      {
-        value: 'b',
-        label: '실행 중인 컨테이너 하나만 유지',
-      },
-    ],
-    correct: 'a',
-    explanation: '이미지는 템플릿이며 여러 실행 인스턴스가 재사용합니다.',
-    task: '컨테이너 수를 바꾸고 공유 이미지와 개별 실행 상태를 구분하세요.',
-  },
   practice: 'interactive',
   experiment: '흐름 확인',
   nodes: [

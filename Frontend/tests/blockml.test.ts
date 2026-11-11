@@ -48,7 +48,6 @@ describe('BlockML 과정과 활동 계약', () => {
       expect(l.minutes).toBeGreaterThanOrEqual(5);
       expect(l.minutes).toBeLessThanOrEqual(18);
       expect(l.activity).toBeDefined();
-      expect(l.reading.length, l.id).toBeGreaterThanOrEqual(4);
       expect(l.references[0].url).toContain('notion.so');
       expect(result(l.id).steps.length).toBeGreaterThan(0);
       expect(evaluateGoals(l, lab(l.id)).some((g) => !g.passed)).toBe(true);

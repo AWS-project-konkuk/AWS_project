@@ -54,34 +54,6 @@ export default defineMdxLesson({
   ],
   sourceWeek: 2,
   mapStages: ['training', 'serving'],
-  activity: {
-    kind: 'replicas',
-    fields: [
-      {
-        id: 'replicas',
-        label: '원하는 복제본 수',
-        initial: 3,
-        min: 1,
-        max: 6,
-        step: 1,
-        help: '한 Pod가 사라진 뒤 원하는 수로 복구되는 과정을 봅니다.',
-      },
-    ],
-    question: '복제본 하나가 사라졌을 때 Deployment의 목표는?',
-    options: [
-      {
-        value: 'b',
-        label: '모델을 자동으로 다시 학습한다',
-      },
-      {
-        value: 'a',
-        label: '선언한 복제본 수로 다시 맞춘다',
-      },
-    ],
-    correct: 'a',
-    explanation: '실행 상태를 복구하는 것이며 모델 학습을 대신하지 않습니다.',
-    task: '복제본 수를 바꾸고 장애·복구 단계를 진행하세요.',
-  },
   practice: 'interactive',
   experiment: '흐름 확인',
   nodes: [

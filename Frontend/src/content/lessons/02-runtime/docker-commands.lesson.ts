@@ -53,24 +53,6 @@ export default defineMdxLesson({
   ],
   sourceWeek: 2,
   mapStages: ['training', 'serving'],
-  activity: {
-    kind: 'commands',
-    fields: [],
-    question: 'stop을 수행한 후의 컨테이너는?',
-    options: [
-      {
-        value: 'b',
-        label: '이미지까지 자동으로 모두 삭제된다',
-      },
-      {
-        value: 'a',
-        label: '종료 상태로 남아 있으며 rm으로 제거할 수 있다',
-      },
-    ],
-    correct: 'a',
-    explanation: '컨테이너 중지·삭제와 이미지 삭제는 서로 다릅니다.',
-    task: 'build → run → logs → stop → rm을 선택해 변화를 확인하세요.',
-  },
   practice: 'interactive',
   experiment: '흐름 확인',
   nodes: [
