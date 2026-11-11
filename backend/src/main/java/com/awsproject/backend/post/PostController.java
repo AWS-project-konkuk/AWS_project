@@ -21,8 +21,7 @@ public class PostController {
 
     @PostMapping 
     public ResponseEntity createPost(
-        @Valid @RequestBody CreatePostRequest request
-    ){
+        @Valid @RequestBody CreatePostRequest request){
         Post savedPost = postService.createPost(request.author(), request.password(), request.title(), request.body(), request.workflow());
         CreatePostResponse response = new CreatePostResponse(
             savedPost.getId(), 
@@ -30,8 +29,6 @@ public class PostController {
             savedPost.getTitle(), 
             savedPost.getCreatedAt());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-
     }
 
     
