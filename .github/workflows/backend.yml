@@ -20,7 +20,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - run: docker build --platform linux/amd64 -t backend-ci ./backend
+
+      - name: Build backend
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          docker build --platform linux/amd64 \
+            --secret id=SUPABASE_DB_URL,env=SUPABASE_DB_URL \
+            -t backend-ci ./backend
 
   publish:
     name: Publish backend image

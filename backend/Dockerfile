@@ -2,7 +2,8 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 
 COPY . .
-RUN sh ./gradlew --no-daemon test bootJar
+RUN --mount=type=secret,id=SUPABASE_DB_URL,env=SUPABASE_DB_URL,required=true \
+    sh ./gradlew --no-daemon test bootJar
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app
