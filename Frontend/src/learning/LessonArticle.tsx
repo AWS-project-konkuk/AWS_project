@@ -3,6 +3,7 @@ import { CheckCircle2, Clock3 } from 'lucide-react';
 import { chapterLabel } from '../curriculum/catalog';
 import type { Lesson } from '../curriculum/types';
 import { lessonBodies } from '../content/lessons';
+import { pilotLesson } from '../systemLab/model';
 import { WorkflowMap } from './WorkflowMap';
 import { LessonMdxProvider, lessonMdxComponents } from './LessonMdx';
 import styles from './LessonLayout.module.css';
@@ -58,17 +59,20 @@ export function LessonArticle({
         <section className={styles.practiceEntry} aria-label="실습 시작 안내">
           <h2>읽은 내용을 실습으로 확인하기</h2>
           <p>
-            예시 실행, 잘못된 구성 수정, 새 구성 만들기 순서로 연습하세요. 실습 화면의 완료 조건에서
-            남은 목표를 확인할 수 있습니다.
+            {lesson.id === pilotLesson
+              ? '시스템과 노드를 실행 상태로 바꾸고 입출력을 연결해 두 Pod의 응답을 확인하세요.'
+              : '예시 실행, 잘못된 구성 수정, 새 구성 만들기 순서로 연습하세요. 실습 화면의 완료 조건에서 남은 목표를 확인할 수 있습니다.'}
           </p>
           <button onClick={onStartPractice}>이제 실습 시작하기</button>
         </section>
       )}
       <WorkflowMap lesson={lesson} />
-      <p className={styles.documentEnd}>
-        원문 링크의 명령·YAML은 실제 환경에서 수행하는 추가 실습입니다. 사이트의 이해 확인과 별도로
-        진행하세요.
-      </p>
+      {lesson.id !== pilotLesson && (
+        <p className={styles.documentEnd}>
+          원문 링크의 명령·YAML은 실제 환경에서 수행하는 추가 실습입니다. 사이트의 이해 확인과
+          별도로 진행하세요.
+        </p>
+      )}
     </article>
   );
 }
