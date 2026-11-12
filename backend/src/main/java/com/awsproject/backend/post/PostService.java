@@ -1,7 +1,11 @@
 package com.awsproject.backend.post;
 
+import java.util.UUID;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import jakarta.transaction.Transactional;
 import tools.jackson.databind.JsonNode;
 
 @Service
@@ -18,6 +22,18 @@ public class PostService {
         String encodedPassword = passwordEncoder.encode(password);
         Post post = new Post(author, encodedPassword, title, body, workflow);
         return postRepository.save(post);
+    }
+
+    @Transactional
+    public void updatePost(UUID id, String password, String title, String body, JsonNode workflow) {
+        Post post = postRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다."));
+
+        boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
+        if (!isPasswordMatch) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        post.update(title, body, workflow);
     }
     
 }

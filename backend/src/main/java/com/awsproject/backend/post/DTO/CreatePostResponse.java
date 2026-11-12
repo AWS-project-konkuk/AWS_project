@@ -1,4 +1,4 @@
-package com.awsproject.backend.post;
+package com.awsproject.backend.post.DTO;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

@@ -7,6 +7,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.generator.EventType;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
@@ -32,6 +33,18 @@ public class Post {
     }
     public Post(String author, String password, String title, String body){
         this(author, password, title, body, null);
+    }
+
+    public void update(String title, String body, JsonNode workflow) {
+        if(title != null){
+            this.title = title;
+        }
+        if(body != null){
+            this.body = body;
+        }
+        if(workflow != null){
+            this.workflow = workflow;
+        }
     }
     @Id
     @Generated
@@ -60,8 +73,7 @@ public class Post {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    @Generated(event = EventType.INSERT)
-    @ColumnDefault("now()")
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
