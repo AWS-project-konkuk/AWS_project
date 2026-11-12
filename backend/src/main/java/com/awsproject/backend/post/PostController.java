@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,10 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
+import com.awsproject.backend.post.DTO.DeletePostRequest;
 import com.awsproject.backend.post.DTO.UpdatePostRequest;
-import com.awsproject.backend.post.DTO.deletePostRequest;
 
 import jakarta.validation.Valid;
+import tools.jackson.databind.JsonNode;
 
 @RestController 
 @RequestMapping ("/api/posts")
@@ -53,10 +55,16 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(
         @PathVariable UUID id,
-        @Valid @RequestBody deletePostRequest request
+        @Valid @RequestBody DeletePostRequest request
     ){
         postService.deletePost(id, request.password());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/workflow")
+    public ResponseEntity<JsonNode> getWorkflow(@PathVariable UUID id) {
+        JsonNode workflow = postService.getWorkflow(id);
+        return ResponseEntity.ok(workflow);
     }
 
 

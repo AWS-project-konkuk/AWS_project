@@ -2,8 +2,10 @@ package com.awsproject.backend.post;
 
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.transaction.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -27,24 +29,30 @@ public class PostService {
     @Transactional
     public void updatePost(UUID id, String password, String title, String body, JsonNode workflow) {
         Post post = postRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다."));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글이 없습니다."));
 
         boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
         if (!isPasswordMatch) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"비밀번호가 일치하지 않습니다.");
         }
         post.update(title, body, workflow);
     }
 
     public void deletePost(UUID id, String password) {
         Post post = postRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다."));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"게시글이 없습니다."));
         
         boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
         if(!isPasswordMatch) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"비밀번호가 일치하지 않습니다.");
         }
         postRepository.delete(post);
+    }
+
+    public JsonNode getWorkflow(UUID id) {
+        Post post = postRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글이 없습니다."));
+        return post.getWorkflow();
     }
     
 }
