@@ -1,0 +1,69 @@
+name: PR title auto labels
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: pr-title-labels-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  label-by-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # PR 제목을 코드에 삽입하지 않고 API 응답의 데이터로 읽습니다.
+      - name: Synchronize the title prefix label
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const prefixLabels = {
+              feat: '📚 feat',
+              fix: '❗ fix',
+              hotfix: '🔥 hotfix',
+              chore: '😀 chore',
+              build: '🛠️ build',
+              ci: '🛠️ build',
+              refactor: '🧰 refactor',
+            };
+            const managedLabels = new Set(Object.values(prefixLabels));
+            const pullNumber = context.payload.pull_request.number;
+
+            // 제목을 연속 수정한 경우에도 오래된 이벤트 제목 대신 현재 제목을 사용합니다.
+            const { data: pullRequest } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: pullNumber,
+            });
+
+            // feat: / feat(api)!: / [feat] / Refactor/... 형식, 대소문자 무관.
+            const match = pullRequest.title.match(
+              /^\s*(?:\[([a-z]+)\]|([a-z]+)(?:\([^\r\n)]*\))?!?\s*[:/])/i,
+            );
+            const prefix = (match?.[1] ?? match?.[2] ?? '').toLowerCase();
+            const desiredLabel = Object.hasOwn(prefixLabels, prefix)
+              ? prefixLabels[prefix]
+              : undefined;
+            const currentLabels = pullRequest.labels.map(({ name }) => name);
+            const issue = { ...context.repo, issue_number: pullNumber };
+
+            if (desiredLabel && !currentLabels.includes(desiredLabel)) {
+              await github.rest.issues.addLabels({ ...issue, labels: [desiredLabel] });
+            }
+
+            // 이 워크플로가 관리하는 분류 라벨만 제거하고 다른 수동 라벨은 보존합니다.
+            for (const label of currentLabels) {
+              if (!managedLabels.has(label) || label === desiredLabel) continue;
+              try {
+                await github.rest.issues.removeLabel({ ...issue, name: label });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+
+            if (!desiredLabel) {
+              core.info('No supported title prefix; automatic category labels were cleared.');
+            }
