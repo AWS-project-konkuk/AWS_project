@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
 import com.awsproject.backend.post.DTO.UpdatePostRequest;
+import com.awsproject.backend.post.DTO.deletePostRequest;
 
 import jakarta.validation.Valid;
 
@@ -47,6 +49,16 @@ public class PostController {
         postService.updatePost(id, request.password(), request.title(), request.body(), request.workflow());
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePost(
+        @PathVariable UUID id,
+        @Valid @RequestBody deletePostRequest request
+    ){
+        postService.deletePost(id, request.password());
+        return ResponseEntity.noContent().build();
+    }
+
 
     
 }

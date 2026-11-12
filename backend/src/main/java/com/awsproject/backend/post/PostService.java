@@ -35,5 +35,16 @@ public class PostService {
         }
         post.update(title, body, workflow);
     }
+
+    public void deletePost(UUID id, String password) {
+        Post post = postRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다."));
+        
+        boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
+        if(!isPasswordMatch) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        postRepository.delete(post);
+    }
     
 }
