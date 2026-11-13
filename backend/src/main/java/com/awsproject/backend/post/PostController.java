@@ -1,7 +1,7 @@
 package com.awsproject.backend.post;
 
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.awsproject.backend.post.DTO.AllPostResponse;
 import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
 import com.awsproject.backend.post.DTO.DeletePostRequest;
 import com.awsproject.backend.post.DTO.UpdatePostRequest;
-import com.awsproject.backend.post.DTO.AllPostResponse;
 
 import jakarta.validation.Valid;
 import tools.jackson.databind.JsonNode;
@@ -76,8 +76,7 @@ public class PostController {
             .map(post -> new AllPostResponse(
                 post.getId(),
                 post.getAuthor(), 
-                post.getTitle(),
-                post.getBody(), 
+                post.getTitle(), 
                 post.getCreatedAt(), 
                 post.getUpdatedAt(), 
                 post.getWorkflow()
