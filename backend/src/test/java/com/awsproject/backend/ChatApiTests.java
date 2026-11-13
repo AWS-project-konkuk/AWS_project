@@ -1,13 +1,16 @@
 package com.awsproject.backend;
 
 import com.sun.net.httpserver.HttpServer;
+import com.awsproject.backend.chat.ChatController;
+import com.awsproject.backend.chat.VllmClient;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@WebMvcTest(ChatController.class)
+@Import(VllmClient.class)
 class ChatApiTests {
     static final HttpServer upstream;
     static volatile String response;
