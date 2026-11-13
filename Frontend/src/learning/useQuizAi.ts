@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { chatErrorMessage, requestChat } from '../api/chat';
 import type { Lesson } from '../curriculum/types';
+import { aiReasonSchema } from '../validation/userInput';
 
 export function buildQuizMessage(lesson: Lesson, answer: number, reason: string): string {
   const assessment = lesson.assessment!;
@@ -32,7 +33,7 @@ export function useQuizAi(lesson: Lesson, answer: unknown, reason: string) {
     typeof answer === 'number' &&
     Number.isInteger(answer) &&
     lesson.assessment?.options[answer] !== undefined &&
-    Boolean(reason.trim());
+    aiReasonSchema.safeParse(reason).success;
   async function request() {
     if (!canRequest || active.current) return;
     const controller = new AbortController();

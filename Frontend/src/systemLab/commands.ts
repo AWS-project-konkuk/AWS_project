@@ -1,3 +1,4 @@
+import { nodeNameSchema, validateInput } from '../validation/userInput';
 import {
   absolute,
   manualConnectionIssue,
@@ -187,9 +188,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       return change(item.id, () => ({ ...item, appLabel: cmd.value }));
     }
     case 'settings': {
-      const name = cmd.name?.trim();
-      if (cmd.name !== undefined && (!name || name.length > 63))
-        throw new Error('이름을 1~63자로 입력하세요.');
+      const name = cmd.name === undefined ? undefined : validateInput(nodeNameSchema, cmd.name);
       if (
         cmd.replicas !== undefined &&
         (!Number.isSafeInteger(cmd.replicas) || cmd.replicas < 1 || cmd.replicas > 10)
