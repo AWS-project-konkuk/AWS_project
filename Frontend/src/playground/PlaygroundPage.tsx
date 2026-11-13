@@ -1,5 +1,10 @@
-import { runPlayground, templatePlayground, templates, type PipelineResult } from './pipeline';
+import { runPlayground, type PipelineResult } from './pipeline';
 import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { useMutation } from '@tanstack/react-query';
+import { getPostWorkflow, isPostId, postError } from '../api/posts';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { ArrowRight, Boxes, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { ResourceCanvas } from '../console/ResourceCanvas';
 import { NodeEditor } from '../nodes/NodeEditor';
@@ -27,7 +32,23 @@ export function PlaygroundPage() {
   const [report, setReport] = useState<{ signature: string; issues: PlaygroundIssue[] } | null>(
     null,
   );
-  const [template, setTemplate] = useState('pipeline');
+  const [searchParams] = useSearchParams();
+  const [workflowId, setWorkflowId] = useState(searchParams.get('workflow') ?? '');
+  const [imported, setImported] = useState(false);
+  const loadWorkflow = useMutation({
+    mutationFn: (id: string) => {
+      if (!isPostId(id)) throw new Error('게시판에서 복사한 워크플로우 ID를 입력해 주세요.');
+      return getPostWorkflow(id);
+    },
+    onSuccess: (workflow) => {
+      setData(workflow);
+      setExecution(null);
+      setReport(null);
+      setEditorState(null);
+      setConnectionMessage('');
+      setImported(true);
+    },
+  });
   const [execution, setExecution] = useState<{
     signature: string;
     result: PipelineResult;
@@ -88,18 +109,8 @@ export function PlaygroundPage() {
           <p>노드를 추가하고 연결하며 MLOps의 흐름을 구성해 보세요.</p>
         </div>
         <div className={styles.actions}>
-          <select
-            aria-label="Playground 템플릿"
-            value={template}
-            onChange={(e) => setTemplate(e.target.value)}
-          >
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
           <button
+            data-primary
             onClick={() => setExecution({ signature, result: runPlayground(data), cursor: 0 })}
           >
             실행 시작
@@ -120,22 +131,55 @@ export function PlaygroundPage() {
           <button disabled={!currentExecution} onClick={() => setExecution(null)}>
             중단
           </button>
-          <button
-            onClick={() => {
-              if (!data.resources.length || confirm('현재 Playground를 예제로 바꿀까요?')) {
-                setData(templatePlayground(template));
-                setReport(null);
-              }
-            }}
-          >
-            예제 불러오기
-          </button>
           <button onClick={() => setReport({ signature, issues: validatePlayground(data) })}>
             구성 확인
           </button>
           <button onClick={reset}>{blocked ? '저장 초기화' : '초기화'}</button>
         </div>
       </header>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2">
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (loadWorkflow.isPending || blocked) return;
+            const id = workflowId.trim();
+            if (
+              isPostId(id) &&
+              data.resources.length &&
+              !window.confirm('현재 Playground를 불러온 워크플로우로 바꿀까요?')
+            )
+              return;
+            setImported(false);
+            loadWorkflow.mutate(id);
+          }}
+        >
+          <Input
+            aria-label="워크플로우 ID"
+            placeholder="워크플로우 ID"
+            value={workflowId}
+            onChange={(event) => setWorkflowId(event.target.value)}
+            required
+            disabled={blocked || loadWorkflow.isPending}
+          />
+          <Button type="submit" disabled={blocked || loadWorkflow.isPending}>
+            {loadWorkflow.isPending ? '불러오는 중' : '불러오기'}
+          </Button>
+        </form>
+        <Button asChild className="no-underline">
+          <Link to="/board/new">게시판에 공유</Link>
+        </Button>
+        {loadWorkflow.isError && (
+          <span role="alert" className="text-ui-error">
+            {postError(loadWorkflow.error)}
+          </span>
+        )}
+        {imported && (
+          <span role="status" className="text-ui-success">
+            워크플로우를 불러왔습니다.
+          </span>
+        )}
+      </div>
       <div className={styles.status} role="status">
         {blocked
           ? '저장 데이터를 읽지 못했습니다. 원본을 보존하며 자동 저장을 중지했습니다.'

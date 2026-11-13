@@ -143,7 +143,35 @@ test('이전 AWS Playground 그래프 복원과 잘못된 주소', async ({ page
   await page.getByRole('button', { name: '설정 저장', exact: true }).click();
   await expect(page.getByTestId('resource-old')).toContainText('보존된 노드');
   await page.goto('/#/learn/no-such-lesson');
-  await expect(page.getByRole('heading', { name: '강의를 찾을 수 없습니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.getByText('강의를 찾을 수 없습니다.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '학습 과정으로 돌아가기' }).click();
+  await expect(page).toHaveURL(/#\/learn$/);
+});
+
+test('강의 화면을 불러오지 못하면 500을 표시하고 다시 열 수 있다', async ({ page }) => {
+  const lessonModule = '**/src/learning/LessonPage.tsx*';
+  await page.route(lessonModule, (route) => route.abort());
+  await page.goto('/#/learn/week2-workflow');
+  await expect(page.getByRole('heading', { name: '500', exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('화면을 불러오는 중 문제가 발생했습니다.');
+  await page.unroute(lessonModule);
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.getByRole('heading', { name: '500', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '실습 영역 확장' })).toBeVisible();
+});
+
+test('라우터가 기본 주소, Playground, 404와 브라우저 뒤로 가기를 처리한다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle('BlockML | MLOps 학습 과정');
+  await page.getByRole('link', { name: 'Playground', exact: true }).click();
+  await expect(page).toHaveURL(/#\/playground$/);
+  await expect(page).toHaveTitle('Playground | BlockML');
+  await page.goBack();
+  await expect(page).toHaveTitle('BlockML | MLOps 학습 과정');
+  await page.goto('/#/unknown');
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.getByText('페이지를 찾을 수 없습니다.', { exact: true })).toBeVisible();
 });
 
 test('통합된 0단원은 전체 흐름·EC2·S3만 순서대로 표시한다', async ({ page }) => {

@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { TourGuide } from './TourGuide';
 import { useCallback, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -49,7 +50,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
             <span>강의 목차</span>
           </button>
           <div className={styles.breadcrumb}>
-            <a href="#/learn">학습 과정</a>
+            <Link to="/learn">학습 과정</Link>
             <ChevronRight size={13} />
             <span>{chapterLabel(lesson.week)}</span>
             <ChevronRight size={13} />
@@ -108,10 +109,10 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
           )}
         </div>
         <footer className={styles.footer}>
-          <a href={index ? `#/learn/${lessons[index - 1].id}` : '#/learn'}>
+          <Link to={index ? `/learn/${lessons[index - 1].id}` : '/learn'}>
             <ArrowLeft size={15} />
             {index ? '이전 강의' : '전체 과정'}
-          </a>
+          </Link>
           <span>
             {completed
               ? '목표 달성이 기록되었습니다.'
@@ -132,10 +133,10 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
           )}
           {next ? (
             completed ? (
-              <a className={styles.next} href={`#/learn/${next.id}`}>
+              <Link className={styles.next} to={`/learn/${next.id}`}>
                 다음 강의
                 <ArrowRight size={15} />
-              </a>
+              </Link>
             ) : (
               <button type="button" disabled>
                 다음 강의
@@ -143,10 +144,10 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
               </button>
             )
           ) : (
-            <a className={styles.next} href="#/learn">
+            <Link className={styles.next} to="/learn">
               전체 과정
               <ArrowRight size={15} />
-            </a>
+            </Link>
           )}
         </footer>
       </div>

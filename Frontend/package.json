@@ -28,6 +28,7 @@
   "homepage": "https://github.com/AWS-project-konkuk/AWS_project#readme",
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
+    "@tanstack/react-query": "^5.107.1",
     "@xyflow/react": "^12.12.0",
     "axios": "1.21.1",
     "class-variance-authority": "^0.7.1",
@@ -37,6 +38,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-joyride": "3.2.0",
+    "react-router": "^8.5.1",
     "tailwind-merge": "^3.7.0",
     "zustand": "5.0.16"
   },
