@@ -65,6 +65,11 @@ export const labels: Record<Kind, string> = {
   pod: 'Pod',
   container: '컨테이너',
 };
+export const resourceRoles: Partial<Record<ResourceKind, string>> = {
+  image: '실행 자료',
+  deployment: '배포 설정',
+  service: '접근 설정',
+};
 export const materials: Record<Material, string> = {
   request: '요청',
   prediction: '응답',
@@ -73,13 +78,13 @@ export const materials: Record<Material, string> = {
   control: '관리 선언',
 };
 export const tools: Record<SystemKind, readonly Kind[]> = {
-  root: ['ec2', 'model'],
+  root: ['ec2'],
   ec2: ['docker', 'kubernetes'],
-  docker: ['image', 'container', 'model'],
-  kubernetes: ['deployment', 'service', 'pod', 'model'],
+  docker: ['image', 'container'],
+  kubernetes: ['deployment', 'service', 'pod'],
 };
 export const portTypes: Record<ResourceKind, Record<Direction, readonly Material[]>> = {
-  start: { in: [], out: ['request'] },
+  start: { in: [], out: ['request', 'model'] },
   end: { in: ['prediction'], out: [] },
   model: { in: [], out: ['model'] },
   image: { in: [], out: ['image'] },
@@ -128,22 +133,14 @@ const podIds = ['pod-a', 'pod-b'];
 export const starterTasks = (
   [
     ['image', 'image'],
-    ['model', 'model'],
+    ['start', 'model'],
     ['deployment', 'control'],
     ['service', 'request'],
   ] as const
 )
   .flatMap(([from, material]) => podIds.map((pod) => wire(from, pod, material)))
   .concat(podIds.map((pod) => wire(pod, 'end', 'prediction')));
-const requiredNodeIds = new Set([
-  'start',
-  'model',
-  'image',
-  'deployment',
-  'service',
-  ...podIds,
-  'end',
-]);
+const requiredNodeIds = new Set(['start', 'image', 'deployment', 'service', ...podIds, 'end']);
 
 export function requiredLabEntities(entities: readonly Entity[]): Set<string> {
   const parents = new Map(entities.map((entity) => [entity.id, entity.parent]));
@@ -184,7 +181,6 @@ function initial(): Graph {
   const entities = [
     sys('root', rootId, '', 0, 0, 0, 0),
     node('start', 'start', rootId, 0, 292),
-    node('model', 'model', rootId, 0, 475),
     sys('ec2', 'ec2', rootId, 230, 0, 795, 650),
     sys('docker', 'docker', 'ec2', 22, 46, 230, 154),
     node('image', 'image', 'docker', 26, 47),

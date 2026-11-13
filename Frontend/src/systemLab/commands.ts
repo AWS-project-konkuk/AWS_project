@@ -26,6 +26,7 @@ export type Command =
   | { type: 'add'; parent: string; kind: Kind; id: string }
   | { type: 'remove'; id: string }
   | { type: 'move'; id: string; position: Point; parent?: string }
+  | { type: 'compact'; id: string }
   | { type: 'resize'; id: string; width: number; height: number }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
   | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
@@ -113,6 +114,34 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
           : { x: Math.max(18, cmd.position.x), y: Math.max(44, cmd.position.y) };
       return fitAncestors(
         change(item.id, (e) => ({ ...e, parent: parent.id, position })),
+        item.id,
+      );
+    }
+    case 'compact': {
+      if (item.type !== 'system') return graph;
+      const children = graph.entities.filter((e) => e.parent === item.id);
+      const offset = children.length
+        ? {
+            x: Math.min(...children.map((e) => e.position.x)) - 18,
+            y: Math.min(...children.map((e) => e.position.y)) - 44,
+          }
+        : { x: 0, y: 0 };
+      const adjusted = {
+        ...graph,
+        entities: graph.entities.map((e) => {
+          if (e.id === item.id)
+            return { ...e, position: { x: e.position.x + offset.x, y: e.position.y + offset.y } };
+          if (e.parent === item.id)
+            return { ...e, position: { x: e.position.x - offset.x, y: e.position.y - offset.y } };
+          return e;
+        }),
+      };
+      const minimum = groupMinimum(adjusted, item.id);
+      return fitAncestors(
+        {
+          ...adjusted,
+          entities: adjusted.entities.map((e) => (e.id === item.id ? { ...e, ...minimum } : e)),
+        },
         item.id,
       );
     }

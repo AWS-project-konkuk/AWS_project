@@ -130,9 +130,10 @@ const infer: Strategy = ({ node, inputs, emit }) => {
   return batch.length + '건 예측 · 모델 ' + model.version + ' · 이미지 ' + image.version;
 };
 const strategies: Record<ResourceKind, Strategy> = {
-  start: ({ emit }) => {
+  start: ({ node, emit }) => {
     emit({ type: 'request', requests: definition.requestIds.map((id) => ({ id })) });
-    return '리뷰 요청 10건을 보냈습니다.';
+    emit({ type: 'model', version: node.version, source: node.id });
+    return '검증된 모델 ' + node.version + '과 리뷰 요청 10건을 보냈습니다.';
   },
   model: ({ node, emit }) => {
     emit({ type: 'model', version: node.version, source: node.id });

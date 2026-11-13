@@ -114,18 +114,38 @@ export function parseSaved(raw: string): Saved {
     const entity = item as unknown as Entity;
     if (protectedKind(kind)) {
       const fixed = base.entities.find((e) => e.kind === kind);
+      if (!fixed || entity.id !== fixed.id) return fail();
+      const start =
+        fixed.type === 'resource' && fixed.kind === 'start' && entity.type === 'resource';
+      const comparable = {
+        ...entity,
+        enabled: undefined,
+        ...(start && { version: fixed.version }),
+      };
+      const expected =
+        start && entity.ports.length === 1
+          ? { ...fixed, ports: fixed.ports.filter((port) => port.material !== 'model') }
+          : fixed;
       if (
-        !fixed ||
-        entity.id !== fixed.id ||
-        signature({ entities: [{ ...entity, enabled: undefined }], connections: [] }) !==
-          signature({ entities: [fixed], connections: [] })
+        signature({ entities: [comparable], connections: [] }) !==
+        signature({ entities: [expected], connections: [] })
       )
         return fail();
-      entities.push({
-        ...fixed,
-        position: fixed.kind === 'root' ? fixed.position : entity.position,
-        enabled: entity.enabled,
-      });
+      entities.push(
+        start
+          ? {
+              ...fixed,
+              position: entity.position,
+              ports: entity.ports,
+              version: entity.version,
+              enabled: entity.enabled,
+            }
+          : {
+              ...fixed,
+              position: fixed.kind === 'root' ? fixed.position : entity.position,
+              enabled: entity.enabled,
+            },
+      );
     } else entities.push(entity);
     ids.add(entity.id);
   }
@@ -157,7 +177,9 @@ export function parseSaved(raw: string): Saved {
       if (
         seen.has(current.id) ||
         parent?.type !== 'system' ||
-        (!protectedKind(current.kind) && !tools[parent.kind].includes(current.kind))
+        (!protectedKind(current.kind) &&
+          !tools[parent.kind].includes(current.kind) &&
+          !(current.kind === 'model' && parent.kind !== 'ec2'))
       )
         return fail();
       seen.add(current.id);
@@ -181,6 +203,7 @@ export function parseSaved(raw: string): Saved {
     graph.connections.push(edge);
   }
   const previousSignature = signature(graph);
+  const compatibleModels = migrateModelSource(graph);
   // Old saves recorded an execution flag for resources that are applied automatically.
   graph.entities = graph.entities.map((entity) => {
     if (hasRunState(entity.kind) || !Object.hasOwn(entity, 'enabled')) return entity;
@@ -192,8 +215,56 @@ export function parseSaved(raw: string): Saved {
     version: 1,
     graph,
     quiz: saved.quiz,
-    proof: saved.proof === previousSignature ? signature(graph) : null,
+    proof: compatibleModels && saved.proof === previousSignature ? signature(graph) : null,
   };
+}
+function migrateModelSource(graph: Graph): boolean {
+  const start = graph.entities.find(
+    (entity) => entity.type === 'resource' && entity.kind === 'start',
+  );
+  if (start?.type !== 'resource') return false;
+  const models = new Map(
+    graph.entities.flatMap((entity) =>
+      entity.type === 'resource' && entity.kind === 'model'
+        ? [[entity.id, entity.version] as const]
+        : [],
+    ),
+  );
+  const connectedVersions = new Set(
+    graph.connections.flatMap((edge) => {
+      const version = models.get(edge.from.node);
+      return version ? [version] : [];
+    }),
+  );
+  const hasModelOutput = start.ports.some((port) => port.id === 'out-model');
+  const version = hasModelOutput
+    ? start.version
+    : (connectedVersions.values().next().value ?? models.get('model') ?? start.version);
+  graph.entities = graph.entities
+    .filter((entity) => entity.kind !== 'model')
+    .map((entity) =>
+      entity.id === start.id && !hasModelOutput
+        ? {
+            ...start,
+            version,
+            ports: [
+              ...start.ports,
+              { id: 'out-model', material: 'model', direction: 'out', multiple: false },
+            ],
+          }
+        : entity,
+    );
+  graph.connections = [
+    ...new Map(
+      graph.connections.map((edge) => {
+        const next = models.has(edge.from.node)
+          ? connection(start.id, 'out-model', edge.to.node, edge.to.port)
+          : edge;
+        return [next.id, next] as const;
+      }),
+    ).values(),
+  ];
+  return [...connectedVersions].every((oldVersion) => oldVersion === version);
 }
 function load() {
   try {

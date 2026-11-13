@@ -437,11 +437,41 @@
   padding: 4px;
   border-bottom: 1px solid var(--color-rule);
 }
+.railLabel {
+  display: none;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+.panelHeader:not(:has(h3)) {
+  flex-direction: column;
+  gap: 4px;
+}
+.panelHeader:not(:has(h3)) .railLabel {
+  display: block;
+}
 .panelHeader:has(h3) {
   justify-content: space-between;
   padding-inline: 4px 10px;
 }
-.results .panelHeader:has(h3) {
+.results .railLabel {
+  display: none;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+.panelHeader:not(:has(h3)) {
+  flex-direction: column;
+  gap: 4px;
+}
+.panelHeader:not(:has(h3)) .railLabel {
+  display: block;
+}
+.panelHeader:has(h3) {
   padding-inline: 10px 4px;
 }
 .panelHeader h3 {
@@ -655,11 +685,16 @@
     grid-template-columns: var(--rail-width) minmax(0, 1fr) var(--rail-width);
   }
   .workspace .panelHeader {
+    flex-direction: column;
+    gap: 4px;
     justify-content: center;
     padding: 4px;
   }
   .panelHeader h3 {
     display: none;
+  }
+  .panelHeader .railLabel {
+    display: block;
   }
   .panelBody[data-open='true'] {
     position: absolute;

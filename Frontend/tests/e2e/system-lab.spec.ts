@@ -25,7 +25,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   for (const pod of ['pod-a', 'pod-b']) {
     for (const [node, type] of [
       ['image', 'image'],
-      ['model', 'model'],
+      ['start', 'model'],
       ['deployment', 'control'],
     ]) {
       await lab.getByTestId('port-' + node + '-out-' + type).click();
@@ -56,7 +56,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await expect(lab.getByRole('status').first()).toHaveText('현재 구성 실행 성공');
   await lab.getByTestId('port-pod-b-in-model').click({ button: 'right' });
-  await lab.getByRole('button', { name: '모델 파일 연결 삭제' }).click();
+  await lab.getByRole('button', { name: '출발 연결 삭제' }).click();
   await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
@@ -66,7 +66,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await expect(lab.getByRole('button', { name: '입력 추가' })).toBeVisible();
   await lab.getByRole('button', { name: '노드 삭제', exact: true }).click();
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
-  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(13);
+  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(12);
   await lab.getByRole('button', { name: '초기 복원' }).click();
   await expect(lab.getByTestId('node-pod-b')).toHaveAttribute('data-status', '정지');
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
@@ -82,6 +82,8 @@ test('실패한 실행도 왼쪽 결과를 펼치고 오른쪽 설정은 좁게 
   const before = (await canvas.boundingBox())!;
   await settings.getByRole('button', { name: '설정 접기' }).click();
   const collapsed = settings.getByRole('button', { name: '설정 펼치기' });
+  await expect(settings.getByText('설정', { exact: true })).toBeVisible();
+  await expect(results.getByText('실행 결과', { exact: true })).toBeVisible();
   await expect(collapsed.locator('.lucide-chevron-left')).toBeVisible();
   expect((await settings.boundingBox())!.width).toBeLessThan(50);
   expect((await canvas.boundingBox())!.width).toBeGreaterThan(before.width);
@@ -133,10 +135,12 @@ test('패널 폭을 따로 선택하고 실행 가능한 항목에서만 스위�
   );
 
   const finder = lab.getByLabel('캔버스에서 항목 찾기');
-  for (const id of ['deployment', 'service', 'model', 'image']) {
+  for (const id of ['deployment', 'service', 'image']) {
     await finder.selectOption(id);
     await expect(settings.getByRole('switch')).toHaveCount(0);
-    await expect(lab.getByTestId('node-' + id).locator('header small')).toHaveCount(0);
+    await expect(lab.getByTestId('node-' + id).locator('header small')).toHaveText(
+      /설정|실행 자료/,
+    );
   }
   await finder.selectOption('pod-a');
   await expect(settings.getByRole('switch', { name: 'Pod 1 실행 상태' })).toBeVisible();
@@ -236,6 +240,13 @@ test('영역 크기 조절은 한 번의 편집으로 되돌릴 수 있다', asy
   await page.mouse.move(origin.x + 65, origin.y + 30, { steps: 8 });
   await expect.poll(async () => (await area.boundingBox())!.width).toBeGreaterThan(old.width + 30);
   await page.mouse.up();
+  const expanded = (await area.boundingBox())!.width;
+  await lab.getByRole('button', { name: '크기 정리' }).click();
+  await expect.poll(async () => (await area.boundingBox())!.width).toBeLessThan(expanded - 30);
+  await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
+  await expect
+    .poll(async () => Math.round((await area.boundingBox())!.width))
+    .toBe(Math.round(expanded));
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
   await expect
     .poll(async () => Math.round((await area.boundingBox())!.width))

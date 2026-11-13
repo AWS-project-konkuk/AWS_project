@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minimize2, Minus, Plus, Trash2 } from 'lucide-react';
 import { reparent, type Command } from './commands';
 import { blockedBy } from './engine';
 import {
@@ -11,6 +11,7 @@ import {
   portTypes,
   protectedKind,
   requiredLabEntities,
+  resourceRoles,
   rootId,
   tools,
   type Direction,
@@ -175,10 +176,10 @@ const hints = {
   ec2: 'Docker와 Kubernetes를 배치할 실행 환경입니다.',
   docker: '서빙 앱을 실행할 이미지와 컨테이너를 준비합니다.',
   kubernetes: 'Pod의 실행과 요청 전달을 구성합니다.',
-  start: '실습을 실행하면 리뷰 요청 10건을 보냅니다.',
+  start: '학습된 모델 파일과 리뷰 요청 10건을 각각의 출력 포트로 제공합니다.',
   end: '두 Pod의 응답 10건이 빠짐없이 도착했는지 확인합니다.',
   model: '학습과 평가를 마친 예제 모델을 제공합니다.',
-  image: '서빙 앱과 의존성을 담은 예제 이미지를 제공합니다.',
+  image: '서빙 앱과 의존성을 묶은 실행 자료입니다. Pod가 이 이미지로 컨테이너를 시작합니다.',
   deployment: 'Pod의 수와 사용할 이미지 버전을 지정합니다.',
   service: '요청을 연결된 대상에 순서대로 나눠 보냅니다.',
   pod: '이미지의 서빙 앱이 모델을 읽고 예측 응답을 만듭니다.',
@@ -211,7 +212,9 @@ export function Inspector({
         <KindIcon kind={node.kind} size={21} />
         <div>
           <h3>{node.name}</h3>
-          <small>{node.type === 'system' ? '시스템' : labels[node.kind]}</small>
+          <small>
+            {node.type === 'system' ? '시스템' : (resourceRoles[node.kind] ?? labels[node.kind])}
+          </small>
         </div>
       </header>
       <p className={styles.hint}>{hints[node.kind]}</p>
@@ -252,6 +255,11 @@ export function Inspector({
             )}
             {blocked && <p className={styles.hint}>{blocked} 정지로 차단</p>}
           </>
+        )}
+        {node.type === 'system' && !locked && (
+          <button type="button" onClick={() => dispatch({ type: 'compact', id: node.id })}>
+            <Minimize2 size={15} /> 크기 정리
+          </button>
         )}
         {node.type === 'system' && (
           <div className={styles.settingLine}>

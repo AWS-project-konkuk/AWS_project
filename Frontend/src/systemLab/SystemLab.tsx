@@ -1,4 +1,3 @@
-import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import {
   ChevronLeft,
@@ -10,11 +9,12 @@ import {
   Square,
   Undo2,
 } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { resolveScenario } from '../weekly/scenarios';
 import { Canvas, KindIcon, type MenuItem } from './Canvas';
-import { Inspector } from './Inspector';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
+import { Inspector } from './Inspector';
 import { labels, pilotLesson, rootId, signature, tools } from './model';
 import { useSystemLab } from './store';
 import styles from './SystemLab.module.css';
@@ -193,10 +193,7 @@ export function SystemLab() {
       <header className={styles.toolbar}>
         <div className={styles.toolbarTitle}>
           <h2>모델 서빙 실습</h2>
-          <p>
-            두 Pod에 실행 이미지·모델·관리 선언·리뷰 요청을 연결하고, 각 Pod의 응답을 도착 노드에
-            연결하세요. 실습을 실행해 리뷰 요청 10건이 모두 처리되는지 확인하세요.
-          </p>
+          <p>두 Pod에 요구사항을 연결하고, 각 Pod의 응답을 도착 노드에 연결하세요.</p>
         </div>
         <div className={styles.actions}>
           {busy ? (
@@ -300,6 +297,9 @@ export function SystemLab() {
               >
                 {resultsVisible ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
               </button>
+              <span className={styles.railLabel} aria-hidden="true">
+                실행 결과
+              </span>
             </header>
             <div id={resultsId} className={styles.panelBody} data-open={resultsVisible}>
               {resultsVisible && (
@@ -466,6 +466,9 @@ export function SystemLab() {
                 {settingsVisible ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               </button>
               {settingsVisible && <h3>설정</h3>}
+              <span className={styles.railLabel} aria-hidden="true">
+                설정
+              </span>
             </header>
             <div
               id={settingsId}

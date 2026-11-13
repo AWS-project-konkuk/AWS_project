@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/systemLab/commands';
 import { runLab } from '../src/systemLab/engine';
 import {
+  absolute,
   connection,
+  makeEntity,
   definition,
   signature,
   starterTasks,
@@ -10,7 +12,7 @@ import {
 } from '../src/systemLab/model';
 import { parseSaved, useSystemLab } from '../src/systemLab/store';
 
-const model = connection('model', 'out-model', 'pod-b', 'in-model');
+const model = connection('start', 'out-model', 'pod-b', 'in-model');
 function ready() {
   let graph = applyCommand(definition.initial(), {
     type: 'toggle',
@@ -44,7 +46,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
   });
   it('선언과 자료는 개별 실행 상태 없이 동작하고 이전 완료 기록을 읽는다', () => {
     const graph = ready();
-    for (const id of ['deployment', 'service', 'model', 'image']) {
+    for (const id of ['deployment', 'service', 'start', 'image']) {
       expect(graph.entities.find((item) => item.id === id)).not.toHaveProperty('enabled');
       expect(() => applyCommand(graph, { type: 'toggle', id, enabled: false })).toThrow();
     }
@@ -122,7 +124,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
       store.dispatch({ type: 'move', id: 'ec2', parent: 'kubernetes', position: { x: 0, y: 0 } }),
     ).toBe(false);
     for (const id of [
-      'model',
+      'start',
       'image',
       'deployment',
       'service',
@@ -136,10 +138,10 @@ describe('Docker·Kubernetes 시범 실행', () => {
     }
     store.dispatch({ type: 'add', id: 'extra-ec2', kind: 'ec2', parent: 'root' });
     store.dispatch({ type: 'add', id: 'extra-docker', kind: 'docker', parent: 'extra-ec2' });
-    store.dispatch({ type: 'add', id: 'extra-model', kind: 'model', parent: 'extra-docker' });
+    store.dispatch({ type: 'add', id: 'extra-image', kind: 'image', parent: 'extra-docker' });
     store.dispatch({
       type: 'connect',
-      edge: connection('extra-model', 'out-model', 'pod-a', 'in-model'),
+      edge: connection('extra-image', 'out-image', 'pod-a', 'in-image'),
     });
     const expanded = useSystemLab.getState().saved.graph;
     expect(store.dispatch({ type: 'remove', id: 'extra-ec2' })).toBe(true);
@@ -190,6 +192,56 @@ describe('Docker·Kubernetes 시범 실행', () => {
     expect(saved.proof).toBe(signature(graph));
     expect(saved).not.toHaveProperty('unlocked');
   });
+  it('이전 모델 출력을 출발로 옮겨 저장된 완료 기록을 복원한다', () => {
+    const graph = ready();
+    const old: Graph = {
+      entities: [
+        ...graph.entities.map((entity) =>
+          entity.kind === 'start' && entity.type === 'resource'
+            ? { ...entity, ports: entity.ports.filter((port) => port.material !== 'model') }
+            : entity,
+        ),
+        {
+          ...makeEntity('model', 'model', 'root', { x: 0, y: 475 }),
+          version: 'v2',
+        } as Graph['entities'][number],
+      ],
+      connections: graph.connections.map((edge) =>
+        edge.from.node === 'start' && edge.from.port === 'out-model'
+          ? connection('model', 'out-model', edge.to.node, edge.to.port)
+          : edge,
+      ),
+    };
+    const saved = parseSaved(
+      JSON.stringify({ version: 1, graph: old, proof: signature(old), quiz: true }),
+    );
+    expect(saved.graph.entities.some((entity) => entity.kind === 'model')).toBe(false);
+    expect(saved.graph.connections).toEqual(graph.connections);
+    expect(saved.proof).toBe(signature(saved.graph));
+    const run = runLab(saved.graph, 'old-save');
+    expect(run.success).toBe(true);
+    expect(run.responses.every((response) => response.model === 'v2')).toBe(true);
+  });
+  it('영역 정리는 자식의 화면 위치와 연결을 그대로 둔다', () => {
+    const graph = applyCommand(ready(), {
+      type: 'resize',
+      id: 'kubernetes',
+      width: 1300,
+      height: 900,
+    });
+    const before = graph.entities.find((entity) => entity.id === 'pod-a')!;
+    const compact = applyCommand(graph, { type: 'compact', id: 'kubernetes' });
+    const group = compact.entities.find((entity) => entity.id === 'kubernetes');
+    expect(group?.type === 'system' && group.width).toBeLessThan(1300);
+    expect(
+      absolute(
+        compact,
+        compact.entities.find((entity) => entity.id === 'pod-a')!,
+      ),
+    ).toEqual(absolute(graph, before));
+    expect(compact.connections).toEqual(graph.connections);
+    expect(signature(compact)).toBe(signature(graph));
+  });
   it('위치 이동은 완료 증거를 유지하고 잘못된 저장 구조를 거부한다', () => {
     const graph = ready();
     const proof = signature(graph);
@@ -199,7 +251,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
     expect(parseSaved(JSON.stringify(saved)).proof).toBe(proof);
     const bad = {
       ...graph,
-      entities: graph.entities.map((e) => (e.id === 'pod-a' ? { ...e, parent: 'model' } : e)),
+      entities: graph.entities.map((e) => (e.id === 'pod-a' ? { ...e, parent: 'start' } : e)),
     };
     expect(() => parseSaved(JSON.stringify({ ...saved, graph: bad }))).toThrow();
   });

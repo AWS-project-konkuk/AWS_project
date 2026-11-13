@@ -41,6 +41,7 @@ import {
   hasRunState,
   materials,
   portLabel,
+  resourceRoles,
   rootId,
   starterTasks,
   type Connection,
@@ -181,7 +182,9 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
       <header>
         <KindIcon kind={entity.kind} size={17} />
         <strong title={entity.name}>{entity.name}</strong>
-        {status && <small>{status}</small>}
+        {(status || resourceRoles[entity.kind]) && (
+          <small>{status ?? resourceRoles[entity.kind]}</small>
+        )}
       </header>
       <div className={styles.ports}>
         {(['in', 'out'] as const).map((direction) => (
