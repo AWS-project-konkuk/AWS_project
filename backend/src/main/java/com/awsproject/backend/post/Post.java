@@ -6,9 +6,10 @@ import java.util.UUID;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.generator.EventType;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

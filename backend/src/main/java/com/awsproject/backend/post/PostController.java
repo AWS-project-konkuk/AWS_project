@@ -1,6 +1,7 @@
 package com.awsproject.backend.post;
 
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
 import com.awsproject.backend.post.DTO.DeletePostRequest;
 import com.awsproject.backend.post.DTO.UpdatePostRequest;
+import com.awsproject.backend.post.DTO.AllPostResponse;
 
 import jakarta.validation.Valid;
 import tools.jackson.databind.JsonNode;
@@ -66,6 +68,25 @@ public class PostController {
         JsonNode workflow = postService.getWorkflow(id);
         return ResponseEntity.ok(workflow);
     }
+
+    @GetMapping 
+    public ResponseEntity<List<AllPostResponse>> getAllPosts() {
+        List<Post> posts = postService.getAllPosts();
+        List<AllPostResponse> response = posts.stream()
+            .map(post -> new AllPostResponse(
+                post.getId(),
+                post.getAuthor(), 
+                post.getTitle(),
+                post.getBody(), 
+                post.getCreatedAt(), 
+                post.getUpdatedAt(), 
+                post.getWorkflow()
+            ))
+            .toList();
+            return ResponseEntity.ok(response);
+    }
+
+
 
 
     

@@ -1,5 +1,6 @@
 package com.awsproject.backend.post;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,10 @@ public class PostService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "워크플로우가 없습니다.");
         }
         return post.getWorkflow();
+    }
+
+    public List<Post> getAllPosts() {
+        return postRepository.findAll();
     }
     
 }
