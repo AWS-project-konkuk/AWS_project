@@ -1,9 +1,20 @@
 import { queryOptions } from '@tanstack/react-query';
-import { listPosts } from '../api/posts';
+import { getPost, listPosts } from '../api/posts/getPosts';
 
-export const postsQuery = queryOptions({
-  queryKey: ['posts'],
-  queryFn: ({ signal }) => listPosts(signal),
-  staleTime: 60_000,
-  retry: false,
-});
+export const postListKey = ['posts', 'list'] as const;
+
+export const postsQuery = (page: number, size: number) =>
+  queryOptions({
+    queryKey: [...postListKey, page, size],
+    queryFn: ({ signal }) => listPosts(page, size, signal),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+export const postQuery = (id: string) =>
+  queryOptions({
+    queryKey: ['posts', 'detail', id],
+    queryFn: ({ signal }) => getPost(id, signal),
+    staleTime: 60_000,
+    retry: false,
+  });

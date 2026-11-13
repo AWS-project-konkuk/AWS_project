@@ -1,18 +1,21 @@
-import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { ClipboardCopy, RefreshCw } from 'lucide-react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
-import { deletePost, postError, readWorkflow, type Post } from '../api/posts';
+import { useState } from 'react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { readWorkflow } from '../api/posts/getPosts';
+import { deletePost } from '../api/posts/postPosts';
+import { isPostId, postError, type Post, type PostSummary } from '../api/posts/posts';
 import { ErrorPage } from '../components/ErrorPage';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { postsQuery } from './boardQuery';
+import { postListKey, postQuery, postsQuery } from './boardQuery';
 import { PostForm } from './PostForm';
 import { WorkflowPreview } from './WorkflowPreview';
 
 const pageSize = 30;
 
-function previewData(post: Post) {
+function previewData(post: PostSummary) {
   if (post.workflow == null) return null;
   try {
     return readWorkflow(post.workflow);
@@ -22,22 +25,30 @@ function previewData(post: Post) {
 }
 
 export function BoardPage() {
-  const posts = useQuery(postsQuery);
   const [search, setSearch] = useSearchParams();
-  const count = posts.data?.length ?? 0;
-  const pages = Math.max(1, Math.ceil(count / pageSize));
   const requestedPage = Number(search.get('page'));
-  const page = Number.isSafeInteger(requestedPage)
-    ? Math.max(1, Math.min(pages, requestedPage))
-    : 1;
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const posts = useQuery(postsQuery(page - 1, pageSize));
+  const pagination = posts.data;
+  const lastPage = Math.max(1, pagination?.totalPages ?? 0);
+  const pageSearch = (target: number) => {
+    const params = new URLSearchParams(search);
+    params.set('page', String(target));
+    return params;
+  };
+
+  if (posts.isSuccess && !posts.isFetching && page > lastPage) {
+    return <Navigate to={{ search: '?' + pageSearch(lastPage).toString() }} replace />;
+  }
+
   return (
     <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-8 sm:py-12">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 text-3xl font-bold">워크플로우 게시판</h1>
-          {posts.data && (
+          {pagination && (
             <p className="mt-2 mb-0 text-ui-muted" aria-live="polite">
-              {count}개 게시글
+              {pagination.totalElements}개 게시글
             </p>
           )}
         </div>
@@ -56,15 +67,15 @@ export function BoardPage() {
           {postError(posts.error)}
         </p>
       )}
-      {posts.data && !count && (
+      {pagination?.totalElements === 0 && page === 1 && (
         <p className="border-0 border-y border-solid border-ui-rule py-14 text-center text-ui-muted">
           아직 게시글이 없습니다.
         </p>
       )}
-      {!!count && (
+      {pagination && pagination.content.length > 0 && (
         <>
           <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {posts.data?.slice((page - 1) * pageSize, page * pageSize).map((post) => (
+            {pagination.content.map((post) => (
               <li key={post.id} className="min-w-0">
                 <Link
                   to={'/board/' + post.id}
@@ -81,17 +92,17 @@ export function BoardPage() {
               </li>
             ))}
           </ul>
-          {pages > 1 && (
+          {pagination.totalPages > 1 && (
             <nav className="mt-6 flex items-center justify-center gap-3" aria-label="게시판 페이지">
-              <Button disabled={page === 1} onClick={() => setSearch({ page: String(page - 1) })}>
+              <Button disabled={page === 1} onClick={() => setSearch(pageSearch(page - 1))}>
                 이전
               </Button>
               <span aria-live="polite">
-                {page} / {pages}
+                {page} / {pagination.totalPages}
               </span>
               <Button
-                disabled={page === pages}
-                onClick={() => setSearch({ page: String(page + 1) })}
+                disabled={!pagination.hasNext}
+                onClick={() => setSearch(pageSearch(page + 1))}
               >
                 다음
               </Button>
@@ -112,11 +123,9 @@ function PostDetails({ post }: { post: Post }) {
   const remove = useMutation({
     mutationFn: (password: string) => deletePost(post.id, password),
     onSuccess: async () => {
-      cache.setQueryData(postsQuery.queryKey, (items) =>
-        items?.filter((item) => item.id !== post.id),
-      );
+      await cache.invalidateQueries({ queryKey: postListKey });
       await navigate('/board', { replace: true });
-      await cache.invalidateQueries({ queryKey: postsQuery.queryKey });
+      cache.removeQueries({ queryKey: postQuery(post.id).queryKey });
     },
   });
   return (
@@ -200,10 +209,12 @@ function PostDetails({ post }: { post: Post }) {
 }
 
 export function BoardPost({ mode }: { mode: 'read' | 'new' | 'edit' }) {
-  const { postId } = useParams();
-  const posts = useQuery({ ...postsQuery, enabled: mode !== 'new' });
-  const post = posts.data?.find((item) => item.id === postId);
-  if (mode !== 'new' && !post && posts.isSuccess && !posts.isFetching)
+  const { postId = '' } = useParams();
+  const validId = isPostId(postId);
+  const detail = useQuery({ ...postQuery(postId), enabled: mode !== 'new' && validId });
+  const post = detail.data;
+  const notFound = isAxiosError(detail.error) && detail.error.response?.status === 404;
+  if (mode !== 'new' && (!validId || notFound))
     return <ErrorPage code={404} description="게시글을 찾을 수 없습니다." />;
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
@@ -215,12 +226,12 @@ export function BoardPost({ mode }: { mode: 'read' | 'new' | 'edit' }) {
         ) : (
           <PostDetails key={post.id} post={post} />
         )
-      ) : posts.isError ? (
+      ) : detail.isError ? (
         <>
           <p role="alert" className="text-ui-error">
-            {postError(posts.error)}
+            {postError(detail.error)}
           </p>
-          <Button onClick={() => void posts.refetch()}>다시 시도</Button>
+          <Button onClick={() => void detail.refetch()}>다시 시도</Button>
         </>
       ) : (
         <p role="status">게시글을 불러오는 중입니다.</p>

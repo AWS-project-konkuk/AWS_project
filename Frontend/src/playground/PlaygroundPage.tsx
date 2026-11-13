@@ -1,28 +1,29 @@
-import { runPlayground, type PipelineResult } from './pipeline';
+import { useMutation } from '@tanstack/react-query';
+import { ArrowRight, Boxes, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useMutation } from '@tanstack/react-query';
-import { getPostWorkflow, isPostId, postError } from '../api/posts';
+import { getPostWorkflow } from '../api/posts/getPosts';
+import { isPostId, postError } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ArrowRight, Boxes, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { ResourceCanvas } from '../console/ResourceCanvas';
-import { NodeEditor } from '../nodes/NodeEditor';
-import { workflowNodes, topicNodes } from '../nodes/catalog';
 import {
   resourceDefaults,
   serviceById,
   type ResourceConfig,
   type Service,
 } from '../console/resources';
+import { NodeEditor } from '../nodes/NodeEditor';
+import { topicNodes, workflowNodes } from '../nodes/catalog';
+import styles from './Playground.module.css';
 import {
   playgroundCanvas,
   playgroundSignature,
   validatePlayground,
   type PlaygroundIssue,
 } from './model';
+import { runPlayground, type PipelineResult } from './pipeline';
 import { usePlayground } from './usePlayground';
-import styles from './Playground.module.css';
 
 export function PlaygroundPage() {
   const { data, setData, blocked, status, reset } = usePlayground();

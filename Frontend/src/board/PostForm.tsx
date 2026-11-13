@@ -1,13 +1,14 @@
-import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { createPost, postError, updatePost, type Post } from '../api/posts';
+import { createPost, updatePost } from '../api/posts/postPosts';
+import { postError, type Post } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
 import { Textarea } from '../components/ui/textarea';
 import { usePlaygroundStore } from '../playground/usePlayground';
-import { postsQuery } from './boardQuery';
+import { postListKey, postQuery } from './boardQuery';
 
 export function PostForm({ post }: { post?: Post }) {
   const navigate = useNavigate();
@@ -32,7 +33,10 @@ export function PostForm({ post }: { post?: Post }) {
       return createPost({ author, title, body, password, workflow });
     },
     onSuccess: async (id) => {
-      await cache.invalidateQueries({ queryKey: postsQuery.queryKey });
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: postListKey }),
+        cache.invalidateQueries({ queryKey: postQuery(id).queryKey }),
+      ]);
       await navigate('/board/' + id, { replace: true });
     },
   });
