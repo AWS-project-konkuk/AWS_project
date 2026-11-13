@@ -1,4 +1,5 @@
-import type { LabField } from '../curriculum/types';
+import type { ComponentType } from 'react';
+import type { LabField, Lesson } from '../curriculum/types';
 export type ActivityKind =
   | 'compute'
   | 'layers'
@@ -36,6 +37,20 @@ export interface ActivitySpec {
   correct: string;
   explanation: string;
   task: string;
+}
+
+/** 모든 활동 본문이 사용하는 공통 입력입니다. */
+export interface ActivityViewProps {
+  lesson: Lesson;
+  spec: ActivitySpec;
+}
+
+/** 종류별 본문과 공통 프레임에 표시할 문구입니다. */
+export interface ActivityDefinition {
+  component: ComponentType<ActivityViewProps>;
+  summary: string;
+  title?: string;
+  label?: string;
 }
 export interface ActivityResult {
   headline: string;

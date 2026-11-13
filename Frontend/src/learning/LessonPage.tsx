@@ -5,6 +5,9 @@ import { chapterLabel, lessons } from '../curriculum/catalog';
 import type { Lesson } from '../curriculum/types';
 import { CourseSidebar } from './CourseSidebar';
 import { LessonArticle } from './LessonArticle';
+import { SystemLab } from '../systemLab/SystemLab';
+import { pilotLesson } from '../systemLab/model';
+import { useLessonCompletion } from '../systemLab/store';
 import { WeeklyLab } from '../weekly/WeeklyLab';
 import { useLearning } from './LearningStore';
 import styles from './LessonLayout.module.css';
@@ -22,10 +25,12 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
   };
   const index = lessons.indexOf(lesson);
   const next = lessons[index + 1];
-  const completed = state.data.lessons[lesson.id]?.completed ?? false;
-  const pendingGoal = lesson.workflow
-    ? workflowGoals(lesson, getLab(state.data, lesson.id)).find((goal) => !goal.passed)
-    : undefined;
+  const completed = useLessonCompletion(state.data)(lesson.id);
+  const pilot = lesson.id === pilotLesson;
+  const pendingGoal =
+    lesson.workflow && !pilot
+      ? workflowGoals(lesson, getLab(state.data, lesson.id)).find((goal) => !goal.passed)
+      : undefined;
   const startPractice = () => changeView('practice');
   return (
     <main className={styles.shell}>
@@ -93,7 +98,11 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
               aria-label="고정 실습 영역"
               data-testid="lesson-practice"
             >
-              <WeeklyLab key={lesson.id} lesson={lesson} />
+              {pilot ? (
+                <SystemLab key={lesson.id} />
+              ) : (
+                <WeeklyLab key={lesson.id} lesson={lesson} />
+              )}
             </div>
           )}
         </div>
@@ -110,7 +119,9 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
                   ? '설명을 읽었다면 실습을 시작하세요.'
                   : pendingGoal
                     ? `남은 목표: ${pendingGoal.label}`
-                    : '설정·결과에서 실습 완료를 기록하세요.'
+                    : pilot
+                      ? '실행 성공 후 결과 패널에서 이해 확인에 답하세요.'
+                      : '설정·결과에서 실습 완료를 기록하세요.'
                 : '설명을 읽고 이해 확인 문제에 답하세요.'}
           </span>
           {lesson.workflow && !completed && view === 'reading' && (

@@ -25,7 +25,11 @@ describe('과제별 초기 상태와 실행 중 오류', () => {
       const repair = applyWorkflowPreset(scenario.id, example, 'repair');
       expect(repair.edges.length).toBeLessThan(example.edges.length);
       expect(repair.edges).toEqual(scenario.starter.map(workflowEdge));
-      for (const field of scenario.fields) expect(repair.answers[field.id]).toBe(field.initial);
+      const repairOverrides: LabState['answers'] =
+        scenario.id === 'week2-workflow' ? { image: 'v2', deployment: 'v1', healing: 'off' } : {};
+      for (const field of scenario.fields) {
+        expect(repair.answers[field.id]).toBe(repairOverrides[field.id] ?? field.initial);
+      }
       const run = runWorkflow(scenario.id, fresh);
       expect(run.stages.some((stage) => stage.status === 'success')).toBe(true);
       expect(

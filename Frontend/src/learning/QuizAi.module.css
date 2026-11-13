@@ -1,0 +1,24 @@
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-ink-2);
+}
+.spinner {
+  flex-shrink: 0;
+  animation: quizSpin 1s linear infinite;
+}
+.answer {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@keyframes quizSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

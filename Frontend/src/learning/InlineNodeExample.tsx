@@ -481,13 +481,15 @@ export function InlineNodeExample({
           {feedback}
         </ResultFeedback>
       )}
-      <footer>
-        <span>작은 예제로 관계를 익힌 뒤 종합 실습에서 여러 조건을 함께 판단합니다.</span>
-        <a href={`#/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">
-          관련 종합 실습으로
-          <ArrowRight size={16} aria-hidden="true" />
-        </a>
-      </footer>
+      {spec.nextLesson && (
+        <footer>
+          <span>작은 예제로 관계를 익힌 뒤 종합 실습에서 여러 조건을 함께 판단합니다.</span>
+          <a href={`#/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">
+            관련 종합 실습으로
+            <ArrowRight size={16} aria-hidden="true" />
+          </a>
+        </footer>
+      )}
     </section>
   );
 }

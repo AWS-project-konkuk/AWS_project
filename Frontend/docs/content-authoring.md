@@ -43,6 +43,20 @@ print("checkpoint loaded")
 
 MDX는 기존 React 실습을 원하는 위치에서 사용하는 수단입니다. 새로운 실습의 계산·실행 동작은 React 컴포넌트로 구현한 뒤 `src/learning/LessonMdx.tsx`의 컴포넌트 목록에 등록해야 합니다. Python·셸 코드 블록은 읽고 복사하는 예제이며 실행되지 않습니다. WorkflowLab은 지정한 기존 종합 실습의 진행 기록을 공유합니다.
 
+### Activity 종류 추가하기
+
+기존 `<Activity />` 안에서 다른 조작 방식을 제공할 때는 MDX 컴포넌트를 새로 등록하지 않습니다. 공통 프레임은 유지하고 종류별 본문만 교체합니다.
+
+| 파일 | 책임 |
+| --- | --- |
+| `src/activities/Activity.tsx` | 펼침·접힘, 제목, 교육용 모형 안내와 본문 배치 |
+| `src/activities/activityRegistry.ts` | 활동 종류와 본문 컴포넌트·안내 문구 연결 |
+| `src/activities/MachineActivity.tsx` | EC2와 프로그램 실행 상태 조작 |
+| `src/activities/VirtualActivity.tsx` | 앱 수에 따른 VM·컨테이너 구조 비교 |
+| `src/activities/SimulationActivity.tsx` | 기존 설정 기반 시뮬레이션의 재생·결과·기록 |
+
+새 활동 본문은 `ActivityViewProps`의 `lesson`과 `spec`을 입력으로 받을 수 있습니다. 상태와 조작 로직은 해당 본문에서 관리하고, 공통 제목이나 펼침 틀을 다시 만들지 않습니다. `ActivityKind`에 종류를 추가하고 `activityRegistry.ts`에 본문과 문구를 등록하면 강의 렌더러를 수정하지 않고 `<Activity />`에서 선택합니다. 별도 등록이 없는 기존 종류는 `SimulationActivity`를 재사용합니다.
+
 ### 본문 연습 문제
 
 ```mdx
@@ -68,6 +82,8 @@ MDX는 기존 React 실습을 원하는 위치에서 사용하는 수단입니�
 기존 [DVC 설정](../src/content/lessons/04-reproducibility/dvc-restore.lesson.ts)의 `nodeExample`을 참고하세요. 노드·연결·전달 자료·실패 영향·질문을 정의하고 본문의 원하는 곳에 `<NodeExample />`를 넣습니다. 위치 인덱스를 계산할 필요가 없습니다.
 
 여러 예제가 필요하면 `<NodeExample spec={...} />`로 각각 전달할 수 있습니다. 각 spec의 `id`는 서로 달라야 저장 기록이 분리됩니다. 긴 구성은 별도 TypeScript 파일에서 export한 뒤 MDX에서 import해도 됩니다. 실제 노드 예제가 있는 문서는 컴파일 시 목차에 표시됩니다.
+
+`nextLesson`은 선택 사항입니다. 관련 종합 실습이 있는 경우에만 해당 강의 ID를 지정하세요. 생략하면 하단의 종합 실습 안내 문구와 이동 링크를 표시하지 않습니다.
 
 ## 기본 문서 요소
 

@@ -1,19 +1,20 @@
-import { describe, it, expect } from 'vitest';
-import { lessons, lessonById } from '../src/curriculum/blockml';
+import { describe, expect, it } from 'vitest';
+import { lessonById, lessons } from '../src/curriculum/blockml';
+import type { Answer, LabState } from '../src/curriculum/types';
+import { emptyLearning, parseLearning, serializeLearning } from '../src/learning/blockProgress';
 import { createNodeLab } from '../src/nodes/lessonNodes';
-import { resolveScenario, wire } from '../src/weekly/scenarios';
 import {
   runWorkflow,
   workflowEdge,
+  workflowGoals,
   workflowIssues,
   workflowSignature,
-  workflowGoals,
 } from '../src/weekly/engine';
-import { parseLearning, serializeLearning, emptyLearning } from '../src/learning/blockProgress';
-import type { Answer, LabState } from '../src/curriculum/types';
+import { resolveScenario, wire } from '../src/weekly/scenarios';
+import { applyWorkflowPreset } from '../src/weekly/presets';
 const fixes: Record<string, Record<string, Answer>> = {
   'week1-workflow': { strategy: 'tensor' },
-  'week2-workflow': { deployment: 'v2', healing: 'on' },
+  'week2-workflow': { image: 'v2', deployment: 'v2', healing: 'on' },
   'week3-workflow': { cache: 'on', shard: 'on', persistent: 'volume' },
   'week4-workflow': { operation: 'pull' },
   'week5-workflow': { window: 'hour', embedding: 'same', retrieval: 'relevant' },
@@ -29,13 +30,13 @@ const connected = (id: string, changes: Record<string, Answer> = {}): LabState =
 };
 describe('개념과 주차 종합 과정 분리', () => {
   it('기존 주소와 독립된 피처·검색 실습을 제공한다', () => {
-    expect(lessons).toHaveLength(53);
-    expect(lessons.filter((l) => l.activity)).toHaveLength(30);
+    expect(lessons).toHaveLength(54);
+    expect(lessons.filter((l) => l.activity)).toHaveLength(27);
     expect(lessonById['feature-workflow'].week).toBe(5);
     expect(lessonById['rag-workflow'].week).toBe(6);
     expect(lessonById['pipeline-capstone'].week).toBe(9);
   });
-  for (const id of Object.keys(fixes))
+  for (const id of Object.keys(fixes).filter((id) => id !== 'week2-workflow'))
     it(`${id}: 조건 실패 후 개선하면 실제 자료를 전달해 완료한다`, () => {
       const bad = connected(id);
       expect(workflowIssues(resolveScenario(id, bad.answers), bad)).toEqual([]);
@@ -51,6 +52,31 @@ describe('개념과 주차 종합 과정 분리', () => {
       expect(result.stages.every((s) => s.status === 'success')).toBe(true);
       expect(result.stages.at(-1)!.outputs.length).toBeGreaterThan(0);
     });
+  it('모델 서빙 실습은 정상 연결에서 시작하며 모델 입력이 빠지면 예측을 만들지 않는다', () => {
+    const id = 'week2-workflow';
+    const lab = connected(id);
+    const ready = runWorkflow(id, lab);
+    expect(ready.success).toBe(true);
+    expect(ready.stages.find((stage) => stage.node === 'pod2')!.outputs[0].content).toContain(
+      'model-v1',
+    );
+    lab.edges = lab.edges.filter(
+      (edge) => !(edge.target === 'pod2' && edge.targetHandle === 'model'),
+    );
+    const missing = runWorkflow(id, lab);
+    expect(missing.success).toBe(false);
+    expect(missing.stages.find((stage) => stage.node === 'pod2')!.outputs).toEqual([]);
+    expect(missing.stages.find((stage) => stage.node === 'response')!.status).toBe('blocked');
+    expect(workflowGoals(lessonById[id], lab).some((goal) => goal.id === 'compare')).toBe(false);
+  });
+  it('버전·복구 실패는 모델 서빙 기본 구성과 별도인 확장 과제로 불러온다', () => {
+    const id = 'week2-workflow';
+    const repair = applyWorkflowPreset(id, createNodeLab(lessonById[id]), 'repair');
+    repair.edges = resolveScenario(id, repair.answers).wires.map(workflowEdge);
+    expect(runWorkflow(id, repair).success).toBe(false);
+    Object.assign(repair.answers, fixes[id]);
+    expect(runWorkflow(id, repair).success).toBe(true);
+  });
   it('노드 이동·배열 순서는 결과에 영향을 주지 않는다', () => {
     const lab = connected('week1-workflow', fixes['week1-workflow']);
     const signature = workflowSignature(lab),

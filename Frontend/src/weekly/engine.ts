@@ -139,9 +139,10 @@ function metrics(spec: Scenario, a: Record<string, Answer>): Run['metrics'] {
   }
   if (spec.week === 2)
     return [
-      { label: '빌드 / 배포 이미지', value: `${a.image} / ${a.deployment}` },
+      { label: '앱 실행 이미지 / Deployment', value: `${a.image} / ${a.deployment}` },
+      { label: '각 Pod가 로딩하는 모델', value: 'model-v1 · 학습·평가 완료한 예제 모델' },
       {
-        label: '장애 후 준비 복제본',
+        label: '응답 준비된 서빙 실행본',
         value: a.image !== a.deployment ? '0 / 2' : a.healing === 'on' ? '2 / 2' : '1 / 2',
       },
     ];
@@ -280,7 +281,9 @@ function execute(spec: Scenario, n: Stage, a: Record<string, Answer>): NodeResul
     if (n.id === 'save') content.saved = 'checkpoint-v1: 완료한 모델·학습 상태';
   }
   if (spec.week === 2) {
-    if (n.id === 'image') content.image = `blockml:${a.image} · 코드·의존성 포함, 게스트 커널 아님`;
+    if (n.id === 'model') content.model = 'model-v1 · 이미 학습·평가한 리뷰 분류 모델 파일';
+    if (n.id === 'image')
+      content.image = `blockml:${a.image} · 추론 코드·Python·라이브러리, 컨테이너에서 실행할 환경`;
     if (n.id === 'controller')
       content.desired = `이미지 ${a.deployment}, 원하는 복제본 2개, 복구 ${a.healing === 'on' ? '사용' : '미사용'}`;
     if (n.id === 'service') {
@@ -290,7 +293,7 @@ function execute(spec: Scenario, n: Stage, a: Record<string, Answer>): NodeResul
     if (n.id === 'pod1' || n.id === 'pod2') {
       if (a.image !== a.deployment)
         return fail(
-          `빌드 이미지 ${a.image}와 Deployment 지정 ${a.deployment}가 달라 준비할 수 없습니다.`,
+          `이 모형에서 제공한 이미지는 ${a.image}인데 Deployment는 ${a.deployment}를 요청했습니다. 지정한 실행 이미지를 준비할 수 없습니다.`,
           '빌드와 배포 태그를 맞추세요.',
         );
       if (n.id === 'pod1' && a.healing !== 'on')
@@ -298,10 +301,12 @@ function execute(spec: Scenario, n: Stage, a: Record<string, Answer>): NodeResul
           'Pod 1 장애 후 대체 복제본이 생성되지 않아 요청 5건을 처리하지 못했습니다.',
           'Deployment의 원하는 상태 복구를 사용하세요.',
         );
-      content.response =
-        n.id === 'pod1' ? '대체 Pod가 같은 이미지로 요청 #1~#5 처리' : 'Pod 2가 요청 #6~#10 처리';
+      content.response = `${n.id === 'pod1' ? 'Pod 1' : 'Pod 2'} 안의 서빙 컨테이너: model-v1 로딩 → ${n.id === 'pod1' ? '리뷰 #1~#5' : '리뷰 #6~#10'} 추론 → 긍정·부정 예측 (교육용 고정 결과)`;
+      result.reason =
+        '이미지로 앱 실행 환경을 준비하고 별도 모델 입력을 로딩합니다. Kubernetes가 예측을 계산하는 것이 아니라 Pod 안의 앱이 계산합니다.';
     }
-    if (n.id === 'response') content.result = '10 / 10건 응답 · 환경 일치·복제본 복구 확인';
+    if (n.id === 'response')
+      content.result = '10 / 10건 예측 응답 · 같은 서빙 환경과 model-v1을 사용하는 두 실행본';
   }
   if (spec.week === 3) {
     if (n.id === 'objects') content.objects = 'train-v1: 작은 이미지 객체 1,000개';
@@ -675,7 +680,7 @@ export function workflowGoals(lesson: Lesson, lab: LabState): GoalResult[] {
       passed: !!current,
       hint: '전체 실행 또는 다음 단계로 마지막 단계까지 확인하세요.',
     },
-    ...(lesson.id === 'week3-workflow'
+    ...(['week2-workflow', 'week3-workflow'].includes(lesson.id)
       ? []
       : [
           {

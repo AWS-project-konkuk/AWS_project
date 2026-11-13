@@ -227,7 +227,7 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
       break;
     }
     case 'virtual':
-      headline = 'VM은 게스트 OS를, 컨테이너는 호스트 커널을 공유합니다.';
+      headline = 'VM은 각자 게스트 OS·커널을 실행하고, 컨테이너는 호스트 커널을 공유합니다.';
       steps = [
         '하드웨어',
         'VM: 하이퍼바이저',

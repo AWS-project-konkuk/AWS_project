@@ -15,6 +15,31 @@
 
 0단원은 01 전체 흐름 → 02 EC2 → 03 S3 순서입니다. 기존 권한·네트워크와 AMI·체크포인트 독립 강의는 삭제했습니다. 이후 단원 번호는 하나씩 당겼으며 남은 강의 ID와 주소는 유지합니다.
 
+## 1단원 재구성 · 2026-11-07
+
+사용자가 지정한 순서에 맞춰 다음 8개 레슨으로 구성합니다. 기존 강의의 ID와 파일 위치는 유지하고 `runtime-overview` 개요만 추가합니다. `docker-commands`는 「Docker란?」으로 확장하고 명령을 본문과 마지막 실습 안에서 설명합니다.
+
+| 순서 | 강의 ID | 제목 | 연결할 이해 |
+| --- | --- | --- | --- |
+| 1 | runtime-overview | 단원 개요 | 실행 환경 준비 → 실행본 관리 → 사용자 요청 전달 |
+| 2 | vm-container | VM과 컨테이너의 차이 | 게스트 커널과 공유 커널 |
+| 3 | docker-commands | Docker란? | Dockerfile·이미지·컨테이너·레지스트리 |
+| 4 | container-isolation | 커널을 공유하면서 어떻게 격리할까 | Namespaces의 범위와 Cgroups의 자원 제어 |
+| 5 | docker-image | 이미지와 컨테이너의 관계 | 템플릿 재사용과 실행 상태·쓰기 레이어 분리 |
+| 6 | k8s-basics | Kubernetes란? | 원하는 상태와 Pod·Deployment·Service |
+| 7 | k8s-control-traffic | Pod 배치와 요청 전달의 경로 나누기 | 제어 관계와 사용자 요청, 노드 라벨과 Pod 라벨 |
+| 8 | week2-workflow | 실습 · 학습된 모델을 Pod 안에서 서비스하기 | 모델·컨테이너 환경·Pod 관리·요청을 연결해 서빙까지 추적 |
+
+### 참고 자료와 편집 기준
+
+- [MLOps 2주차](https://www.notion.so/f14ebb1cb38a82d6b28501d3693fd20e): 커널 격리, 클러스터 구성 요소, Pod·Deployment·Service, 로컬 배포와 장애 실험.
+- [DevOps 6차시](https://www.notion.so/392ebb1cb38a8286b9b501e0da4e0fdc): 환경 차이의 문제, Docker와 VM·컨테이너, 이미지 레이어와 레지스트리, ECR·ECS·EKS의 위치.
+- [Docker 상세 노트](https://www.notion.so/36cebb1cb38a802d8d0fec8b47a33a22): Dockerfile과 명령의 흐름. API와 설정 예시는 Docker·Kubernetes 공식 문서로 대조합니다.
+
+0단원에서 사용자가 직접 수정한 글처럼 질문을 던지고 바로 풀어 설명합니다. 같은 리뷰 서비스 사례를 유지하고, 쉬운 말 → 정확한 용어 → 구체적 예 → 다음 질문 순서로 씁니다. 유머는 상황을 기억하기 위한 짧은 문장으로 사용하며 개념 설명을 대신하지 않습니다. 같은 결론을 여러 제목 아래 반복하지 않습니다.
+
+각 실습은 예상할 것, 조작할 것, 확인할 근거를 명시합니다. 브라우저 노드는 교육용 모형이며 로컬 명령은 별도 추가 실습입니다. `port-forward`는 선택한 Pod로의 디버깅 연결이므로 Service 데이터 경로의 부하 분산을 입증했다고 설명하지 않습니다. 복제본 유지와 HPA, 컨테이너 재시작과 Pod 교체, 중지와 삭제, 파일 보존과 메모리 복원을 구분합니다.
+
 ## 원문 링크
 
 - [1주차](https://www.notion.so/896ebb1cb38a830b8ade81b394fce2f5)

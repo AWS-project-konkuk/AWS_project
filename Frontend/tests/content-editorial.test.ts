@@ -14,8 +14,8 @@ const sources = Object.fromEntries(
 );
 
 describe('레슨 편집 기준', () => {
-  it('53개 레슨의 첫 문제 제기 뒤에 설명이 있는 도입 이미지를 제공한다', () => {
-    expect(Object.keys(sources)).toHaveLength(53);
+  it('54개 레슨의 첫 문제 제기 뒤에 설명이 있는 도입 이미지를 제공한다', () => {
+    expect(Object.keys(sources)).toHaveLength(54);
     for (const [path, source] of Object.entries(sources)) {
       const secondHeading = source.indexOf('\n## ', source.indexOf('## ') + 3);
       const opening = source.slice(0, secondHeading);

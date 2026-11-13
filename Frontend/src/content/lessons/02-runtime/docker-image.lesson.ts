@@ -1,41 +1,55 @@
 import { defineMdxLesson } from '../../defineLesson';
 
-// 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
+// 본문과 실습 안내는 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'docker-image',
   unit: 1,
-  order: 3,
+  order: 5,
   title: '이미지와 컨테이너의 관계',
-  summary: '실행 환경의 템플릿에서 격리된 프로세스를 실행합니다.',
+  minutes: 12,
+  summary:
+    '하나의 이미지로 두 컨테이너를 만들고, 실행 상태와 파일 변경이 따로 관리되는 이유를 확인합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['코드·의존성', '컨테이너 이미지', '실행 컨테이너'],
+    '같은 이미지를 두 컨테이너에 연결하고 이미지 재사용, 쓰기 레이어, 중지와 삭제의 차이를 설명합니다.',
+  concepts: ['이미지 레이어', '쓰기 레이어', '실행본', '태그·digest'],
   assessment: {
-    question: '이미지 하나로 가능한 것은?',
-    options: ['여러 컨테이너 실행', '실행 중인 컨테이너 하나만 유지'],
+    question: '같은 이미지로 A와 B를 만들었습니다. 공유 볼륨 없이 A의 쓰기 레이어에 파일을 만들면?',
+    options: [
+      '원본 이미지와 B는 자동 변경되지 않는다',
+      '같은 이미지이므로 B에도 즉시 같은 파일이 생긴다',
+    ],
     correct: 0,
-    explanation: '이미지는 템플릿이며 여러 실행 인스턴스가 재사용합니다.',
+    explanation:
+      '같은 이미지의 읽기 전용 레이어를 기반으로 해도 컨테이너별 쓰기 레이어는 별개입니다. 같은 볼륨을 공유하는 경우는 별도로 구분합니다.',
   },
-  advanced: [
-    {
-      title: '심화 · GPU 배치 조건',
-      body: 'nodeSelector·Affinity는 실행 위치 조건을, Taints·Tolerations는 배치 허용 조건을 표현합니다. Toleration이 있다고 특정 노드에 반드시 배치되는 것은 아닙니다. GPU 장치 플러그인과 자원 요청도 확인합니다.',
-    },
-  ],
-  caution: '이미지는 템플릿이며 여러 실행 인스턴스가 재사용합니다.',
-  reflection: '이미지 하나로 가능한 것은?',
+  caution:
+    '이미지를 재사용하는 것과 실행 상태를 공유하는 것은 다릅니다. 중지는 기존 컨테이너 삭제가 아닙니다.',
+  reflection:
+    'A를 중지했다가 시작하는 경우와 삭제한 뒤 같은 이미지로 새로 만드는 경우의 파일 상태는 어떻게 다를까요?',
   references: [
     {
-      title: '원문 · MLOps 2주차 · 실제 도구 실습',
+      title: '원문 · MLOps 2주차 · 컨테이너 원리와 Kubernetes 실습',
       url: 'https://www.notion.so/f14ebb1cb38a82d6b28501d3693fd20e',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://kubernetes.io/docs/concepts/overview/components/',
+      title: '원문 · DevOps 6차시 · Docker와 AWS 컨테이너 서비스',
+      url: 'https://www.notion.so/392ebb1cb38a8286b9b501e0da4e0fdc',
     },
     {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://docs.docker.com/get-started/docker-concepts/',
+      title: '원문 · Docker에 대한 상세 · 실행 환경과 명령',
+      url: 'https://www.notion.so/36cebb1cb38a802d8d0fec8b47a33a22',
+    },
+    {
+      title: 'Docker 공식 · 이미지',
+      url: 'https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/',
+    },
+    {
+      title: 'Docker 공식 · 이미지 레이어',
+      url: 'https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/',
+    },
+    {
+      title: 'Docker 공식 · 컨테이너 저장소',
+      url: 'https://docs.docker.com/engine/storage/',
     },
   ],
   sourceWeek: 2,
@@ -91,34 +105,6 @@ export default defineMdxLesson({
     nextLesson: 'week2-workflow',
     kind: '구성 관계',
     afterSection: 1,
-  },
-  activity: {
-    kind: 'container',
-    fields: [
-      {
-        id: 'copies',
-        label: '컨테이너 수',
-        initial: 2,
-        min: 1,
-        max: 6,
-        step: 1,
-        help: '동일 이미지에서 실행 인스턴스가 늘어납니다.',
-      },
-    ],
-    question: '이미지 하나로 가능한 것은?',
-    options: [
-      {
-        value: 'a',
-        label: '여러 컨테이너 실행',
-      },
-      {
-        value: 'b',
-        label: '실행 중인 컨테이너 하나만 유지',
-      },
-    ],
-    correct: 'a',
-    explanation: '이미지는 템플릿이며 여러 실행 인스턴스가 재사용합니다.',
-    task: '컨테이너 수를 바꾸고 공유 이미지와 개별 실행 상태를 구분하세요.',
   },
   practice: 'interactive',
   experiment: '흐름 확인',

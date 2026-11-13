@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronDown, X } from 'lucide-react';
 import { chapters, chapterLabel, lessons } from '../curriculum/catalog';
 import type { Lesson } from '../curriculum/types';
+import { useLessonCompletion } from '../systemLab/store';
 import { useLearning } from './LearningStore';
 import styles from './LessonLayout.module.css';
 
@@ -15,6 +16,7 @@ export function CourseSidebar({
   onClose: () => void;
 }) {
   const { state } = useLearning();
+  const isComplete = useLessonCompletion(state.data);
   const [narrow, setNarrow] = useState(() => matchMedia('(max-width: 1023px)').matches);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -71,7 +73,7 @@ export function CourseSidebar({
                     }}
                   >
                     <span>
-                      {state.data.lessons[item.id]?.completed ? (
+                      {isComplete(item.id) ? (
                         <CheckCircle2 size={14} />
                       ) : (
                         String(lessons.indexOf(item) + 1).padStart(2, '0')

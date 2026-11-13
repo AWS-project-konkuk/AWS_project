@@ -86,7 +86,7 @@ export function collectLessons(modules: Record<string, LessonDocument>): LessonD
         a.lesson.id.localeCompare(b.lesson.id),
     );
   for (const { lesson } of result)
-    if (lesson.nodeExample && !seen.has(lesson.nodeExample.nextLesson))
+    if (lesson.nodeExample?.nextLesson && !seen.has(lesson.nodeExample.nextLesson))
       throw new Error(
         `${lesson.id}: 본문 노드 예제가 가리키는 강의 ${lesson.nodeExample.nextLesson}가 없습니다.`,
       );

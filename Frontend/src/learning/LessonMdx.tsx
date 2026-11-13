@@ -31,17 +31,9 @@ function NodeExample({ spec, practice = false }: { spec?: NodeExampleSpec; pract
   return <InlineNodeExample lessonId={lesson.id} spec={selected} startInPractice={practice} />;
 }
 function Activity({ open = false }: { open?: boolean }) {
-  const lesson = useLesson();
-  if (!lesson.activity)
-    throw new Error(`${lesson.id}: Activity를 사용하려면 activity 설정이 필요합니다.`);
-  return (
-    <details className={styles.optionalActivity} open={open}>
-      <summary>선택 활동 · 결과를 예측하고 비교하기</summary>
-      <p>브라우저의 교육용 모형입니다. 실제 도구 실행이나 필수 완료 조건이 아닙니다.</p>
-      <LearningActivity lesson={lesson} />
-    </details>
-  );
+  return <LearningActivity lesson={useLesson()} open={open} />;
 }
+
 function Quiz() {
   return <Understanding lesson={useLesson()} />;
 }
