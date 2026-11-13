@@ -7,6 +7,7 @@ import {
   makeEntity,
   definition,
   signature,
+  serviceRoutes,
   starterTasks,
   type Graph,
 } from '../src/systemLab/model';
@@ -46,7 +47,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
   });
   it('선언과 자료는 개별 실행 상태 없이 동작하고 이전 완료 기록을 읽는다', () => {
     const graph = ready();
-    for (const id of ['deployment', 'service', 'start', 'image']) {
+    for (const id of ['start', 'image']) {
       expect(graph.entities.find((item) => item.id === id)).not.toHaveProperty('enabled');
       expect(() => applyCommand(graph, { type: 'toggle', id, enabled: false })).toThrow();
     }
@@ -62,18 +63,24 @@ describe('Docker·Kubernetes 시범 실행', () => {
     expect(runLab(restored.graph, 'migrated').success).toBe(true);
     const stoppedDocker = applyCommand(graph, { type: 'toggle', id: 'docker', enabled: false });
     expect(
-      runLab(stoppedDocker, 'stopped').steps.find((step) => step.node === 'image')?.status,
-    ).toBe('blocked');
+      runLab(stoppedDocker, 'stopped').steps.find((step) => step.node === 'pod-a')?.message,
+    ).toContain('Docker 정지 상태');
   });
-  it('빠진 모델, 태그 불일치, 관리 대상 수, 시스템 정지를 구분한다', () => {
+  it('빠진 모델, 이미지, 관리 대상 수, 시스템 정지를 구분한다', () => {
     const graph = ready();
     const cases = [
       [applyCommand(graph, { type: 'disconnect', ids: [model.id] }), '모델 입력이 없습니다.'],
       [
-        applyCommand(graph, { type: 'settings', id: 'deployment', version: 'v2' }),
-        '받은 이미지 v1',
+        applyCommand(graph, {
+          type: 'disconnect',
+          ids: [connection('image', 'out-image', 'kubernetes', 'in-image').id],
+        }),
+        '컨테이너 이미지를 연결하세요',
       ],
-      [applyCommand(graph, { type: 'settings', id: 'deployment', replicas: 3 }), '원하는 수 3개'],
+      [
+        applyCommand(graph, { type: 'cluster', id: 'kubernetes', patch: { replicas: 3 } }),
+        '원하는 수 3개',
+      ],
       [
         applyCommand(graph, { type: 'toggle', id: 'kubernetes', enabled: false }),
         'Kubernetes 정지 상태',
@@ -85,24 +92,31 @@ describe('Docker·Kubernetes 시범 실행', () => {
       expect(result.steps.map((step) => step.message).join('\n')).toContain(message);
     }
   });
-  it('순환 경로의 선을 반환하고, 같은 응답이 두 번 오면 실패한다', () => {
+  it('Service 설정이 요청 경로와 전달값을 결정한다', () => {
+    const graph = ready();
+    expect(serviceRoutes(graph).map((route) => route.to.node)).toEqual(['pod-a', 'pod-b']);
+    const missed = applyCommand(graph, {
+      type: 'cluster',
+      id: 'kubernetes',
+      patch: { serviceSelector: 'other' },
+    });
+    expect(serviceRoutes(missed)).toHaveLength(0);
+    expect(runLab(missed, 'miss').success).toBe(false);
+    const result = runLab(graph, 'routing');
+    expect(
+      result.steps
+        .find((step) => step.node === 'kubernetes')
+        ?.transfers.map((transfer) => transfer.description),
+    ).toEqual(['요청 5건', '요청 5건']);
+    expect(
+      result.steps
+        .find((step) => step.node === 'start')
+        ?.transfers.some((transfer) => transfer.description === 'model.pkl · v1'),
+    ).toBe(true);
+    expect(() => applyCommand(graph, { type: 'connect', edge: serviceRoutes(graph)[0] })).toThrow();
+  });
+  it('같은 응답이 두 번 오면 실패한다', () => {
     let graph = applyCommand(ready(), {
-      type: 'add',
-      kind: 'service',
-      parent: 'kubernetes',
-      id: 'service-b',
-    });
-    graph = applyCommand(graph, {
-      type: 'port-change',
-      id: 'service',
-      port: 'in-request',
-      changes: { multiple: true },
-    });
-    const a = connection('service', 'out-request', 'service-b', 'in-request');
-    const b = connection('service-b', 'out-request', 'service', 'in-request');
-    for (const edge of [a, b]) graph = applyCommand(graph, { type: 'connect', edge });
-    expect(runLab(graph, 'cycle').cycle.sort()).toEqual([a.id, b.id].sort());
-    graph = applyCommand(ready(), {
       type: 'port-add',
       id: 'pod-b',
       port: 'extra',
@@ -123,26 +137,13 @@ describe('Docker·Kubernetes 시범 실행', () => {
     expect(
       store.dispatch({ type: 'move', id: 'ec2', parent: 'kubernetes', position: { x: 0, y: 0 } }),
     ).toBe(false);
-    for (const id of [
-      'start',
-      'image',
-      'deployment',
-      'service',
-      'pod-a',
-      'pod-b',
-      'ec2',
-      'docker',
-      'kubernetes',
-    ]) {
+    for (const id of ['start', 'image', 'pod-a', 'pod-b', 'ec2', 'docker', 'kubernetes']) {
       expect(store.dispatch({ type: 'remove', id })).toBe(false);
     }
     store.dispatch({ type: 'add', id: 'extra-ec2', kind: 'ec2', parent: 'root' });
     store.dispatch({ type: 'add', id: 'extra-docker', kind: 'docker', parent: 'extra-ec2' });
     store.dispatch({ type: 'add', id: 'extra-image', kind: 'image', parent: 'extra-docker' });
-    store.dispatch({
-      type: 'connect',
-      edge: connection('extra-image', 'out-image', 'pod-a', 'in-image'),
-    });
+
     const expanded = useSystemLab.getState().saved.graph;
     expect(store.dispatch({ type: 'remove', id: 'extra-ec2' })).toBe(true);
     expect(useSystemLab.getState().saved.graph).toEqual(before);
@@ -216,7 +217,9 @@ describe('Docker·Kubernetes 시범 실행', () => {
       JSON.stringify({ version: 1, graph: old, proof: signature(old), quiz: true }),
     );
     expect(saved.graph.entities.some((entity) => entity.kind === 'model')).toBe(false);
-    expect(saved.graph.connections).toEqual(graph.connections);
+    expect(saved.graph.connections.map((e) => e.id).sort()).toEqual(
+      graph.connections.map((e) => e.id).sort(),
+    );
     expect(saved.proof).toBe(signature(saved.graph));
     const run = runLab(saved.graph, 'old-save');
     expect(run.success).toBe(true);
@@ -241,6 +244,30 @@ describe('Docker·Kubernetes 시범 실행', () => {
     ).toEqual(absolute(graph, before));
     expect(compact.connections).toEqual(graph.connections);
     expect(signature(compact)).toBe(signature(graph));
+  });
+  it('저장된 배포와 Service 배선을 설정과 접속점으로 이관한다', () => {
+    const graph = ready();
+    const legacy: Graph = {
+      entities: [
+        ...graph.entities.map((e) =>
+          e.type === 'system' && e.kind === 'kubernetes' ? { ...e, kubernetes: undefined } : e,
+        ),
+        makeEntity('deployment', 'deployment', 'kubernetes', { x: 36, y: 50 }),
+        makeEntity('service', 'service', 'kubernetes', { x: 36, y: 215 }),
+      ],
+      connections: graph.connections
+        .filter((edge) => edge.to.node !== 'kubernetes')
+        .concat(connection('start', 'out-request', 'service', 'in-request')),
+    };
+    const saved = parseSaved(
+      JSON.stringify({ version: 1, graph: legacy, quiz: true, proof: signature(legacy) }),
+    );
+    expect(saved.graph.entities.some((e) => e.kind === 'deployment')).toBe(false);
+    expect(saved.graph.connections.map((e) => e.id).sort()).toEqual(
+      graph.connections.map((e) => e.id).sort(),
+    );
+    expect(saved.proof).toBe(signature(saved.graph));
+    expect(runLab(saved.graph, 'restored').success).toBe(true);
   });
   it('위치 이동은 완료 증거를 유지하고 잘못된 저장 구조를 거부한다', () => {
     const graph = ready();

@@ -4,6 +4,11 @@ import {
   connection,
   connectionIssue,
   definition,
+  defaultKubernetes,
+  endpointId,
+  clusterImages,
+  makeEntity,
+  manualConnectionIssue,
   hasRunState,
   isSystemKind,
   labels,
@@ -19,6 +24,7 @@ import {
   type Graph,
   type Kind,
 } from './model';
+import { runLab } from './engine';
 import type { LearningData } from '../curriculum/types';
 
 export const storageKey = 'blockml:system-lab:week2-workflow:v1';
@@ -111,6 +117,26 @@ export function parseSaved(raw: string): Saved {
         ports.add(p.id);
       }
     }
+    if (kind === 'kubernetes' && item.kubernetes !== undefined) {
+      const cfg = item.kubernetes;
+      if (
+        !record(cfg) ||
+        typeof cfg.imageId !== 'string' ||
+        typeof cfg.workloadLabel !== 'string' ||
+        typeof cfg.serviceSelector !== 'string' ||
+        !number(cfg.replicas) ||
+        !Number.isInteger(cfg.replicas) ||
+        cfg.replicas < 1 ||
+        cfg.replicas > 10 ||
+        !number(cfg.servicePort) ||
+        !Number.isInteger(cfg.servicePort) ||
+        cfg.servicePort < 1 ||
+        cfg.servicePort > 65535
+      )
+        return fail();
+    }
+    if (kind === 'pod' && item.appLabel !== undefined && typeof item.appLabel !== 'string')
+      return fail();
     const entity = item as unknown as Entity;
     if (protectedKind(kind)) {
       const fixed = base.entities.find((e) => e.kind === kind);
@@ -179,7 +205,11 @@ export function parseSaved(raw: string): Saved {
         parent?.type !== 'system' ||
         (!protectedKind(current.kind) &&
           !tools[parent.kind].includes(current.kind) &&
-          !(current.kind === 'model' && parent.kind !== 'ec2'))
+          !(current.kind === 'model' && parent.kind !== 'ec2') &&
+          !(
+            (current.kind === 'deployment' || current.kind === 'service') &&
+            parent.kind === 'kubernetes'
+          ))
       )
         return fail();
       seen.add(current.id);
@@ -204,6 +234,8 @@ export function parseSaved(raw: string): Saved {
   }
   const previousSignature = signature(graph);
   const compatibleModels = migrateModelSource(graph);
+  const migrated = migrateKubernetes(graph);
+  const movedPorts = migrateClusterPorts(graph);
   // Old saves recorded an execution flag for resources that are applied automatically.
   graph.entities = graph.entities.map((entity) => {
     if (hasRunState(entity.kind) || !Object.hasOwn(entity, 'enabled')) return entity;
@@ -215,8 +247,118 @@ export function parseSaved(raw: string): Saved {
     version: 1,
     graph,
     quiz: saved.quiz,
-    proof: compatibleModels && saved.proof === previousSignature ? signature(graph) : null,
+    proof:
+      compatibleModels &&
+      saved.proof === previousSignature &&
+      (!(migrated || movedPorts) || runLab(graph, 'migration').success)
+        ? signature(graph)
+        : null,
   };
+}
+function migrateKubernetes(graph: Graph): boolean {
+  const legacy = graph.entities.some(
+    (e) =>
+      e.kind === 'deployment' || (e.kind === 'kubernetes' && e.type === 'system' && !e.kubernetes),
+  );
+  if (!legacy) return false;
+  const original = [...graph.entities];
+  const endpoints = new Map<string, string>();
+  for (const cluster of original) {
+    if (cluster.type !== 'system' || cluster.kind !== 'kubernetes' || cluster.kubernetes) continue;
+    const local = original.filter((e) => e.parent === cluster.id);
+    const deployment = local.find((e) => e.kind === 'deployment');
+    const entries = local.filter((e) => e.kind === 'service');
+    const entry =
+      entries.find((e) =>
+        graph.connections.some((wire) => wire.to.node === e.id && wire.from.node === 'start'),
+      ) ?? entries[0];
+    const id = endpointId(cluster.id);
+    if (original.some((e) => e.id === id && (e.kind !== 'service' || e.parent !== cluster.id)))
+      fail();
+    entries.forEach((e) => endpoints.set(e.id, id));
+    const images = clusterImages(graph, cluster);
+    const wired = graph.connections.find(
+      (edge) =>
+        images.some((image) => image.id === edge.from.node) &&
+        local.some((pod) => pod.kind === 'pod' && pod.id === edge.to.node),
+    );
+    const image =
+      images.find((e) => e.id === wired?.from.node) ??
+      images.find(
+        (e) => e.version === (deployment?.type === 'resource' ? deployment.version : 'v1'),
+      ) ??
+      images[0];
+    graph.entities = graph.entities.filter((e) => !entries.some((old) => old.id === e.id));
+    graph.entities.push(
+      makeEntity('service', id, cluster.id, entry?.position ?? { x: 36, y: 215 }),
+    );
+    graph.entities = graph.entities.map((e) =>
+      e.id === cluster.id
+        ? {
+            ...cluster,
+            kubernetes: {
+              ...defaultKubernetes,
+              imageId: image?.id ?? '',
+              replicas: deployment?.type === 'resource' ? deployment.replicas : 2,
+            },
+          }
+        : e,
+    );
+  }
+  graph.entities = graph.entities
+    .filter((e) => e.kind !== 'deployment')
+    .map((e) =>
+      e.type === 'resource' && e.kind === 'pod'
+        ? {
+            ...e,
+            ports: e.ports.filter((p) => p.material !== 'image' && p.material !== 'control'),
+          }
+        : e,
+    );
+  const wires = graph.connections;
+  graph.connections = [];
+  for (const edge of wires) {
+    const next = connection(
+      edge.from.node,
+      edge.from.port,
+      endpoints.get(edge.to.node) ?? edge.to.node,
+      edge.to.port,
+    );
+    if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
+  }
+  return true;
+}
+function migrateClusterPorts(graph: Graph): boolean {
+  const endpoints = graph.entities.filter((e) => e.kind === 'service');
+  if (!endpoints.length) return false;
+  const parents = new Map(endpoints.map((e) => [e.id, e.parent]));
+  const wires = graph.connections;
+  graph.entities = graph.entities.filter((e) => !parents.has(e.id));
+  graph.connections = [];
+  for (const edge of wires) {
+    if (parents.has(edge.from.node)) continue;
+    const next = connection(
+      edge.from.node,
+      edge.from.port,
+      parents.get(edge.to.node) ?? edge.to.node,
+      edge.to.port,
+    );
+    if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
+  }
+  for (const cluster of graph.entities) {
+    if (cluster.type !== 'system' || !cluster.kubernetes?.imageId) continue;
+    const image = graph.entities.find(
+      (e) => e.id === cluster.kubernetes?.imageId && e.kind === 'image',
+    );
+    const output =
+      image?.type === 'resource'
+        ? image.ports.find((p) => p.direction === 'out' && p.material === 'image')
+        : undefined;
+    if (!image || !output) continue;
+    const next = connection(image.id, output.id, cluster.id, 'in-image');
+    if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
+  }
+  return true;
 }
 function migrateModelSource(graph: Graph): boolean {
   const start = graph.entities.find(

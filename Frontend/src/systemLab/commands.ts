@@ -1,6 +1,6 @@
 import {
   absolute,
-  connectionIssue,
+  manualConnectionIssue,
   definition,
   descendants,
   hasRunState,
@@ -16,6 +16,7 @@ import {
   type Entity,
   type Graph,
   type Kind,
+  type KubernetesSettings,
   type Material,
   type Point,
   type PortSpec,
@@ -28,6 +29,8 @@ export type Command =
   | { type: 'move'; id: string; position: Point; parent?: string }
   | { type: 'compact'; id: string }
   | { type: 'resize'; id: string; width: number; height: number }
+  | { type: 'cluster'; id: string; patch: Partial<KubernetesSettings> }
+  | { type: 'pod-label'; id: string; value: string }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
   | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
   | { type: 'connect'; edge: Connection }
@@ -50,7 +53,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
   });
   if (cmd.type === 'restore') return definition.initial();
   if (cmd.type === 'connect') {
-    const error = connectionIssue(graph, cmd.edge);
+    const error = manualConnectionIssue(graph, cmd.edge);
     if (error) throw new Error(error);
     return { ...graph, connections: [...graph.connections, cmd.edge] };
   }
@@ -77,6 +80,8 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
   }
   const item = graph.entities.find((e) => e.id === cmd.id);
   if (!item) return graph;
+  if (item.kind === 'service' && cmd.type !== 'move')
+    throw new Error('접속점은 Kubernetes 설정에서 관리합니다.');
   if (cmd.type === 'remove' && requiredLabEntities(graph.entities).has(item.id)) {
     throw new Error('실습에 필요한 항목은 삭제할 수 없습니다.');
   }
@@ -104,7 +109,8 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       const parent = graph.entities.find((e) => e.id === (cmd.parent ?? item.parent));
       if (
         parent?.type !== 'system' ||
-        !tools[parent.kind].includes(item.kind) ||
+        (!tools[parent.kind].includes(item.kind) &&
+          !(item.kind === 'service' && parent.id === item.parent)) ||
         descendants(graph, item.id).has(parent.id)
       )
         throw new Error('이 영역으로 옮길 수 없습니다.');
@@ -157,6 +163,31 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
         item.id,
       );
     }
+    case 'cluster': {
+      if (item.type !== 'system' || !item.kubernetes) return graph;
+      const settings = { ...item.kubernetes, ...cmd.patch };
+      if (
+        !Number.isInteger(settings.replicas) ||
+        settings.replicas < 1 ||
+        settings.replicas > 10 ||
+        !Number.isInteger(settings.servicePort) ||
+        settings.servicePort < 1 ||
+        settings.servicePort > 65535 ||
+        !/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(settings.workloadLabel) ||
+        (settings.serviceSelector !== '' &&
+          !/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(settings.serviceSelector))
+      )
+        throw new Error(
+          '복제본은 1~10개, 포트는 1~65535, 라벨은 소문자·숫자·하이픈으로 입력하세요.',
+        );
+      return change(item.id, () => ({ ...item, kubernetes: settings }));
+    }
+    case 'pod-label': {
+      if (item.type !== 'resource' || item.kind !== 'pod') return graph;
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(cmd.value))
+        throw new Error('라벨은 소문자·숫자·하이픈으로 입력하세요.');
+      return change(item.id, () => ({ ...item, appLabel: cmd.value }));
+    }
     case 'settings': {
       const name = cmd.name?.trim();
       if (cmd.name !== undefined && (!name || name.length > 63))
@@ -202,7 +233,12 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
             ? cmd.changes.material
             : undefined;
       const direction = cmd.type === 'port-add' ? cmd.direction : current?.direction;
-      if (material && direction && !portTypes[item.kind][direction].includes(material))
+      if (
+        material &&
+        direction &&
+        (!portTypes[item.kind][direction].includes(material) ||
+          (item.kind === 'pod' && (material === 'image' || material === 'control')))
+      )
         throw new Error('이 노드가 처리할 수 없는 타입입니다.');
       const attached = graph.connections.filter((edge) =>
         [edge.from, edge.to].some((p) => p.node === item.id && p.port === cmd.port),

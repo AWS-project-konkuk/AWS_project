@@ -24,11 +24,26 @@ interface EntityBase {
   position: Point;
   enabled?: boolean;
 }
+export interface KubernetesSettings {
+  imageId: string;
+  replicas: number;
+  workloadLabel: string;
+  serviceSelector: string;
+  servicePort: number;
+}
+export const defaultKubernetes: KubernetesSettings = {
+  imageId: '',
+  replicas: 2,
+  workloadLabel: 'review',
+  serviceSelector: 'review',
+  servicePort: 80,
+};
 export interface SystemEntity extends EntityBase {
   type: 'system';
   kind: SystemKind;
   width: number;
   height: number;
+  kubernetes?: KubernetesSettings;
 }
 export interface ResourceEntity extends EntityBase {
   type: 'resource';
@@ -36,6 +51,7 @@ export interface ResourceEntity extends EntityBase {
   ports: PortSpec[];
   version: Version;
   replicas: number;
+  appLabel?: string;
 }
 export type Entity = SystemEntity | ResourceEntity;
 export interface Endpoint {
@@ -61,14 +77,14 @@ export const labels: Record<Kind, string> = {
   model: '모델 파일',
   image: '컨테이너 이미지',
   deployment: 'Deployment',
-  service: 'Service',
+  service: 'Service 접속점',
   pod: 'Pod',
   container: '컨테이너',
 };
 export const resourceRoles: Partial<Record<ResourceKind, string>> = {
   image: '실행 자료',
   deployment: '배포 설정',
-  service: '접근 설정',
+  service: '요청 진입점',
 };
 export const materials: Record<Material, string> = {
   request: '요청',
@@ -81,7 +97,7 @@ export const tools: Record<SystemKind, readonly Kind[]> = {
   root: ['ec2'],
   ec2: ['docker', 'kubernetes'],
   docker: ['image', 'container'],
-  kubernetes: ['deployment', 'service', 'pod'],
+  kubernetes: ['pod'],
 };
 export const portTypes: Record<ResourceKind, Record<Direction, readonly Material[]>> = {
   start: { in: [], out: ['request', 'model'] },
@@ -109,16 +125,34 @@ export function makeEntity(kind: Kind, id: string, parent: string, position: Poi
     position,
     ...(hasRunState(kind) && { enabled: false }),
   };
-  if (isSystemKind(kind)) return { ...base, type: 'system', kind, width: 300, height: 200 };
+  if (isSystemKind(kind))
+    return {
+      ...base,
+      type: 'system',
+      kind,
+      width: 300,
+      height: 200,
+      ...(kind === 'kubernetes' && { kubernetes: { ...defaultKubernetes } }),
+    };
   const ports = (['in', 'out'] as const).flatMap((direction) =>
-    portTypes[kind][direction].map((material) => ({
-      id: direction + '-' + material,
-      direction,
-      material,
-      multiple: kind === 'end',
-    })),
+    portTypes[kind][direction]
+      .filter((material) => kind !== 'pod' || (material !== 'image' && material !== 'control'))
+      .map((material) => ({
+        id: direction + '-' + material,
+        direction,
+        material,
+        multiple: kind === 'end',
+      })),
   );
-  return { ...base, type: 'resource', kind, ports, version: 'v1', replicas: 2 };
+  return {
+    ...base,
+    type: 'resource',
+    kind,
+    ports,
+    version: 'v1',
+    replicas: 2,
+    ...(kind === 'pod' && { appLabel: 'review' }),
+  };
 }
 export function connection(from: string, out: string, to: string, input: string): Connection {
   return {
@@ -130,17 +164,50 @@ export function connection(from: string, out: string, to: string, input: string)
 const wire = (from: string, to: string, material: Material) =>
   connection(from, 'out-' + material, to, 'in-' + material);
 const podIds = ['pod-a', 'pod-b'];
-export const starterTasks = (
-  [
-    ['image', 'image'],
-    ['start', 'model'],
-    ['deployment', 'control'],
-    ['service', 'request'],
-  ] as const
-)
-  .flatMap(([from, material]) => podIds.map((pod) => wire(from, pod, material)))
-  .concat(podIds.map((pod) => wire(pod, 'end', 'prediction')));
-const requiredNodeIds = new Set(['start', 'image', 'deployment', 'service', ...podIds, 'end']);
+export const starterTasks = [
+  wire('image', 'kubernetes', 'image'),
+  ...podIds
+    .map((pod) => wire('start', pod, 'model'))
+    .concat(podIds.map((pod) => wire(pod, 'end', 'prediction'))),
+];
+const requiredNodeIds = new Set(['start', 'image', 'kubernetes', ...podIds, 'end']);
+
+export const clusterPorts: PortSpec[] = [
+  { id: 'in-request', material: 'request', direction: 'in', multiple: false },
+  { id: 'in-image', material: 'image', direction: 'in', multiple: false },
+  { id: 'out-request', material: 'request', direction: 'out', multiple: false },
+];
+export const endpointId = (id: string) => (id === 'kubernetes' ? 'service' : id + '-endpoint');
+export const appLabel = (pod: ResourceEntity) => pod.appLabel ?? 'review';
+export function clusterImages(graph: Graph, cluster: SystemEntity): ResourceEntity[] {
+  const stores = new Set(
+    graph.entities
+      .filter((e) => e.kind === 'docker' && e.parent === cluster.parent)
+      .map((e) => e.id),
+  );
+  return graph.entities.filter(
+    (e): e is ResourceEntity => e.type === 'resource' && e.kind === 'image' && stores.has(e.parent),
+  );
+}
+export function serviceRoutes(graph: Graph): Connection[] {
+  return graph.entities.flatMap((cluster) => {
+    if (cluster.type !== 'system' || !cluster.kubernetes || !cluster.kubernetes.serviceSelector)
+      return [];
+    return graph.entities.flatMap((pod) => {
+      if (
+        pod.type !== 'resource' ||
+        pod.kind !== 'pod' ||
+        pod.parent !== cluster.id ||
+        appLabel(pod) !== cluster.kubernetes?.serviceSelector
+      )
+        return [];
+      const input = pod.ports.find(
+        (port) => port.direction === 'in' && port.material === 'request',
+      );
+      return input ? [connection(cluster.id, 'out-request', pod.id, input.id)] : [];
+    });
+  });
+}
 
 export function requiredLabEntities(entities: readonly Entity[]): Set<string> {
   const parents = new Map(entities.map((entity) => [entity.id, entity.parent]));
@@ -169,6 +236,7 @@ function initial(): Graph {
     kind,
     width,
     height,
+    ...(kind === 'kubernetes' && { kubernetes: { ...defaultKubernetes, imageId: 'image' } }),
   });
   const node = (
     kind: ResourceKind,
@@ -185,13 +253,11 @@ function initial(): Graph {
     sys('docker', 'docker', 'ec2', 22, 46, 230, 154),
     node('image', 'image', 'docker', 26, 47),
     sys('kubernetes', 'kubernetes', 'ec2', 22, 218, 750, 412),
-    node('deployment', 'deployment', 'kubernetes', 36, 56),
-    node('service', 'service', 'kubernetes', 36, 215),
     node('pod', 'pod-a', 'kubernetes', 415, 50, 'Pod 1'),
     node('pod', 'pod-b', 'kubernetes', 415, 222, 'Pod 2'),
     node('end', 'end', rootId, 1080, 360),
   ];
-  return { entities, connections: [wire('start', 'service', 'request')] };
+  return { entities, connections: [wire('start', 'kubernetes', 'request')] };
 }
 export interface LabDefinition {
   initial: () => Graph;
@@ -218,9 +284,19 @@ export function descendants(graph: Graph, id: string): Set<string> {
 }
 export function findPort(graph: Graph, endpoint: Endpoint) {
   const node = graph.entities.find((entity) => entity.id === endpoint.node);
+  if (node?.kind === 'kubernetes') return clusterPorts.find((port) => port.id === endpoint.port);
   return node?.type === 'resource'
     ? node.ports.find((port) => port.id === endpoint.port)
     : undefined;
+}
+export function manualConnectionIssue(graph: Graph, edge: Connection): string | undefined {
+  const from = graph.entities.find((e) => e.id === edge.from.node);
+  const to = graph.entities.find((e) => e.id === edge.to.node);
+  if (from?.kind === 'kubernetes' || from?.kind === 'service' || from?.kind === 'deployment')
+    return '이 경로는 Kubernetes 설정에서 지정하세요.';
+  if (to?.kind === 'pod' && findPort(graph, edge.to)?.material !== 'model')
+    return 'Pod의 요청과 이미지는 Kubernetes 설정을 따릅니다.';
+  return connectionIssue(graph, edge);
 }
 export function connectionIssue(graph: Graph, edge: Connection): string | undefined {
   const out = findPort(graph, edge.from);
@@ -250,10 +326,12 @@ export function signature(graph: Graph) {
         parent: entity.parent,
         name: entity.name,
         enabled: entity.enabled,
+        ...(entity.type === 'system' && entity.kubernetes && { kubernetes: entity.kubernetes }),
         ...(entity.type === 'resource' && {
           ports: entity.ports,
           version: entity.version,
           replicas: entity.replicas,
+          ...(entity.appLabel !== undefined && { appLabel: entity.appLabel }),
         }),
       }))
       .sort((a, b) => a.id.localeCompare(b.id)),

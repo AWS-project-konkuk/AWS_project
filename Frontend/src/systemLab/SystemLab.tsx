@@ -17,7 +17,16 @@ import { Canvas, KindIcon, type MenuItem } from './Canvas';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
 import { Inspector } from './Inspector';
-import { labels, pilotLesson, rootId, signature, tools } from './model';
+import {
+  findPort,
+  labels,
+  materials,
+  pilotLesson,
+  rootId,
+  serviceRoutes,
+  signature,
+  tools,
+} from './model';
 import { useSystemLab } from './store';
 import styles from './SystemLab.module.css';
 
@@ -183,6 +192,14 @@ export function SystemLab() {
       setFrontPanel('results');
     }
   };
+  const chosenWire = [...graph.connections, ...serviceRoutes(graph)].find(
+    (edge) => edge.id === selectedEdge,
+  );
+  const chosenMaterial = chosenWire && findPort(graph, chosenWire.from)?.material;
+  const delivered = active?.result.steps
+    .slice(0, active.cursor)
+    .flatMap((step) => step.transfers)
+    .find((transfer) => transfer.edge === selectedEdge);
   const completed = !!saved.proof && saved.quiz;
   return (
     <section
@@ -212,7 +229,10 @@ export function SystemLab() {
       <header className={styles.toolbar}>
         <div className={styles.toolbarTitle}>
           <h2>모델 서빙 실습</h2>
-          <p>두 Pod에 요구사항을 연결하고, 각 Pod의 응답을 도착 노드에 연결하세요.</p>
+          <p>
+            이미지를 Kubernetes에 연결하고 Service 대상 라벨을 확인하세요. 두 Pod에 모델을 전달하고
+            각 응답을 도착에 연결하세요.
+          </p>
         </div>
         <div className={styles.actions}>
           <button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
@@ -328,7 +348,19 @@ export function SystemLab() {
               {resultsVisible && (
                 <PanelSizes panel="실행 결과" size={resultsSize} choose={setResultsSize} />
               )}
-              <span className={styles.resultStatus} role="status">
+              <span
+                className={styles.resultStatus}
+                role="status"
+                data-tone={
+                  done
+                    ? active.result.success
+                      ? 'success'
+                      : 'error'
+                    : saved.proof && !active
+                      ? 'success'
+                      : undefined
+                }
+              >
                 {busy
                   ? '실행 중 · ' + active.cursor + ' / ' + active.result.steps.length
                   : active?.stopped
@@ -442,6 +474,13 @@ export function SystemLab() {
                     <KindIcon kind={kind} /> {labels[kind]} <Plus size={14} />
                   </button>
                 ))}
+              {chosenWire && chosenMaterial && (
+                <span role="status">
+                  {name(chosenWire.from.node)} → {name(chosenWire.to.node)} ·{' '}
+                  {materials[chosenMaterial]}
+                  {delivered && ' · ' + delivered.description}
+                </span>
+              )}
               {selectedEdge && graph.connections.some((e) => e.id === selectedEdge) && (
                 <button
                   type="button"

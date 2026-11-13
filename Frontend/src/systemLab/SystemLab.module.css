@@ -276,6 +276,76 @@
   width: 25px;
   padding: 0;
 }
+.clusterPort {
+  --port-color: var(--lab-request);
+  position: absolute;
+  left: 0;
+  top: 48px;
+  padding-left: 16px;
+  font-size: 11px;
+  color: var(--port-color);
+}
+.clusterPort[data-port='in-image'] {
+  --port-color: var(--lab-image);
+  top: 76px;
+}
+.clusterPort[data-port='out-request'] {
+  left: auto;
+  right: 0;
+  padding: 0 16px 0 0;
+}
+.clusterPort .handle {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 0;
+}
+.clusterPort[data-connected='true'] .handle::before {
+  background: var(--port-color);
+}
+.portSpec {
+  padding: 8px 0;
+  line-height: 1.55;
+}
+.portSpec h4 {
+  margin: 0;
+}
+.portSpec ol {
+  padding-inline-start: 20px;
+}
+.portSpec li + li {
+  margin-top: 6px;
+}
+.area[data-status='성공'],
+.node[data-status='성공'] {
+  border: 2px solid var(--color-success);
+}
+.area:is([data-status='실패'], [data-status='차단']),
+.node:is([data-status='실패'], [data-status='차단']) {
+  border: 2px solid var(--color-error);
+}
+:is(.node, .area):is([data-status='실행 준비'], [data-status='성공']) :is(.state, header small),
+.resultStatus[data-tone='success'],
+.trace > li[data-status='success'] strong {
+  color: var(--color-success);
+}
+:is(.node, .area):is([data-status='정지'], [data-status='실패'], [data-status='차단'])
+  :is(.state, header small),
+.resultStatus[data-tone='error'],
+.settingLine button[role='switch'][aria-checked='false'] {
+  color: var(--color-error);
+}
+.settingLine button[role='switch'][aria-checked='true'] {
+  color: var(--color-success);
+}
+.resizePreview {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 4;
+  outline: 2px dashed var(--color-accent);
+  border-radius: 8px;
+  pointer-events: none;
+}
 .areaSummary {
   display: block;
   padding: 8px 10px;
