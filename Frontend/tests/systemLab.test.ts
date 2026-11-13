@@ -105,7 +105,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
     const result = runLab(graph, 'routing');
     expect(
       result.steps
-        .find((step) => step.node === 'kubernetes')
+        .find((step) => step.node === 'service')
         ?.transfers.map((transfer) => transfer.description),
     ).toEqual(['요청 5건', '요청 5건']);
     expect(
@@ -114,6 +114,7 @@ describe('Docker·Kubernetes 시범 실행', () => {
         ?.transfers.some((transfer) => transfer.description === 'model.pkl · v1'),
     ).toBe(true);
     expect(() => applyCommand(graph, { type: 'connect', edge: serviceRoutes(graph)[0] })).toThrow();
+    expect(result.responses.every((response) => response.viaService === 'service')).toBe(true);
   });
   it('같은 응답이 두 번 오면 실패한다', () => {
     let graph = applyCommand(ready(), {
@@ -249,14 +250,16 @@ describe('Docker·Kubernetes 시범 실행', () => {
     const graph = ready();
     const legacy: Graph = {
       entities: [
-        ...graph.entities.map((e) =>
-          e.type === 'system' && e.kind === 'kubernetes' ? { ...e, kubernetes: undefined } : e,
-        ),
+        ...graph.entities
+          .filter((e) => e.kind !== 'service')
+          .map((e) =>
+            e.type === 'system' && e.kind === 'kubernetes' ? { ...e, kubernetes: undefined } : e,
+          ),
         makeEntity('deployment', 'deployment', 'kubernetes', { x: 36, y: 50 }),
         makeEntity('service', 'service', 'kubernetes', { x: 36, y: 215 }),
       ],
       connections: graph.connections
-        .filter((edge) => edge.to.node !== 'kubernetes')
+        .filter((edge) => edge.to.node !== 'kubernetes' && edge.to.node !== 'service')
         .concat(connection('start', 'out-request', 'service', 'in-request')),
     };
     const saved = parseSaved(
@@ -268,6 +271,70 @@ describe('Docker·Kubernetes 시범 실행', () => {
     );
     expect(saved.proof).toBe(signature(saved.graph));
     expect(runLab(saved.graph, 'restored').success).toBe(true);
+  });
+  it('영역 입력에 연결된 요청을 Service로 옮기고 완료 기록을 검증한다', () => {
+    const graph = ready();
+    const old: Graph = {
+      entities: graph.entities.filter((e) => e.kind !== 'service'),
+      connections: graph.connections.map((edge) =>
+        edge.to.node === 'service'
+          ? connection(edge.from.node, edge.from.port, 'kubernetes', 'in-request')
+          : edge,
+      ),
+    };
+    const restored = parseSaved(
+      JSON.stringify({ version: 1, graph: old, quiz: true, proof: signature(old) }),
+    );
+    expect(restored.proof).toBe(signature(restored.graph));
+    expect(runLab(restored.graph, 'restored').success).toBe(true);
+    const bypassed = {
+      ...graph,
+      connections: graph.connections
+        .filter((edge) => edge.to.node !== 'service')
+        .concat(
+          connection('start', 'out-request', 'pod-a', 'in-request'),
+          connection('start', 'out-request', 'pod-b', 'in-request'),
+        ),
+    };
+    expect(runLab(bypassed, 'bypass').success).toBe(false);
+  });
+  it('Kubernetes 이미지 입력을 삭제하고 새 ID의 포트로 다시 연결한다', () => {
+    const deleted = applyCommand(ready(), {
+      type: 'port-remove', id: 'kubernetes', port: 'in-image',
+    });
+    expect(deleted.connections.some((edge) => edge.to.node === 'kubernetes')).toBe(false);
+    expect(runLab(deleted, 'deleted').success).toBe(false);
+    const added = applyCommand(deleted, {
+      type: 'port-add', id: 'kubernetes', port: 'new-image', material: 'image', direction: 'in',
+    });
+    expect(() => applyCommand(added, {
+      type: 'port-add', id: 'kubernetes', port: 'output', material: 'image', direction: 'out',
+    })).toThrow();
+    const graph = applyCommand(added, {
+      type: 'connect', edge: connection('image', 'out-image', 'kubernetes', 'new-image'),
+    });
+    const saved = parseSaved(
+      JSON.stringify({ version: 1, graph, quiz: true, proof: signature(graph) }),
+    );
+    expect(saved.proof).toBe(signature(saved.graph));
+    expect(runLab(saved.graph, 'restored').success).toBe(true);
+  });
+  it.each([true, false])('이전 이미지 입력 토글 %s를 포트 목록으로 복원한다', (imageInput) => {
+    const graph = ready();
+    const legacy: Graph = {
+      entities: graph.entities.map((entity) =>
+        entity.type === 'system' && entity.kubernetes
+          ? { ...entity, ports: undefined, kubernetes: { ...entity.kubernetes, imageInput } }
+          : entity,
+      ),
+      connections: graph.connections.filter((edge) => imageInput || edge.to.node !== 'kubernetes'),
+    };
+    const saved = parseSaved(
+      JSON.stringify({ version: 1, graph: legacy, quiz: true, proof: signature(legacy) }),
+    );
+    expect(saved.graph.entities.find((entity) => entity.kind === 'kubernetes')?.ports)
+      .toHaveLength(imageInput ? 1 : 0);
+    expect(runLab(saved.graph, 'legacy').success).toBe(imageInput);
   });
   it('위치 이동은 완료 증거를 유지하고 잘못된 저장 구조를 거부한다', () => {
     const graph = ready();

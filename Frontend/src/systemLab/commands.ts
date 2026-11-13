@@ -6,7 +6,7 @@ import {
   hasRunState,
   labels,
   makeEntity,
-  portTypes,
+  editablePortTypes,
   protectedKind,
   requiredLabEntities,
   rootId,
@@ -80,8 +80,6 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
   }
   const item = graph.entities.find((e) => e.id === cmd.id);
   if (!item) return graph;
-  if (item.kind === 'service' && cmd.type !== 'move')
-    throw new Error('접속점은 Kubernetes 설정에서 관리합니다.');
   if (cmd.type === 'remove' && requiredLabEntities(graph.entities).has(item.id)) {
     throw new Error('실습에 필요한 항목은 삭제할 수 없습니다.');
   }
@@ -222,8 +220,9 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     case 'port-add':
     case 'port-change':
     case 'port-remove': {
-      if (item.type !== 'resource') return graph;
-      const current = item.ports.find((p) => p.id === cmd.port);
+      if (item.type !== 'resource' && item.kind !== 'kubernetes') return graph;
+      const existing = item.ports ?? [];
+      const current = existing.find((p) => p.id === cmd.port);
       if (cmd.type !== 'port-add' && !current) return graph;
       if (cmd.type === 'port-add' && current) return graph;
       const material =
@@ -236,8 +235,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       if (
         material &&
         direction &&
-        (!portTypes[item.kind][direction].includes(material) ||
-          (item.kind === 'pod' && (material === 'image' || material === 'control')))
+        !editablePortTypes(item.kind, direction).includes(material)
       )
         throw new Error('이 노드가 처리할 수 없는 타입입니다.');
       const attached = graph.connections.filter((edge) =>
@@ -252,12 +250,12 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       const ports =
         cmd.type === 'port-add'
           ? [
-              ...item.ports,
+              ...existing,
               { id: cmd.port, direction: cmd.direction, material: cmd.material, multiple: false },
             ]
           : cmd.type === 'port-remove'
-            ? item.ports.filter((p) => p.id !== cmd.port)
-            : item.ports.map((p) => (p.id === cmd.port ? { ...p, ...cmd.changes } : p));
+            ? existing.filter((p) => p.id !== cmd.port)
+            : existing.map((p) => (p.id === cmd.port ? { ...p, ...cmd.changes } : p));
       const removed = new Set(
         attached
           .filter((e) => removeAll || (single && attached.length > 1 && e.id !== cmd.keep))
@@ -265,7 +263,13 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       );
       return fitAncestors(
         {
-          ...change(item.id, () => ({ ...item, ports })),
+          ...change(item.id, () => ({
+            ...item,
+            ports,
+            ...(item.type === 'system' && {
+              height: Math.max(item.height, clusterPortHeight(ports.length)),
+            }),
+          })),
           connections: graph.connections.filter((e) => !removed.has(e.id)),
         },
         item.id,
@@ -282,11 +286,17 @@ export function size(item: Entity) {
   );
   return { width: 184, height: 44 + rows * 28 + 5 };
 }
+export const clusterPortHeight = (count: number) => 64 + count * 28;
 export function groupMinimum(graph: Graph, id: string) {
   const children = graph.entities.filter((item) => item.parent === id);
+  const portCount = graph.entities.find((item) => item.id === id)?.ports?.length ?? 0;
   return {
     width: Math.max(220, ...children.map((item) => item.position.x + size(item).width + 18)),
-    height: Math.max(110, ...children.map((item) => item.position.y + size(item).height + 18)),
+    height: Math.max(
+      110,
+      clusterPortHeight(portCount),
+      ...children.map((item) => item.position.y + size(item).height + 18),
+    ),
   };
 }
 function fitAncestors(graph: Graph, childId: string): Graph {

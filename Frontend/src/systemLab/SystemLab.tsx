@@ -230,8 +230,8 @@ export function SystemLab() {
         <div className={styles.toolbarTitle}>
           <h2>모델 서빙 실습</h2>
           <p>
-            이미지를 Kubernetes에 연결하고 Service 대상 라벨을 확인하세요. 두 Pod에 모델을 전달하고
-            각 응답을 도착에 연결하세요.
+            이미지는 Kubernetes에, 요청은 내부 Service에 연결하세요. 두 Pod에 모델을 전달하고 각
+            응답을 도착에 연결하세요.
           </p>
         </div>
         <div className={styles.actions}>

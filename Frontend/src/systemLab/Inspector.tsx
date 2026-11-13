@@ -10,7 +10,7 @@ import {
   labels,
   materials,
   portLabel,
-  portTypes,
+  editablePortTypes,
   protectedKind,
   requiredLabEntities,
   resourceRoles,
@@ -33,14 +33,14 @@ function PortRow({
   port,
   dispatch,
 }: {
-  node: Extract<Entity, { type: 'resource' }>;
+  node: Entity;
   graph: Graph;
   port: PortSpec;
   dispatch: Dispatch;
 }) {
   const [choose, setChoose] = useState(false);
   const attached = graph.connections.filter((e) => e.to.node === node.id && e.to.port === port.id);
-  const label = portLabel(node.ports, port);
+  const label = portLabel(node.ports ?? [], port);
   return (
     <div className={styles.portEditor}>
       <div className={styles.portControls}>
@@ -56,7 +56,7 @@ function PortRow({
             })
           }
         >
-          {portTypes[node.kind][port.direction].map((type) => (
+          {editablePortTypes(node.kind, port.direction).map((type) => (
             <option key={type} value={type}>
               {materials[type]}
             </option>
@@ -126,14 +126,12 @@ function PortList({
   direction,
   dispatch,
 }: {
-  node: Extract<Entity, { type: 'resource' }>;
+  node: Entity;
   graph: Graph;
   direction: Direction;
   dispatch: Dispatch;
 }) {
-  const choices = portTypes[node.kind][direction].filter(
-    (type) => node.kind !== 'pod' || (type !== 'image' && type !== 'control'),
-  );
+  const choices = editablePortTypes(node.kind, direction);
   const [draft, setDraft] = useState<Material>(choices[0]);
   const title = direction === 'in' ? '입력' : '출력';
   if (!choices.length) return null;
@@ -141,7 +139,7 @@ function PortList({
     <section className={styles.portGroup} aria-label={title + ' 포트'}>
       <h4>{title}</h4>
       {node.ports
-        .filter((p) => p.direction === direction)
+        ?.filter((p) => p.direction === direction)
         .map((p) => (
           <PortRow key={p.id} node={node} graph={graph} port={p} dispatch={dispatch} />
         ))}
@@ -186,7 +184,7 @@ const hints = {
   image: '서빙 앱과 의존성을 묶은 실행 자료입니다. Pod가 이 이미지로 컨테이너를 시작합니다.',
   deployment: 'Pod의 수와 사용할 이미지 버전을 지정합니다.',
   service:
-    'Kubernetes 설정의 대상 라벨과 포트에 따라 요청을 전달합니다. 설정을 바꾸려면 Kubernetes 영역을 선택하세요.',
+    '리뷰 요청을 받아 대상 라벨이 맞는 Pod로 전달합니다. 대상 라벨과 네트워크 포트는 Kubernetes 설정에서 바꿀 수 있습니다.',
   pod: '이미지의 서빙 앱이 모델을 읽고 예측 응답을 만듭니다.',
   container: '이미지와 모델을 사용해 예제 요청을 처리합니다.',
 };
@@ -202,7 +200,7 @@ export function Inspector({
   busy: boolean;
   dispatch: Dispatch;
 }) {
-  const locked = protectedKind(node.kind) || node.kind === 'service';
+  const locked = protectedKind(node.kind);
   const required = requiredLabEntities(graph.entities).has(node.id);
   const runnable = hasRunState(node.kind);
   const blocked = !runnable || node.enabled ? blockedBy(graph, node.id) : undefined;
@@ -229,7 +227,8 @@ export function Inspector({
           <ol>
             <li>
               <strong>요청 출력</strong> · 분류할 리뷰 요청 {definition.requestIds.length}건을
-              제공합니다. 요청마다 고유 ID가 있습니다. Kubernetes의 요청 입력에 연결하세요.
+              제공합니다. 요청마다 고유 ID가 있습니다. Kubernetes 내부 Service의 요청 입력에
+              연결하세요.
             </li>
             <li>
               <strong>모델 출력</strong> · 학습된 모델 파일 <code>model.pkl</code>을 제공합니다. 각
@@ -247,6 +246,7 @@ export function Inspector({
               출발의 리뷰 요청 {definition.requestIds.length}건에 대한 응답이 모두 도착해야 합니다.
               누락, 중복, 알 수 없는 요청 ID는 허용하지 않습니다.
             </li>
+            <li>모든 요청은 Kubernetes 내부 Service를 거쳐야 합니다.</li>
             <li>응답을 보낸 Pod는 같은 배포에 속하며, 같은 모델과 이미지를 사용해야 합니다.</li>
           </ol>
           <p>실행에 성공한 뒤 왼쪽 패널의 이해 확인을 완료하세요.</p>
@@ -324,7 +324,10 @@ export function Inspector({
             return (
               <>
                 <h4>Deployment</h4>
-                <p className={styles.hint}>이미지는 Kubernetes 옆면의 이미지 입력에 연결하세요.</p>
+                <p className={styles.hint}>
+                  이미지는 Kubernetes 옆면에, 요청은 내부 Service에 연결하세요.
+                </p>
+                <PortList node={node} graph={graph} direction="in" dispatch={dispatch} />
                 <label>
                   원하는 Pod 수
                   <input

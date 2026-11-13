@@ -4,6 +4,7 @@ import {
   connection,
   connectionIssue,
   definition,
+  defaultClusterPorts,
   defaultKubernetes,
   endpointId,
   clusterImages,
@@ -23,6 +24,7 @@ import {
   type Entity,
   type Graph,
   type Kind,
+  type KubernetesSettings,
 } from './model';
 import { runLab } from './engine';
 import type { LearningData } from '../curriculum/types';
@@ -46,6 +48,7 @@ const fail = () => {
 const record = (x: unknown): x is Record<string, unknown> =>
   !!x && typeof x === 'object' && !Array.isArray(x);
 const number = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+type LegacyKubernetes = KubernetesSettings & { imageInput?: boolean };
 export function parseSaved(raw: string): Saved {
   const saved: unknown = JSON.parse(raw);
   if (
@@ -90,6 +93,23 @@ export function parseSaved(raw: string): Saved {
         item.height < 0
       )
         return fail();
+      if (item.ports !== undefined) {
+        if (kind !== 'kubernetes' || !Array.isArray(item.ports)) return fail();
+        const ids = new Set<string>();
+        for (const port of item.ports as unknown[]) {
+          if (
+            !record(port) ||
+            typeof port.id !== 'string' ||
+            !port.id ||
+            ids.has(port.id) ||
+            port.direction !== 'in' ||
+            port.material !== 'image' ||
+            typeof port.multiple !== 'boolean'
+          )
+            return fail();
+          ids.add(port.id);
+        }
+      }
     } else {
       if (
         item.type !== 'resource' ||
@@ -111,7 +131,8 @@ export function parseSaved(raw: string): Saved {
           (p.direction !== 'in' && p.direction !== 'out') ||
           typeof p.multiple !== 'boolean' ||
           typeof p.material !== 'string' ||
-          !(portTypes[kind][p.direction] as readonly string[]).includes(p.material)
+          (!(portTypes[kind][p.direction] as readonly string[]).includes(p.material) &&
+            !(kind === 'service' && p.direction === 'out' && p.material === 'request'))
         )
           return fail();
         ports.add(p.id);
@@ -122,6 +143,7 @@ export function parseSaved(raw: string): Saved {
       if (
         !record(cfg) ||
         typeof cfg.imageId !== 'string' ||
+        (cfg.imageInput !== undefined && typeof cfg.imageInput !== 'boolean') ||
         typeof cfg.workloadLabel !== 'string' ||
         typeof cfg.serviceSelector !== 'string' ||
         !number(cfg.replicas) ||
@@ -193,7 +215,8 @@ export function parseSaved(raw: string): Saved {
     entities.push(item);
   };
   for (const item of base.entities) {
-    if (required.has(item.id) && item.type === 'resource') restoreMissing(item);
+    if (required.has(item.id) && item.type === 'resource' && item.kind !== 'service')
+      restoreMissing(item);
   }
   for (const item of entities) {
     const seen = new Set<string>();
@@ -216,7 +239,19 @@ export function parseSaved(raw: string): Saved {
       current = parent;
     }
   }
-  const graph: Graph = { entities, connections: [] };
+  const graph: Graph = {
+    entities: entities.map((entity) => {
+      if (entity.type !== 'system' || entity.kind !== 'kubernetes') return entity;
+      const legacy: LegacyKubernetes = entity.kubernetes ?? defaultKubernetes;
+      const { imageInput, ...settings } = legacy;
+      return {
+        ...entity,
+        ports: entity.ports ?? (imageInput === false ? [] : defaultClusterPorts()),
+        ...(entity.kubernetes && { kubernetes: settings }),
+      };
+    }),
+    connections: [],
+  };
   for (const item of saved.graph.connections as unknown[]) {
     if (
       !record(item) ||
@@ -229,13 +264,22 @@ export function parseSaved(raw: string): Saved {
     )
       return fail();
     const edge: Connection = connection(item.from.node, item.from.port, item.to.node, item.to.port);
-    if (connectionIssue(graph, edge)) return fail();
+    if (
+      connectionIssue(graph, edge) &&
+      !(
+        edge.to.port === 'in-request' &&
+        entities.some((e) => e.id === edge.to.node && e.kind === 'kubernetes') &&
+        edge.from.node === 'start'
+      )
+    )
+      return fail();
     graph.connections.push(edge);
   }
-  const previousSignature = signature(graph);
+  const previousSignature = signature({ ...graph, entities });
   const compatibleModels = migrateModelSource(graph);
   const migrated = migrateKubernetes(graph);
-  const movedPorts = migrateClusterPorts(graph);
+  const foldedLegacy = migrateClusterPorts(graph);
+  const movedPorts = restoreServiceNodes(graph);
   // Old saves recorded an execution flag for resources that are applied automatically.
   graph.entities = graph.entities.map((entity) => {
     if (hasRunState(entity.kind) || !Object.hasOwn(entity, 'enabled')) return entity;
@@ -250,7 +294,7 @@ export function parseSaved(raw: string): Saved {
     proof:
       compatibleModels &&
       saved.proof === previousSignature &&
-      (!(migrated || movedPorts) || runLab(graph, 'migration').success)
+      (!(migrated || foldedLegacy || movedPorts) || runLab(graph, 'migration').success)
         ? signature(graph)
         : null,
   };
@@ -326,11 +370,24 @@ function migrateKubernetes(graph: Graph): boolean {
     );
     if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
   }
+  for (const cluster of graph.entities) {
+    if (cluster.type !== 'system' || !cluster.kubernetes?.imageId) continue;
+    const image = graph.entities.find((e) => e.id === cluster.kubernetes?.imageId);
+    const port =
+      image?.type === 'resource'
+        ? image.ports.find((p) => p.direction === 'out' && p.material === 'image')
+        : undefined;
+    const input = cluster.ports?.[0];
+    if (!image || !port || !input) continue;
+    const wire = connection(image.id, port.id, cluster.id, input.id);
+    if (!manualConnectionIssue(graph, wire)) graph.connections.push(wire);
+  }
   return true;
 }
 function migrateClusterPorts(graph: Graph): boolean {
   const endpoints = graph.entities.filter((e) => e.kind === 'service');
-  if (!endpoints.length) return false;
+  if (!endpoints.some((e) => e.type === 'resource' && e.ports.some((p) => p.direction === 'out')))
+    return false;
   const parents = new Map(endpoints.map((e) => [e.id, e.parent]));
   const wires = graph.connections;
   graph.entities = graph.entities.filter((e) => !parents.has(e.id));
@@ -343,7 +400,11 @@ function migrateClusterPorts(graph: Graph): boolean {
       parents.get(edge.to.node) ?? edge.to.node,
       edge.to.port,
     );
-    if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
+    if (
+      !manualConnectionIssue(graph, next) ||
+      (next.to.port === 'in-request' && parents.has(edge.to.node))
+    )
+      graph.connections.push(next);
   }
   for (const cluster of graph.entities) {
     if (cluster.type !== 'system' || !cluster.kubernetes?.imageId) continue;
@@ -354,11 +415,38 @@ function migrateClusterPorts(graph: Graph): boolean {
       image?.type === 'resource'
         ? image.ports.find((p) => p.direction === 'out' && p.material === 'image')
         : undefined;
-    if (!image || !output) continue;
-    const next = connection(image.id, output.id, cluster.id, 'in-image');
+    const input = cluster.ports?.[0];
+    if (!image || !output || !input) continue;
+    const next = connection(image.id, output.id, cluster.id, input.id);
     if (!manualConnectionIssue(graph, next)) graph.connections.push(next);
   }
   return true;
+}
+function restoreServiceNodes(graph: Graph): boolean {
+  let changed = false;
+  const redirects = new Map<string, string>();
+  for (const cluster of graph.entities.filter((e) => e.kind === 'kubernetes')) {
+    const request = graph.connections.find(
+      (edge) => edge.to.node === cluster.id && edge.to.port === 'in-request',
+    );
+    const service = graph.entities.find((e) => e.kind === 'service' && e.parent === cluster.id);
+    if (!service && (request || cluster.id === 'kubernetes')) {
+      const id = endpointId(cluster.id);
+      if (graph.entities.some((e) => e.id === id)) fail();
+      graph.entities.push(makeEntity('service', id, cluster.id, { x: 36, y: 215 }));
+      changed = true;
+    }
+    if (request) redirects.set(cluster.id, service?.id ?? endpointId(cluster.id));
+  }
+  if (redirects.size) {
+    graph.connections = graph.connections.map((edge) =>
+      redirects.has(edge.to.node) && edge.to.port === 'in-request'
+        ? connection(edge.from.node, edge.from.port, redirects.get(edge.to.node)!, 'in-request')
+        : edge,
+    );
+    changed = true;
+  }
+  return changed;
 }
 function migrateModelSource(graph: Graph): boolean {
   const start = graph.entities.find(

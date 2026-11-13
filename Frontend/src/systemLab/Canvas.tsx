@@ -30,14 +30,13 @@ import {
   Send,
   Server,
 } from 'lucide-react';
-import { groupMinimum, size, type Command } from './commands';
+import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
 import { blockedBy, type RunResult } from './engine';
 import {
   absolute,
   connection,
   manualConnectionIssue,
   serviceRoutes,
-  clusterPorts,
   descendants,
   findPort,
   hasRunState,
@@ -103,8 +102,7 @@ type CanvasNode = Node<CanvasData, 'entity'>;
 function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   const { entity } = data;
   const update = useUpdateNodeInternals();
-  const ports =
-    entity.type === 'resource' ? entity.ports : entity.kind === 'kubernetes' ? clusterPorts : null;
+  const ports = entity.ports;
   const portSignature = ports?.map((p) => p.id + p.direction + p.material).join('|');
   useLayoutEffect(() => {
     update(id);
@@ -172,38 +170,34 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
           isConnectable={false}
           className={styles.proxy}
         />
-        {entity.kind === 'kubernetes' &&
-          clusterPorts.map((port) => (
-            <div
-              key={port.id}
-              className={styles.clusterPort}
-              data-port={port.id}
-              data-connected={data.connected.has(port.id)}
-            >
-              <Handle
-                id={port.id}
-                type={port.direction === 'in' ? 'target' : 'source'}
-                position={port.direction === 'in' ? Position.Left : Position.Right}
-                isConnectable={data.editable && port.direction === 'in'}
-                className={styles.handle}
-                data-testid={'port-' + id + '-' + port.id}
-                aria-label={
-                  entity.name +
-                  ' ' +
-                  materials[port.material] +
-                  (port.direction === 'in' ? ' 입력' : ' 출력')
-                }
-                onContextMenu={(event) => data.portMenu(event, port.id)}
-              />
-              <span>
-                {port.id === 'in-request'
-                  ? '요청 입력'
-                  : port.id === 'in-image'
-                    ? '이미지 입력'
-                    : '요청 전달'}
-              </span>
-            </div>
-          ))}
+        {ports && (
+          <div className={styles.clusterPorts}>
+            {ports.map((port) => {
+              const label = portLabel(ports, port) + ' 입력';
+              const Icon = materialIcons[port.material];
+              return (
+                <div
+                  key={port.id}
+                  className={styles.clusterPort}
+                  data-connected={data.connected.has(port.id)}
+                >
+                  <Handle
+                    id={port.id}
+                    type="target"
+                    position={Position.Left}
+                    isConnectable={data.editable}
+                    className={styles.handle}
+                    data-testid={'port-' + id + '-' + port.id}
+                    aria-label={entity.name + ' ' + label}
+                    onContextMenu={(event) => data.portMenu(event, port.id)}
+                  />
+                  <Icon size={12} />
+                  <span>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {selected && data.editable && !data.collapsed && <ResizeGrip entity={entity} data={data} />}
       </section>
     );
@@ -222,6 +216,15 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
           <small>{status ?? resourceRoles[entity.kind]}</small>
         )}
       </header>
+      {entity.kind === 'service' && (
+        <Handle
+          id="service-route"
+          type="source"
+          position={Position.Right}
+          isConnectable={false}
+          className={styles.routeAnchor}
+        />
+      )}
       <div className={styles.ports}>
         {(['in', 'out'] as const).map((direction) => (
           <div key={direction}>
@@ -456,7 +459,9 @@ export function Canvas({
             ? {
                 width: Math.round(collapsed ? Math.min(280, entity.width) : entity.width),
                 height: Math.round(
-                  collapsed ? (entity.kind === 'kubernetes' ? 112 : 78) : entity.height,
+                  collapsed
+                    ? Math.max(78, clusterPortHeight(entity.ports?.length ?? 0))
+                    : entity.height,
                 ),
               }
             : undefined;
@@ -725,7 +730,7 @@ export function Canvas({
               x + 70 >= p.x && y + 25 >= p.y && x + 70 <= p.x + e.width && y + 25 <= p.y + e.height
             );
           });
-          const newParent = entity.kind === 'service' ? entity.parent : (group?.id ?? rootId);
+          const newParent = group?.id ?? rootId;
           const destination = entityMap.get(newParent);
           const offset = destination ? absolute(graph, destination) : { x: 0, y: 0 };
           const moved = dispatch({

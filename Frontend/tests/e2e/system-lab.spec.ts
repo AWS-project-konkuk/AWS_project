@@ -31,9 +31,15 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await selector.fill('review');
   await selector.press('Tab');
   await expect(canvas.locator('.react-flow__edge')).toHaveCount(3);
+  const inputs = lab.getByRole('region', { name: '입력 포트' });
+  await inputs.getByRole('button', { name: '이미지 포트 삭제' }).click();
+  await expect(lab.getByTestId('port-kubernetes-in-image')).toHaveCount(0);
+  await inputs.getByRole('button', { name: '입력 추가' }).click();
+  const imageInput = canvas.getByLabel('Kubernetes 이미지 입력', { exact: true });
+  await expect(imageInput).toBeVisible();
   await lab.getByRole('button', { name: '전체 서비스', exact: true }).click();
   await lab.getByTestId('port-image-out-image').click();
-  await lab.getByTestId('port-kubernetes-in-image').click();
+  await imageInput.click();
   for (const pod of ['pod-a', 'pod-b']) {
     await lab.getByTestId('port-start-out-model').click();
     await lab.getByTestId('port-' + pod + '-in-model').click();
@@ -71,7 +77,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await expect(lab.getByRole('button', { name: '입력 추가' })).toBeVisible();
   await lab.getByRole('button', { name: '노드 삭제', exact: true }).click();
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
-  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(10);
+  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(11);
   await lab.getByRole('button', { name: '초기 복원' }).click();
   await expect(lab.getByTestId('node-pod-b')).toHaveAttribute('data-status', '정지');
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
@@ -206,10 +212,11 @@ test('영역을 접고, 선을 우클릭해 삭제한 뒤 되돌린다', async (
   const canvas = lab.getByTestId('system-lab-canvas');
   await lab.getByRole('button', { name: 'Kubernetes 접기', exact: true }).click();
   await expect(canvas.getByTestId('node-pod-a')).toHaveCount(0);
-  await expect(canvas.getByText('숨겨진 항목 2개')).toBeVisible();
-  await expect(canvas.getByTestId('port-kubernetes-in-request')).toBeVisible();
+  await expect(canvas.getByText('숨겨진 항목 3개')).toBeVisible();
+  await expect(canvas.getByTestId('port-kubernetes-in-image')).toBeVisible();
+  await expect(canvas.getByText('연결 1', { exact: true }).first()).toBeVisible();
   await lab.getByRole('button', { name: 'Kubernetes 펼치기', exact: true }).click();
-  const edge = canvas.getByRole('group', { name: '출발 → Kubernetes 요청', exact: true });
+  const edge = canvas.getByRole('group', { name: '출발 → Service 요청', exact: true });
   const edgeLayer = await edge.evaluate((element) =>
     Number(getComputedStyle(element.closest('svg')!).zIndex),
   );
@@ -319,7 +326,7 @@ for (const width of [1440, 1024, 390]) {
     const labBounds = (await lab.boundingBox())!;
     expect(labBounds.y + labBounds.height).toBeGreaterThanOrEqual(practice.y + practice.height - 1);
     await expect(lab.getByRole('button', { name: '실습 힌트' })).toHaveCount(0);
-    await expect(lab.getByText(/이미지를 Kubernetes.*도착에 연결하세요/)).toBeVisible();
+    await expect(lab.getByText(/이미지는 Kubernetes.*도착에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-' + width + '.png' });

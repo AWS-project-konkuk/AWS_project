@@ -1,7 +1,6 @@
 import {
   definition,
   appLabel,
-  makeEntity,
   serviceRoutes,
   hasRunState,
   materials,
@@ -13,13 +12,14 @@ import {
   type Version,
 } from './model';
 
-type Request = { id: number };
+type Request = { id: number; viaService?: string };
 type Response = {
   id: number;
   pod: string;
   model: Version;
   image: Version;
   deployment: string;
+  viaService?: string;
   label: string;
 };
 export type Artifact =
@@ -122,17 +122,29 @@ function deploymentImage(graph: Graph, pod: ResourceEntity) {
     throw new Error('배포 대상 Pod ' + pods.length + '개 · 원하는 수 ' + settings.replicas + '개');
   if (appLabel(pod) !== settings.workloadLabel)
     throw new Error('Pod의 라벨이 Deployment의 라벨과 다릅니다.');
-  const source = graph.connections.find(
-    (edge) => edge.to.node === cluster.id && edge.to.port === 'in-image',
+  const ports = new Set(
+    cluster.ports
+      ?.filter((port) => port.material === 'image' && port.direction === 'in')
+      .map((port) => port.id),
   );
-  const image = graph.entities.find(
-    (e) => e.type === 'resource' && e.kind === 'image' && e.id === source?.from.node,
+  const sources = new Set(
+    graph.connections
+      .filter((edge) => edge.to.node === cluster.id && ports.has(edge.to.port))
+      .map((edge) => edge.from.node),
   );
-  if (image?.type !== 'resource')
+  const images = graph.entities.filter(
+    (e): e is ResourceEntity => e.type === 'resource' && e.kind === 'image' && sources.has(e.id),
+  );
+  if (!images.length)
     throw new Error('Kubernetes의 이미지 입력에 컨테이너 이미지를 연결하세요.');
-  const blocked = blockedBy(graph, image.id);
-  if (blocked) throw new Error(blocked + ' 정지 상태 · 이미지를 사용할 수 없습니다.');
-  return { version: image.version, source: image.id };
+  return required(
+    images.map((image) => {
+      const blocked = blockedBy(graph, image.id);
+      if (blocked) throw new Error(blocked + ' 정지 상태 · 이미지를 사용할 수 없습니다.');
+      return { type: 'image', version: image.version, source: image.id };
+    }),
+    'image',
+  );
 }
 const infer: Strategy = ({ node, graph, inputs, emit }) => {
   const model = required(inputs, 'model');
@@ -140,12 +152,13 @@ const infer: Strategy = ({ node, graph, inputs, emit }) => {
   const batch = requests(inputs);
   emit({
     type: 'prediction',
-    responses: batch.map(({ id }) => ({
+    responses: batch.map(({ id, viaService }) => ({
       id,
       pod: node.id,
       model: model.version,
       image: image.version,
       deployment: node.kind === 'pod' ? node.parent : '',
+      viaService,
       label: id % 2 ? '긍정' : '부정',
     })),
   });
@@ -170,9 +183,9 @@ const strategies: Record<ResourceKind, Strategy> = {
   },
   service: ({ node, graph, inputs, distribute }) => {
     const batch = requests(inputs);
-    const count = distribute(batch);
+    const count = distribute(batch.map((request) => ({ ...request, viaService: node.id })));
     if (!count) throw new Error('Service 대상 라벨에 맞는 요청 입력이 없습니다.');
-    const cluster = graph.entities.find((e) => e.id === node.id);
+    const cluster = graph.entities.find((e) => e.id === node.parent);
     const port = cluster?.type === 'system' ? cluster.kubernetes?.servicePort : undefined;
     return (
       (port ? '포트 ' + port + ' · ' : '') +
@@ -194,6 +207,8 @@ const strategies: Record<ResourceKind, Strategy> = {
       throw new Error('알 수 없는 요청의 응답이 있습니다.');
     if (ids.size !== definition.requestIds.length)
       throw new Error('응답 ' + ids.size + ' / 10건 · 연결과 Pod 상태를 확인하세요.');
+    if (responses.some((response) => !response.viaService))
+      throw new Error('모든 요청은 Kubernetes Service를 거쳐야 합니다.');
     const pods = new Set(responses.map((r) => r.pod));
     if (pods.size < definition.requiredPods || responses.some((r) => !r.deployment))
       throw new Error('Deployment가 관리하는 서로 다른 Pod가 두 개 이상 요청을 처리해야 합니다.');
@@ -230,7 +245,7 @@ export function runLab(graph: Graph, id: string): RunResult {
   const start = graph.entities.find((e) => e.kind === 'start');
   const entries = graph.entities.filter(
     (e) =>
-      e.kind === 'kubernetes' &&
+      e.kind === 'service' &&
       graph.connections.some((wire) => wire.from.node === start?.id && wire.to.node === e.id),
   );
   const queue = [end?.id, ...entries.map((entry) => entry.id)];
@@ -243,13 +258,9 @@ export function runLab(graph: Graph, id: string): RunResult {
         queue.push(edge.from.node);
       }
   }
-  const pending = graph.entities.flatMap((e): ResourceEntity[] => {
-    if (!relevant.has(e.id)) return [];
-    if (e.type === 'resource') return [e];
-    if (e.kind !== 'kubernetes') return [];
-    const endpoint = makeEntity('service', e.id, e.parent, e.position);
-    return endpoint.type === 'resource' ? [{ ...endpoint, name: e.name }] : [];
-  });
+  const pending = graph.entities.filter(
+    (e): e is ResourceEntity => e.type === 'resource' && relevant.has(e.id),
+  );
   const steps: RunStep[] = [];
   const done = new Set<string>();
   const values = new Map<string, Artifact>();

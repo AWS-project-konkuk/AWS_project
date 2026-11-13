@@ -276,23 +276,25 @@
   width: 25px;
   padding: 0;
 }
-.clusterPort {
-  --port-color: var(--lab-request);
+.routeAnchor {
+  opacity: 0;
+  pointer-events: none;
+}
+.clusterPorts {
   position: absolute;
   left: 0;
-  top: 48px;
+  top: 64px;
+}
+.clusterPort {
+  --port-color: var(--lab-image);
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding-left: 16px;
   font-size: 11px;
   color: var(--port-color);
-}
-.clusterPort[data-port='in-image'] {
-  --port-color: var(--lab-image);
-  top: 76px;
-}
-.clusterPort[data-port='out-request'] {
-  left: auto;
-  right: 0;
-  padding: 0 16px 0 0;
 }
 .clusterPort .handle {
   width: 28px;
