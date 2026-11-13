@@ -6,7 +6,7 @@ export interface Post {
   id: string;
   title: string;
   author: string;
-  body: string;
+  body?: string | null;
   createdAt: string;
   updatedAt: string | null;
   workflow: unknown;
@@ -33,7 +33,7 @@ export async function listPosts(signal: AbortSignal): Promise<Post[]> {
         !isPostId(post.id) ||
         typeof post.title !== 'string' ||
         typeof post.author !== 'string' ||
-        typeof post.body !== 'string' ||
+        (post.body != null && typeof post.body !== 'string') ||
         typeof post.createdAt !== 'string',
     )
   ) {
@@ -49,7 +49,7 @@ export async function createPost(draft: PostDraft & { author: string }) {
   return data.id;
 }
 
-export async function updatePost(id: string, draft: PostDraft) {
+export async function updatePost(id: string, draft: Omit<PostDraft, 'body'> & { body?: string }) {
   await api.patch('/posts/' + id, draft);
 }
 
