@@ -174,6 +174,28 @@ test('라우터가 기본 주소, Playground, 404와 브라우저 뒤로 가기�
   await expect(page.getByText('페이지를 찾을 수 없습니다.', { exact: true })).toBeVisible();
 });
 
+test('오류 화면에 응답 상태와 설명을 표시하고 다시 시도할 수 있다', async ({ page }) => {
+  const module = '**/src/learning/LessonPage.tsx*';
+  await page.route(module, (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: "throw Object.assign(new Error('Unavailable'), { isAxiosError: true, response: { status: 503 } });",
+    }),
+  );
+  await page.goto('/#/learn/week2-workflow');
+  await expect(page.getByRole('heading', { name: '503', exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('서비스를 일시적으로 이용할 수 없습니다.');
+  await page.unroute(module);
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.getByRole('button', { name: '실습 영역 확장' })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('combobox', { name: '화면 테마' }).selectOption('dark');
+  await page.goto('/#/invalid-page');
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.screenshot({ path: 'test-results/error-page-mobile.png' });
+});
+
 test('통합된 0단원은 전체 흐름·EC2·S3만 순서대로 표시한다', async ({ page }) => {
   await page.goto('/#/learn');
   await readLessons(page);
