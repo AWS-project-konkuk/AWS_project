@@ -1,8 +1,9 @@
 package com.awsproject.backend.post;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -59,8 +60,9 @@ public class PostService {
         return post.getWorkflow();
     }
 
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    @Transactional(readOnly = true)
+    public Page<Post> getPosts(Pageable pageable) {
+        return postRepository.findAll(pageable);
     }
 
     @Transactional

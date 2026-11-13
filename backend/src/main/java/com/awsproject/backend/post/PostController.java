@@ -1,8 +1,11 @@
 package com.awsproject.backend.post;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,8 +21,9 @@ import com.awsproject.backend.post.DTO.AllPostResponse;
 import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
 import com.awsproject.backend.post.DTO.DeletePostRequest;
-import com.awsproject.backend.post.DTO.UpdatePostRequest;
+import com.awsproject.backend.post.DTO.PageResponse;
 import com.awsproject.backend.post.DTO.PostDetailResponse;
+import com.awsproject.backend.post.DTO.UpdatePostRequest;
 
 import jakarta.validation.Valid;
 import tools.jackson.databind.JsonNode;
@@ -27,6 +31,9 @@ import tools.jackson.databind.JsonNode;
 @RestController 
 @RequestMapping ("/api/posts")
 public class PostController {
+
+    private static final Sort POST_LIST_SORT =
+        Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"));
 
     private final PostService postService;
 
@@ -70,20 +77,12 @@ public class PostController {
         return ResponseEntity.ok(workflow);
     }
 
-    @GetMapping 
-    public ResponseEntity<List<AllPostResponse>> getAllPosts() {
-        List<Post> posts = postService.getAllPosts();
-        List<AllPostResponse> response = posts.stream()
-            .map(post -> new AllPostResponse(
-                post.getId(),
-                post.getAuthor(), 
-                post.getTitle(), 
-                post.getCreatedAt(), 
-                post.getUpdatedAt(), 
-                post.getWorkflow()
-            ))
-            .toList();
-            return ResponseEntity.ok(response);
+    @GetMapping
+    public ResponseEntity<PageResponse<AllPostResponse>> getPosts(Pageable pageable) {
+        // 클라이언트의 sort 파라미터는 무시하고 서버에서 정렬 기준을 고정한다.
+        Pageable fixed = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), POST_LIST_SORT);
+        Page<AllPostResponse> page = postService.getPosts(fixed).map(AllPostResponse::from);
+        return ResponseEntity.ok(PageResponse.from(page));
     }
 
     @GetMapping("/{id}")
