@@ -1,4 +1,5 @@
 import { ThemeControl } from '../settings/ThemeControl';
+import { ErrorPage } from '../components/ErrorPage';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   ArrowDown,
@@ -358,13 +359,18 @@ function RoutedLearning() {
   const slug = hash.startsWith('#/learn/') ? hash.slice('#/learn/'.length) : '';
   const lesson = Object.hasOwn(lessonById, slug) ? lessonById[slug] : undefined;
   const isPlayground = hash === '#/playground';
+  const missingLesson = hash.startsWith('#/learn/') && !lesson;
+  const notFound =
+    hash.startsWith('#/') && hash !== '#/' && hash !== '#/learn' && !isPlayground && !lesson;
   useEffect(() => {
     document.title = isPlayground
       ? 'Playground | BlockML'
       : lesson
         ? `${lesson.title} | BlockML`
-        : 'BlockML | MLOps 학습 과정';
-  }, [lesson, isPlayground]);
+        : notFound
+          ? '404 | BlockML'
+          : 'BlockML | MLOps 학습 과정';
+  }, [lesson, isPlayground, notFound]);
   return (
     <div className={styles.appFrame} data-lesson={Boolean(lesson) || isPlayground}>
       <Header />
@@ -378,11 +384,11 @@ function RoutedLearning() {
         >
           <PlaygroundPage />
         </Suspense>
-      ) : slug && !lesson ? (
-        <main className={styles.notFound}>
-          <h1>강의를 찾을 수 없습니다.</h1>
-          <a href="#/learn">학습 과정으로 돌아가기</a>
-        </main>
+      ) : notFound ? (
+        <ErrorPage
+          code={404}
+          description={missingLesson ? '강의를 찾을 수 없습니다.' : undefined}
+        />
       ) : lesson ? (
         <Suspense
           fallback={

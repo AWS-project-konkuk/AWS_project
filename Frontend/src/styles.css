@@ -10,6 +10,7 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' source(none);
 @source './components/ui';
+@source './components/ErrorPage.tsx';
 @source './systemLab';
 
 @theme inline {
@@ -53,31 +54,6 @@
 }
 body {
   margin: 0;
-}
-.recovery {
-  max-width: 520px;
-  margin: 15vh auto;
-  padding: 32px;
-  background: var(--color-paper);
-  border: 1px solid var(--c-dce3db);
-  border-radius: 12px;
-}
-.recovery h1 {
-  font-size: 22px;
-}
-.recovery p {
-  font-size: 13px;
-  line-height: 1.9;
-  color: var(--c-718369);
-}
-.recovery button {
-  padding: var(--space-sm) var(--space-md);
-  border: 0;
-  border-radius: 6px;
-  color: var(--color-accent-ink);
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-ink);
 }
 button,
 input,

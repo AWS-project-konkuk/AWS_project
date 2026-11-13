@@ -143,7 +143,32 @@ test('이전 AWS Playground 그래프 복원과 잘못된 주소', async ({ page
   await page.getByRole('button', { name: '설정 저장', exact: true }).click();
   await expect(page.getByTestId('resource-old')).toContainText('보존된 노드');
   await page.goto('/#/learn/no-such-lesson');
-  await expect(page.getByRole('heading', { name: '강의를 찾을 수 없습니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.getByText('강의를 찾을 수 없습니다.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '학습 과정으로 돌아가기' }).click();
+  await expect(page).toHaveURL(/#\/learn$/);
+});
+
+test('오류 화면에 응답 상태와 설명을 표시하고 다시 시도할 수 있다', async ({ page }) => {
+  const module = '**/src/learning/LessonPage.tsx*';
+  await page.route(module, (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: "throw Object.assign(new Error('Unavailable'), { isAxiosError: true, response: { status: 503 } });",
+    }),
+  );
+  await page.goto('/#/learn/week2-workflow');
+  await expect(page.getByRole('heading', { name: '503', exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('서비스를 일시적으로 이용할 수 없습니다.');
+  await page.unroute(module);
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.getByRole('button', { name: '실습 영역 확장' })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('combobox', { name: '화면 테마' }).selectOption('dark');
+  await page.goto('/#/invalid-page');
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.screenshot({ path: 'test-results/error-page-mobile.png' });
 });
 
 test('통합된 0단원은 전체 흐름·EC2·S3만 순서대로 표시한다', async ({ page }) => {
