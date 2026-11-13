@@ -15,6 +15,6 @@ export const postQuery = (id: string) =>
   queryOptions({
     queryKey: ['posts', 'detail', id],
     queryFn: ({ signal }) => getPost(id, signal),
-    staleTime: 60_000,
+    staleTime: 0,
     retry: false,
   });

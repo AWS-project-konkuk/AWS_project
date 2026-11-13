@@ -10,6 +10,7 @@ import { ErrorPage } from '../components/ErrorPage';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { postListKey, postQuery, postsQuery } from './boardQuery';
+import { BoardPagination } from './BoardPagination';
 import { PostForm } from './PostForm';
 import { WorkflowPreview } from './WorkflowPreview';
 
@@ -25,7 +26,7 @@ function previewData(post: PostSummary) {
 }
 
 export function BoardPage() {
-  const [search, setSearch] = useSearchParams();
+  const [search] = useSearchParams();
   const requestedPage = Number(search.get('page'));
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const posts = useQuery(postsQuery(page - 1, pageSize));
@@ -92,22 +93,7 @@ export function BoardPage() {
               </li>
             ))}
           </ul>
-          {pagination.totalPages > 1 && (
-            <nav className="mt-6 flex items-center justify-center gap-3" aria-label="게시판 페이지">
-              <Button disabled={page === 1} onClick={() => setSearch(pageSearch(page - 1))}>
-                이전
-              </Button>
-              <span aria-live="polite">
-                {page} / {pagination.totalPages}
-              </span>
-              <Button
-                disabled={!pagination.hasNext}
-                onClick={() => setSearch(pageSearch(page + 1))}
-              >
-                다음
-              </Button>
-            </nav>
-          )}
+          <BoardPagination page={page} totalPages={pagination.totalPages} pageSearch={pageSearch} />
         </>
       )}
     </main>

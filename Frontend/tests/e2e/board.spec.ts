@@ -74,18 +74,26 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
   );
   await page.goto('/#/board');
   const main = page.getByRole('main');
-  await expect(main.getByRole('listitem')).toHaveCount(30);
+  const cards = main.locator(':scope > ul > li');
+  const pagination = main.getByRole('navigation', { name: '게시판 페이지' });
+  const pageNumbers = pagination.getByRole('link', { name: /^\d+페이지$/ });
+  await expect(cards).toHaveCount(30);
+  await expect(pageNumbers).toHaveText(['1', '2']);
+  await expect(pagination.getByRole('link', { name: '1페이지' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   await expect(main.getByRole('img', { name: '워크플로우 미리보기' })).toBeVisible();
   await expect(main.getByText('31개 게시글')).toBeVisible();
   expect(requestedPages).toEqual(['0']);
   await page.screenshot({ path: 'test-results/board-desktop.png' });
-  await main.getByRole('button', { name: '다음', exact: true }).click();
-  await expect(main.getByRole('listitem')).toHaveCount(1);
+  await pagination.getByRole('link', { name: '다음', exact: true }).click();
+  await expect(cards).toHaveCount(1);
   await expect(main.getByRole('link', { name: /게시글 30/ })).toBeVisible();
   await expect(main.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
   expect(requestedPages).toEqual(['0', '1']);
-  await main.getByRole('button', { name: '이전', exact: true }).click();
-  await expect(main.getByRole('listitem')).toHaveCount(30);
+  await pagination.getByRole('link', { name: '이전', exact: true }).click();
+  await expect(cards).toHaveCount(30);
   expect(requestedPages).toEqual(['0', '1']);
   await main.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect.poll(() => requestedPages).toEqual(['0', '1', '0']);
@@ -108,7 +116,46 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
 
   await page.goto('/#/board?page=3');
   await expect(page).toHaveURL(/#\/board\?page=2$/);
-  await expect(main.getByRole('listitem')).toHaveCount(1);
+  await expect(cards).toHaveCount(1);
+});
+
+test('페이지 번호를 최대 10개 표시하고 첫 페이지와 마지막 페이지로 이동한다', async ({ page }) => {
+  const posts = Array.from({ length: 361 }, (_, index) => ({
+    ...first,
+    id: '33333333-3333-4333-8333-' + String(index).padStart(12, '0'),
+    title: '게시글 ' + (index + 1),
+    workflow: null,
+  }));
+  await page.route(
+    (url) => url.pathname === '/api/posts',
+    (route) => route.fulfill({ json: postPage(new URL(route.request().url()), posts) }),
+  );
+  await page.goto('/#/board?filter=shared');
+  const pagination = page.getByRole('navigation', { name: '게시판 페이지' });
+  const pageNumbers = pagination.getByRole('link', { name: /^\d+페이지$/ });
+  await expect(pageNumbers).toHaveText(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+  await expect(pagination.getByRole('button', { name: '첫 페이지' })).toBeDisabled();
+  await pagination.screenshot({ path: 'test-results/board-pagination-desktop.png' });
+
+  await pagination.getByRole('link', { name: '마지막 페이지' }).click();
+  await expect(page).toHaveURL(/filter=shared&page=13$/);
+  await expect(pageNumbers).toHaveText(['4', '5', '6', '7', '8', '9', '10', '11', '12', '13']);
+  await expect(pagination.getByRole('button', { name: '마지막 페이지' })).toBeDisabled();
+  await page.setViewportSize({ width: 320, height: 844 });
+  const paginationWidth = await pagination.evaluate((nav) => nav.scrollWidth <= nav.clientWidth);
+  expect(paginationWidth).toBe(true);
+  await pagination.screenshot({ path: 'test-results/board-pagination-mobile.png' });
+
+  await pagination.getByRole('link', { name: '8페이지' }).click();
+  await expect(pagination.getByRole('link', { name: '8페이지' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await pagination.getByRole('link', { name: '첫 페이지' }).click();
+  await expect(pagination.getByRole('link', { name: '1페이지' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });
 
 test('글을 등록하고 비밀번호 오류를 확인한 뒤 수정과 삭제를 수행한다', async ({ page }) => {
@@ -174,6 +221,7 @@ test('글을 등록하고 비밀번호 오류를 확인한 뒤 수정과 삭제�
   await page.getByLabel('비밀번호').fill('correct');
   await page.getByRole('button', { name: '삭제 확인' }).click();
   await expect(page.getByText('아직 게시글이 없습니다.')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '게시판 페이지' })).toHaveCount(0);
   await page.goto('/#/board/' + newId);
   await expect(page.getByText('게시글을 찾을 수 없습니다.')).toBeVisible();
 });
