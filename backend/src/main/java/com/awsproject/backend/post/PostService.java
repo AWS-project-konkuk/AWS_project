@@ -31,7 +31,7 @@ public class PostService {
         Post post = postRepository.findById(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글이 없습니다."));
 
-        boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
+        boolean isPasswordMatch = post.isPasswordMatch(password, passwordEncoder);
         if (!isPasswordMatch) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,"비밀번호가 일치하지 않습니다.");
         }
@@ -42,7 +42,7 @@ public class PostService {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"게시글이 없습니다."));
         
-        boolean isPasswordMatch = passwordEncoder.matches(password, post.getPassword());
+        boolean isPasswordMatch = post.isPasswordMatch(password, passwordEncoder);
         if(!isPasswordMatch) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,"비밀번호가 일치하지 않습니다.");
         }
@@ -52,6 +52,9 @@ public class PostService {
     public JsonNode getWorkflow(UUID id) {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글이 없습니다."));
+        if(post.getWorkflow() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "워크플로우가 없습니다.");
+        }
         return post.getWorkflow();
     }
     

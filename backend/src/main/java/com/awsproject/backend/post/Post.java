@@ -46,6 +46,11 @@ public class Post {
             this.workflow = workflow;
         }
     }
+
+    public boolean isPasswordMatch(String password, PasswordEncoder passwordEncoder) {
+        return passwordEncoder.matches(password, this.password);
+    }
+
     @Id
     @Generated
     @ColumnDefault ("gen_random_uuid()")
@@ -83,10 +88,6 @@ public class Post {
 
     public String getAuthor() {
         return author;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public String getTitle() {
