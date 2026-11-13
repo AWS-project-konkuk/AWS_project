@@ -22,13 +22,6 @@ export interface PageResponse<T> {
   hasNext: boolean;
 }
 
-export interface PostDraft {
-  title: string;
-  body: string;
-  password: string;
-  workflow: unknown;
-}
-
 export const isPostId = (value: string) =>
   /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
 
