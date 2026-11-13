@@ -9,8 +9,20 @@
   animation: quizSpin 1s linear infinite;
 }
 .answer {
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.answer :is(pre, table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.answer :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: var(--space-md) var(--space-xs);
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+.answer :is(p, ul, ol) {
+  margin-block: var(--space-xs);
 }
 @keyframes quizSpin {
   to {

@@ -26,7 +26,14 @@ test('퀴즈 AI 요청의 입력·로딩·응답·오류·재시도와 이전 �
     if (calls === 2) await route.fulfill({ status: 503, json: { code: 'VLLM_NOT_CONFIGURED' } });
     else
       await route.fulfill({
-        json: { answer: '이유 검토\n<script>위험</script>\n' + '긴 한글 답변 '.repeat(100) },
+        json: {
+          answer:
+            '### 이유 검토\n\n- **핵심 개념**을 설명합니다.\n\n' +
+            '| 항목 | 결과 |\n| --- | --- |\n| 이유 | 타당함 |\n\n' +
+            '```yaml\nreplicas: 2\n```\n\n' +
+            '<script>위험</script>\n\n' +
+            '긴 한글 답변 '.repeat(100),
+        },
       });
   });
   await page.goto('/#/learn/mlops-overview');
@@ -42,6 +49,10 @@ test('퀴즈 AI 요청의 입력·로딩·응답·오류·재시도와 이전 �
   await expect(quiz.getByRole('button', { name: 'AI 검토 중…' })).toBeDisabled();
   release();
   const result = quiz.getByLabel('AI 검토 결과', { exact: true });
+  await expect(result.getByRole('heading', { name: '이유 검토' })).toBeVisible();
+  await expect(result.getByRole('listitem')).toContainText('핵심 개념');
+  await expect(result.getByRole('cell', { name: '타당함' })).toBeVisible();
+  await expect(result.locator('pre code')).toContainText('replicas: 2');
   await expect(result).toContainText('<script>위험</script>');
   await expect(result.locator('script')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();

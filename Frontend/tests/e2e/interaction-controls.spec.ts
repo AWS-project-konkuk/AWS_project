@@ -22,9 +22,7 @@ test('정답 제출 전에는 해설을 숨기고 선택 변경 시 판정을 �
   await expect(quiz.getByRole('status')).toHaveCount(0);
   await quiz.getByRole('button', { name: '정답 확인하기', exact: true }).click();
   await expect(quiz.getByRole('status')).toContainText('맞습니다');
-  await expect(
-    quiz.getByRole('button', { name: '내가 말한 이유 검증하기', exact: true }),
-  ).toBeDisabled();
+  await expect(quiz.getByRole('button', { name: 'AI에게 요청하기', exact: true })).toBeEnabled();
   await quiz.screenshot({ path: 'test-results/quiz-submit.png' });
   await expect(page).toHaveURL(/mlops-overview$/);
   await expect(quiz.getByRole('button', { name: /이해 확인.*완료/ })).toHaveCount(0);

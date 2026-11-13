@@ -12,7 +12,7 @@ it('백엔드 계약대로 전송하고 한글 응답과 줄바꿈을 보존한�
   expect(post).toHaveBeenCalledWith(
     '/chat',
     { message: '선택한 이유' },
-    { signal: controller.signal },
+    { signal: controller.signal, timeout: 130_000 },
   );
 });
 it('공백과 32,000자 초과 요청은 전송하지 않는다', async () => {
