@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { CharacterCount } from '../components/ui/character-limit';
+import { inputLimits, nodeNameSchema } from '../validation/userInput';
 import { workflowNodes, topicNodes } from './catalog';
 import { nodeErrors } from './config';
 import type { ResourceConfig } from '../console/resources';
@@ -16,6 +18,7 @@ export function NodeEditor({
 }) {
   const [draft, setDraft] = useState(initial);
   const [errors, setErrors] = useState<string[]>([]);
+  const nameCountId = useId();
   const fields =
     [...workflowNodes, ...topicNodes].find((node) => node.id === draft.service)?.fields ?? [];
   return (
@@ -25,7 +28,12 @@ export function NodeEditor({
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        const next = { ...draft, name: draft.name.trim() };
+        const name = nodeNameSchema.safeParse(draft.name);
+        if (!name.success && draft.name !== initial.name) {
+          setErrors([name.error.issues[0].message]);
+          return;
+        }
+        const next = { ...draft, name: name.success ? name.data : draft.name };
         const issues = nodeErrors(next, others);
         setErrors(issues);
         if (!issues.length) onSave(next);
@@ -37,9 +45,11 @@ export function NodeEditor({
         <input
           aria-label="노드 이름"
           value={draft.name}
-          maxLength={63}
+          aria-describedby={nameCountId}
+          maxLength={inputLimits.nodeName}
           onChange={(event) => setDraft({ ...draft, name: event.target.value })}
         />
+        <CharacterCount id={nameCountId} count={draft.name.length} limit={inputLimits.nodeName} />
       </label>
       {fields.map((field) => (
         <label key={field.id}>

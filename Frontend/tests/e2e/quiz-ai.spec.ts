@@ -41,9 +41,13 @@ test('퀴즈 AI 요청의 입력·로딩·응답·오류·재시도와 이전 �
   const button = quiz.getByRole('button', { name: 'AI에게 요청하기', exact: true });
   await expect(button).toBeDisabled();
   await quiz.getByRole('radio').nth(0).check();
+  await expect(quiz.getByLabel('선택한 이유', { exact: true })).toHaveAttribute('maxlength', '300');
   await quiz.getByLabel('선택한 이유', { exact: true }).fill('   ');
   await expect(button).toBeDisabled();
   await quiz.getByLabel('선택한 이유', { exact: true }).fill('운영 피드백이 필요합니다');
+  await expect(quiz.getByLabel('선택한 이유', { exact: true })).toHaveAccessibleDescription(
+    '13 / 300자',
+  );
   await button.click();
   await expect(quiz.getByText('AI가 선택한 이유를 검토하고 있습니다.')).toBeVisible();
   await expect(quiz.getByRole('button', { name: 'AI 검토 중…' })).toBeDisabled();

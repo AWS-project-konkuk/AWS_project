@@ -139,7 +139,10 @@ test('이전 AWS Playground 그래프 복원과 잘못된 주소', async ({ page
   await page.goto('/#/playground');
   await expect(page.getByTestId('resource-old')).toContainText('이전 데이터');
   await page.getByRole('button', { name: '이전 데이터 노드 설정', exact: true }).click();
-  await page.getByLabel('노드 이름', { exact: true }).fill('보존된 노드');
+  const nodeName = page.getByLabel('노드 이름', { exact: true });
+  await expect(nodeName).toHaveAttribute('maxlength', '20');
+  await nodeName.fill('보존된 노드');
+  await expect(nodeName).toHaveAccessibleDescription('6 / 20자');
   await page.getByRole('button', { name: '설정 저장', exact: true }).click();
   await expect(page.getByTestId('resource-old')).toContainText('보존된 노드');
   await page.goto('/#/learn/no-such-lesson');

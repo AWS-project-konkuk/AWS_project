@@ -8,7 +8,8 @@ import { deletePost } from '../api/posts/postPosts';
 import { isPostId, postError, type Post, type PostSummary } from '../api/posts/posts';
 import { ErrorPage } from '../components/ErrorPage';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { LimitedInput } from '../components/ui/character-limit';
+import { inputLimits } from '../validation/userInput';
 import { postListKey, postQuery, postsQuery } from './boardQuery';
 import { BoardPagination } from './BoardPagination';
 import { PostForm } from './PostForm';
@@ -178,7 +179,14 @@ function PostDetails({ post }: { post: Post }) {
         >
           <label className="grid gap-1">
             비밀번호
-            <Input type="password" name="password" autoComplete="current-password" required />
+            <LimitedInput
+              aria-label="비밀번호"
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              maxLength={inputLimits.password}
+              required
+            />
           </label>
           <Button type="submit" variant="destructive" disabled={remove.isPending}>
             삭제 확인

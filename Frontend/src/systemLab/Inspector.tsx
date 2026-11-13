@@ -25,8 +25,10 @@ import {
 } from './model';
 import { KindIcon } from './Canvas';
 import { Button } from '../components/ui/button';
+import { LimitedInput } from '../components/ui/character-limit';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
+import { inputLimits } from '../validation/userInput';
 import { hint } from './appearance';
 
 type Dispatch = (command: Command) => boolean;
@@ -270,10 +272,11 @@ export function Inspector({
           <>
             <label>
               이름{' '}
-              <Input
+              <LimitedInput
                 key={node.name}
+                aria-label="이름"
                 defaultValue={node.name}
-                maxLength={63}
+                maxLength={inputLimits.nodeName}
                 onBlur={(e) => {
                   if (
                     node.name !== e.target.value &&

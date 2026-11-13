@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { CharacterCount } from '../components/ui/character-limit';
+import { inputLimits } from '../validation/userInput';
 import { ResultFeedback } from './ResultFeedback';
 import type { Lesson } from '../curriculum/types';
 import { useLearning } from './LearningStore';
@@ -10,6 +12,7 @@ import styles from './LessonLayout.module.css';
 export function Understanding({ lesson }: { lesson: Lesson }) {
   const { state, edit } = useLearning();
   const [feedbackVersion, setFeedbackVersion] = useState(0);
+  const reasonCountId = useId();
   const lab = getLab(state.data, lesson.id);
   const answer = lab.answers._understanding;
   const reason = String(lab.answers._reason ?? '');
@@ -49,6 +52,8 @@ export function Understanding({ lesson }: { lesson: Lesson }) {
         선택한 이유를 내 말로 설명하기 (선택)
         <textarea
           aria-label="선택한 이유"
+          aria-describedby={reasonCountId}
+          maxLength={inputLimits.aiReason}
           rows={3}
           value={reason}
           onChange={(event) =>
@@ -59,6 +64,7 @@ export function Understanding({ lesson }: { lesson: Lesson }) {
             )
           }
         />
+        <CharacterCount id={reasonCountId} count={reason.length} limit={inputLimits.aiReason} />
       </label>
       <div className={styles.quizActions}>
         <button

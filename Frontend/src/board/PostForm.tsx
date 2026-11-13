@@ -4,10 +4,10 @@ import { Link, useNavigate } from 'react-router';
 import { createPost, updatePost } from '../api/posts/postPosts';
 import { postError, type Post } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { LimitedInput, LimitedTextarea } from '../components/ui/character-limit';
 import { NativeSelect } from '../components/ui/native-select';
-import { Textarea } from '../components/ui/textarea';
 import { usePlaygroundStore } from '../playground/usePlayground';
+import { inputLimits } from '../validation/userInput';
 import { postListKey, postQuery } from './boardQuery';
 
 export function PostForm({ post }: { post?: Post }) {
@@ -15,22 +15,30 @@ export function PostForm({ post }: { post?: Post }) {
   const cache = useQueryClient();
   const { data, blocked } = usePlaygroundStore();
   const [attachment, setAttachment] = useState('keep');
+  const bodyRequired = !post || Boolean(post.body);
   const back = post ? '/board/' + post.id : '/board';
   const save = useMutation({
     mutationFn: async (fields: FormData) => {
-      const title = String(fields.get('title')).trim();
-      const body = String(fields.get('body')).trim();
-      const password = String(fields.get('password'));
-      const author = String(fields.get('author') ?? '').trim();
-      if (!title || !password.trim() || (!post && (!author || !body)) || (post?.body && !body)) {
-        throw new Error('필수 항목을 입력해 주세요.');
-      }
+      const title = String(fields.get('title') ?? '');
+      const body = String(fields.get('body') ?? '');
+      const password = String(fields.get('password') ?? '');
       const workflow = attachment === 'current' ? data : (post?.workflow ?? null);
       if (post) {
-        await updatePost(post.id, { title, body: body || undefined, password, workflow });
+        await updatePost(post.id, {
+          title,
+          body: bodyRequired || body !== '' ? body : undefined,
+          password,
+          workflow,
+        });
         return post.id;
       }
-      return createPost({ author, title, body, password, workflow });
+      return createPost({
+        author: String(fields.get('author') ?? ''),
+        title,
+        body,
+        password,
+        workflow,
+      });
     },
     onSuccess: async (id) => {
       await Promise.all([
@@ -52,27 +60,37 @@ export function PostForm({ post }: { post?: Post }) {
       {!post && (
         <label>
           작성자
-          <Input name="author" required />
+          <LimitedInput aria-label="작성자" name="author" maxLength={inputLimits.author} required />
         </label>
       )}
       <label>
         제목
-        <Input name="title" required defaultValue={post?.title} />
+        <LimitedInput
+          aria-label="제목"
+          name="title"
+          required
+          maxLength={inputLimits.title}
+          defaultValue={post?.title}
+        />
       </label>
       <label>
         내용
-        <Textarea
+        <LimitedTextarea
+          aria-label="내용"
           name="body"
-          required={!post || Boolean(post.body)}
+          required={bodyRequired}
+          maxLength={inputLimits.body}
           rows={7}
-          defaultValue={post?.body ?? ''}
+          defaultValue={post?.body?.replace(/\r\n?/g, '\n') ?? ''}
           placeholder={post && post.body == null ? '비워 두면 기존 본문을 유지합니다.' : undefined}
         />
       </label>
       <label>
         비밀번호
-        <Input
+        <LimitedInput
+          aria-label="비밀번호"
           name="password"
+          maxLength={inputLimits.password}
           type="password"
           autoComplete={post ? 'current-password' : 'new-password'}
           required
