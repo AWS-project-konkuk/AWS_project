@@ -14,7 +14,7 @@ import {
   Target,
 } from 'lucide-react';
 import { lessons, lessonById, chapters, chapterLabel } from '../curriculum/catalog';
-import { completedCount } from './blockProgress';
+import { useLessonCompletion } from '../systemLab/store';
 import { useLearning } from './LearningStore';
 import styles from './Learning.module.css';
 
@@ -28,7 +28,8 @@ const PlaygroundPage = lazy(() =>
 function Header() {
   const { state, saveStatus, recover } = useLearning();
   const [recovery, setRecovery] = useState(false);
-  const count = completedCount(state.data);
+  const isComplete = useLessonCompletion(state.data);
+  const count = lessons.filter((lesson) => isComplete(lesson.id)).length;
   return (
     <>
       <header className={styles.header}>
@@ -105,8 +106,9 @@ function LearningHub() {
   const { state } = useLearning();
   const [query, setQuery] = useState('');
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
-  const count = completedCount(state.data);
-  const next = lessons.find((lesson) => !state.data.lessons[lesson.id]?.completed) ?? lessons[0];
+  const isComplete = useLessonCompletion(state.data);
+  const count = lessons.filter((lesson) => isComplete(lesson.id)).length;
+  const next = lessons.find((lesson) => !isComplete(lesson.id)) ?? lessons[0];
   const matches = lessons.filter(
     (lesson) =>
       (activeWeek === null || lesson.week === activeWeek) &&
@@ -251,17 +253,15 @@ function LearningHub() {
                 </div>
                 <span>
                   {
-                    lessons.filter(
-                      (lesson) =>
-                        lesson.week === week.week && state.data.lessons[lesson.id]?.completed,
-                    ).length
+                    lessons.filter((lesson) => lesson.week === week.week && isComplete(lesson.id))
+                      .length
                   }{' '}
                   / {lessons.filter((lesson) => lesson.week === week.week).length} 완료
                 </span>
               </div>
               <div className={styles.cards}>
                 {items.map((lesson) => {
-                  const complete = state.data.lessons[lesson.id]?.completed;
+                  const complete = isComplete(lesson.id);
                   return (
                     <a
                       key={lesson.id}
