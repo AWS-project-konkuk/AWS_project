@@ -278,6 +278,24 @@ test('손상된 시범 저장만 보호하고 초기화한다', async ({ page })
   );
 });
 
+test('생성 도구가 캔버스 위에 있고 전체 화면에서 실습에 집중한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 695 });
+  const lab = await openLab(page);
+  const canvas = lab.getByTestId('system-lab-canvas');
+  const tool = lab.getByRole('button', { name: 'EC2 추가' });
+  await expect(tool).toBeInViewport({ ratio: 1 });
+  await expect(lab.getByTestId('node-pod-b')).toBeInViewport({ ratio: 1 });
+  const height = (await canvas.boundingBox())!.height;
+  expect((await tool.boundingBox())!.y).toBeLessThan((await canvas.boundingBox())!.y);
+  await lab.getByRole('button', { name: '실습 전체 화면' }).click();
+  await expect(lab.getByRole('button', { name: '전체 화면 나가기' })).toBeVisible();
+  await expect.poll(async () => (await canvas.boundingBox())!.height).toBeGreaterThan(height + 140);
+  expect((await lab.boundingBox())!.y).toBe(0);
+  await expect(lab.getByTestId('node-pod-b')).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press('Escape');
+  await expect(lab.getByRole('button', { name: '실습 전체 화면' })).toBeVisible();
+});
+
 for (const width of [1440, 1024, 390]) {
   test(width + 'px에서 캔버스와 패널이 겹치지 않는다', async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
@@ -291,7 +309,7 @@ for (const width of [1440, 1024, 390]) {
     const labBounds = (await lab.boundingBox())!;
     expect(labBounds.y + labBounds.height).toBeGreaterThanOrEqual(practice.y + practice.height - 1);
     await expect(lab.getByRole('button', { name: '실습 힌트' })).toHaveCount(0);
-    await expect(lab.getByText(/두 Pod에 실행 이미지.*10건/)).toBeVisible();
+    await expect(lab.getByText(/두 Pod에.*도착 노드에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-' + width + '.png' });

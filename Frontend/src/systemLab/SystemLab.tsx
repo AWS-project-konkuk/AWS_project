@@ -2,6 +2,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import {
   ChevronLeft,
   ChevronRight,
+  Maximize,
+  Minimize,
   Play,
   Plus,
   Redo2,
@@ -79,6 +81,7 @@ export function SystemLab() {
   const [resultsSize, setResultsSize] = useState<PanelSize>('medium');
   const [settingsSize, setSettingsSize] = useState<PanelSize>('medium');
   const [frontPanel, setFrontPanel] = useState<'results' | 'settings'>('settings');
+  const [focused, setFocused] = useState(false);
   const workspaceShell = useRef<HTMLDivElement>(null);
   const [narrow, setNarrow] = useState(false);
   const resultsVisible = resultsOpen && (!narrow || frontPanel === 'results' || !settingsOpen);
@@ -134,6 +137,20 @@ export function SystemLab() {
     observer.observe(workspaceShell.current);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    if (!focused) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      setFocused(false);
+    };
+    window.addEventListener('keydown', close);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', close);
+    };
+  }, [focused]);
   const dispatch = (command: Command) => {
     if (busy) return false;
     const changed = commit(command);
@@ -170,10 +187,12 @@ export function SystemLab() {
   return (
     <section
       className={styles.lab}
+      data-focused={focused}
       aria-label="Docker·Kubernetes 시스템 실습"
       data-testid="system-lab"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
+          if (menu) event.preventDefault();
           setMenu(null);
           return;
         }
@@ -196,6 +215,10 @@ export function SystemLab() {
           <p>두 Pod에 요구사항을 연결하고, 각 Pod의 응답을 도착 노드에 연결하세요.</p>
         </div>
         <div className={styles.actions}>
+          <button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
+            {focused ? <Minimize size={15} /> : <Maximize size={15} />}
+            {focused ? '전체 화면 나가기' : '실습 전체 화면'}
+          </button>
           {busy ? (
             <button
               type="button"
@@ -398,21 +421,6 @@ export function SystemLab() {
             </div>
           </aside>
           <div className={styles.board}>
-            <ReactFlowProvider>
-              <Canvas
-                graph={graph}
-                selected={selected.id}
-                select={select}
-                dispatch={dispatch}
-                editable={!busy}
-                run={active?.result ?? null}
-                cursor={active?.cursor ?? 0}
-                onMenu={onMenu}
-                clearMenu={() => setMenu(null)}
-                selectedEdge={selectedEdge}
-                selectEdge={selectEdge}
-              />
-            </ReactFlowProvider>
             <div className={styles.palette} aria-label="시스템 도구">
               <div className={styles.paletteLabel}>
                 <strong>{parent?.name} 도구</strong>
@@ -448,6 +456,21 @@ export function SystemLab() {
                 </button>
               )}
             </div>
+            <ReactFlowProvider>
+              <Canvas
+                graph={graph}
+                selected={selected.id}
+                select={select}
+                dispatch={dispatch}
+                editable={!busy}
+                run={active?.result ?? null}
+                cursor={active?.cursor ?? 0}
+                onMenu={onMenu}
+                clearMenu={() => setMenu(null)}
+                selectedEdge={selectedEdge}
+                selectEdge={selectEdge}
+              />
+            </ReactFlowProvider>
           </div>
           <aside className={styles.inspector} aria-label="항목 설정">
             <header className={styles.panelHeader}>

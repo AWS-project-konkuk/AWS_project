@@ -97,6 +97,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
               className={styles.practice}
               aria-label="고정 실습 영역"
               data-testid="lesson-practice"
+              data-system-lab={pilot || undefined}
             >
               {pilot ? (
                 <SystemLab key={lesson.id} />

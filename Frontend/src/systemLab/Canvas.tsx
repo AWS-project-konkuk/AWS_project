@@ -345,17 +345,16 @@ export function Canvas({
     });
   };
   const fitInitial = useRef(() => {
-    const narrow = (element.current?.clientWidth ?? 0) < 560;
-    void flow.fitView({ padding: 0.12, minZoom: narrow ? 0.48 : 0.18, maxZoom: 1 });
+    void flow.fitView({ padding: 0.14, minZoom: 0.12, maxZoom: 1 });
   });
   useEffect(() => {
     if (!element.current) return;
     let frame = 0;
-    let visibleBefore = false;
     const observer = new ResizeObserver(([entry]) => {
-      const visibleNow = entry.contentRect.width > 0 && entry.contentRect.height > 0;
-      if (visibleNow && !visibleBefore) frame = requestAnimationFrame(fitInitial.current);
-      visibleBefore = visibleNow;
+      cancelAnimationFrame(frame);
+      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+        frame = requestAnimationFrame(fitInitial.current);
+      }
     });
     observer.observe(element.current);
     return () => {
@@ -601,7 +600,7 @@ export function Canvas({
         defaultNodes={nodeList}
         edges={edges}
         nodeTypes={nodeTypes}
-        minZoom={0.16}
+        minZoom={0.12}
         maxZoom={2}
         connectOnClick
         deleteKeyCode={null}
