@@ -63,4 +63,9 @@ public class PostService {
         return postRepository.findAll();
     }
 
+    @Transactional
+    public Post getPost(UUID id) {
+        return postRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글이 없습니다."));
+    }
 }

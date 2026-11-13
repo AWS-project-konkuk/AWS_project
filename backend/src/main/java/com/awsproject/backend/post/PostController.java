@@ -19,6 +19,7 @@ import com.awsproject.backend.post.DTO.CreatePostRequest;
 import com.awsproject.backend.post.DTO.CreatePostResponse;
 import com.awsproject.backend.post.DTO.DeletePostRequest;
 import com.awsproject.backend.post.DTO.UpdatePostRequest;
+import com.awsproject.backend.post.DTO.PostDetailResponse;
 
 import jakarta.validation.Valid;
 import tools.jackson.databind.JsonNode;
@@ -85,8 +86,11 @@ public class PostController {
             return ResponseEntity.ok(response);
     }
 
-
-
+    @GetMapping("/{id}")
+    public ResponseEntity<PostDetailResponse> getPost(@PathVariable UUID id) {
+        Post post = postService.getPost(id);
+        return ResponseEntity.ok(PostDetailResponse.from(post));
+    }
 
     
 }
