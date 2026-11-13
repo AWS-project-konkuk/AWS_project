@@ -15,10 +15,24 @@ public class ApiExceptionHandler {
                 .body(new ApiError(ex.code(), ex.getMessage()));
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
-    public ResponseEntity<ApiError> invalidRequest(Exception ex) {
-        return ResponseEntity.badRequest().contentType(JSON_UTF8).body(new ApiError("INVALID_REQUEST",
-                "message 또는 messages 중 하나를 올바른 JSON 형식으로 보내주세요."));
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> validationError(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .orElse("요청 값을 확인해주세요.");
+
+        return ResponseEntity.badRequest().contentType(JSON_UTF8)
+                .body(new ApiError("INVALID_REQUEST", message));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> malformedRequest(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().contentType(JSON_UTF8)
+                .body(new ApiError("INVALID_REQUEST",
+                        "요청 본문의 JSON 형식과 필드 타입을 확인해주세요."));
     }
 
     public record ApiError(String code, String message) {}
