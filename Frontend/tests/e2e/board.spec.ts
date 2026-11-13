@@ -14,7 +14,6 @@ const first = {
   id: firstId,
   author: '작성자',
   title: '공유 구성',
-  body: '게시글 내용',
   workflow,
   createdAt: '2026-11-13T10:00:00Z',
   updatedAt: null,
@@ -87,14 +86,17 @@ test('글을 등록하고 비밀번호 오류를 확인한 뒤 수정과 삭제�
       password: 'correct',
       workflow: null,
     });
-    posts = [{ ...first, ...draft, id: newId }];
+    posts = [
+      { ...first, id: newId, author: draft.author, title: draft.title, workflow: draft.workflow },
+    ];
     return route.fulfill({ status: 201, json: { id: newId } });
   });
   await page.route('**/api/posts/' + newId, (route) => {
     const draft = route.request().postDataJSON();
     if (draft.password !== 'correct') return route.fulfill({ status: 403 });
     if (route.request().method() === 'PATCH') {
-      posts = posts.map((post) => ({ ...post, title: draft.title, body: draft.body }));
+      expect(draft.body).toBeUndefined();
+      posts = posts.map((post) => ({ ...post, title: draft.title }));
     } else {
       expect(route.request().method()).toBe('DELETE');
       posts = [];

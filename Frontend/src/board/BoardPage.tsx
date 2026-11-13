@@ -154,8 +154,10 @@ function PostDetails({ post }: { post: Post }) {
           {copyStatus}
         </p>
       )}
-      <p className="my-6 break-words whitespace-pre-wrap text-ui-ink-2">{post.body}</p>
-      <div className="overflow-hidden rounded-lg border border-solid border-ui-rule-2">
+      {post.body && (
+        <p className="my-6 break-words whitespace-pre-wrap text-ui-ink-2">{post.body}</p>
+      )}
+      <div className="mt-6 overflow-hidden rounded-lg border border-solid border-ui-rule-2">
         <WorkflowPreview workflow={workflow} detailed />
       </div>
       <div className="mt-5 flex flex-wrap gap-2">

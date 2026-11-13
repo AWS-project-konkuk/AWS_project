@@ -21,12 +21,12 @@ export function PostForm({ post }: { post?: Post }) {
       const body = String(fields.get('body')).trim();
       const password = String(fields.get('password'));
       const author = String(fields.get('author') ?? '').trim();
-      if (!title || !body || !password.trim() || (!post && !author)) {
+      if (!title || !password.trim() || (!post && (!author || !body)) || (post?.body && !body)) {
         throw new Error('필수 항목을 입력해 주세요.');
       }
       const workflow = attachment === 'current' ? data : (post?.workflow ?? null);
       if (post) {
-        await updatePost(post.id, { title, body, password, workflow });
+        await updatePost(post.id, { title, body: body || undefined, password, workflow });
         return post.id;
       }
       return createPost({ author, title, body, password, workflow });
@@ -57,7 +57,13 @@ export function PostForm({ post }: { post?: Post }) {
       </label>
       <label>
         내용
-        <Textarea name="body" required rows={7} defaultValue={post?.body} />
+        <Textarea
+          name="body"
+          required={!post || Boolean(post.body)}
+          rows={7}
+          defaultValue={post?.body ?? ''}
+          placeholder={post && post.body == null ? '비워 두면 기존 본문을 유지합니다.' : undefined}
+        />
       </label>
       <label>
         비밀번호

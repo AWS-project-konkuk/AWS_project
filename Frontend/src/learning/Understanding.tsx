@@ -3,15 +3,19 @@ import { ResultFeedback } from './ResultFeedback';
 import type { Lesson } from '../curriculum/types';
 import { useLearning } from './LearningStore';
 import { getLab } from './blockProgress';
+import { QuizAiFeedback } from './QuizAiFeedback';
+import { useQuizAi } from './useQuizAi';
 import styles from './LessonLayout.module.css';
 
 export function Understanding({ lesson }: { lesson: Lesson }) {
   const { state, edit } = useLearning();
   const [feedbackVersion, setFeedbackVersion] = useState(0);
-  const assessment = lesson.assessment;
-  if (!assessment) return null;
   const lab = getLab(state.data, lesson.id);
   const answer = lab.answers._understanding;
+  const reason = String(lab.answers._reason ?? '');
+  const ai = useQuizAi(lesson, answer, reason);
+  const assessment = lesson.assessment;
+  if (!assessment) return null;
   const passed = answer === assessment.correct;
   const checked = lab.answers._checkedUnderstanding === answer && answer !== undefined;
   return (
@@ -46,7 +50,7 @@ export function Understanding({ lesson }: { lesson: Lesson }) {
         <textarea
           aria-label="선택한 이유"
           rows={3}
-          value={String(lab.answers._reason ?? '')}
+          value={reason}
           onChange={(event) =>
             edit(
               lesson.id,
@@ -75,11 +79,15 @@ export function Understanding({ lesson }: { lesson: Lesson }) {
         >
           정답 확인하기
         </button>
-        <button disabled title="AI 이유 검증 기능은 준비 중입니다">
-          내가 말한 이유 검증하기
+        <button
+          type="button"
+          disabled={!ai.canRequest || ai.loading}
+          onClick={() => void ai.request()}
+        >
+          {ai.loading ? 'AI 검토 중…' : 'AI에게 요청하기'}
         </button>
       </div>
-      <p>AI 이유 검증은 준비 중입니다. 작성한 이유는 저장됩니다.</p>
+      <QuizAiFeedback {...ai} />
       {checked && (
         <ResultFeedback
           key={feedbackVersion}
