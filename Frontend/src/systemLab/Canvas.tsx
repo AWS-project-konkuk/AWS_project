@@ -52,7 +52,17 @@ import {
   type Material,
   type Point,
 } from './model';
-import styles from './SystemLab.module.css';
+import { Button } from '../components/ui/button';
+import { NativeSelect } from '../components/ui/native-select';
+import { cn } from '../components/ui/styles';
+import {
+  divider,
+  entityFrame,
+  entityStatus,
+  kindColor,
+  materialColor,
+  portHandle,
+} from './appearance';
 
 const icons = {
   root: Layers,
@@ -70,7 +80,14 @@ const icons = {
 };
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
   const Icon = icons[kind];
-  return <Icon size={size} aria-hidden className={styles.kindIcon} data-kind-icon={kind} />;
+  return (
+    <Icon
+      size={size}
+      aria-hidden
+      className={cn('shrink-0 text-(--kind-color)', kindColor[kind])}
+      data-kind-icon={kind}
+    />
+  );
 }
 const materialIcons = {
   request: Send,
@@ -121,20 +138,31 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   if (entity.type === 'system')
     return (
       <section
-        className={styles.area}
+        className={cn(
+          entityFrame,
+          kindColor[entity.kind],
+          'group/entity size-full rounded-[10px] bg-[color-mix(in_srgb,var(--kind-color)_6%,var(--color-paper-2))]',
+        )}
         data-kind={entity.kind}
         data-status={status}
         data-collapsed={data.collapsed}
         data-selected={selected}
         data-testid={'system-' + id}
       >
-        <div className={styles.areaHeader}>
+        <div
+          className={cn(
+            'system-lab-area-header flex h-9 items-center gap-[7px] rounded-t-[10px] bg-[color-mix(in_srgb,var(--kind-color)_14%,var(--color-paper))] px-2 text-ui-ink [&>strong]:flex-1 [&>strong]:truncate [&>strong]:text-base',
+            divider,
+          )}
+        >
           <KindIcon kind={entity.kind} size={18} />
           <strong title={entity.name}>{entity.name}</strong>
-          <span className={styles.state}>{status}</span>
-          <button
+          <span className={cn('whitespace-nowrap text-[13px] text-ui-muted', entityStatus)}>
+            {status}
+          </span>
+          <Button
             type="button"
-            className="nodrag"
+            className="nodrag size-[25px] min-h-0 shrink-0 p-0"
             aria-label={entity.name + (data.collapsed ? ' 펼치기' : ' 접기')}
             onClick={(event) => {
               event.stopPropagation();
@@ -142,10 +170,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             }}
           >
             {data.collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="nodrag"
+            className="nodrag size-[25px] min-h-0 shrink-0 p-0"
             aria-label={entity.name + ' 집중 보기'}
             onClick={(event) => {
               event.stopPropagation();
@@ -153,32 +181,37 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             }}
           >
             <Maximize size={13} />
-          </button>
+          </Button>
         </div>
-        {data.collapsed && <span className={styles.areaSummary}>숨겨진 항목 {data.count}개</span>}
+        {data.collapsed && (
+          <span className="block px-2.5 py-2 text-ui-muted">숨겨진 항목 {data.count}개</span>
+        )}
         <Handle
           type="target"
           position={Position.Left}
           id="summary-in"
           isConnectable={false}
-          className={styles.proxy}
+          className="pointer-events-none! size-[9px]! border-ui-paper! bg-ui-muted! opacity-0 group-data-[collapsed=true]/entity:opacity-100"
         />
         <Handle
           type="source"
           position={Position.Right}
           id="summary-out"
           isConnectable={false}
-          className={styles.proxy}
+          className="pointer-events-none! size-[9px]! border-ui-paper! bg-ui-muted! opacity-0 group-data-[collapsed=true]/entity:opacity-100"
         />
         {ports && (
-          <div className={styles.clusterPorts}>
+          <div className="absolute top-16 left-0">
             {ports.map((port) => {
               const label = portLabel(ports, port) + ' 입력';
               const Icon = materialIcons[port.material];
               return (
                 <div
                   key={port.id}
-                  className={styles.clusterPort}
+                  className={cn(
+                    'group/port relative flex h-7 items-center gap-1 pl-4 text-[11px] text-(--port-color)',
+                    materialColor[port.material],
+                  )}
                   data-connected={data.connected.has(port.id)}
                 >
                   <Handle
@@ -186,7 +219,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                     type="target"
                     position={Position.Left}
                     isConnectable={data.editable}
-                    className={styles.handle}
+                    className={portHandle}
                     data-testid={'port-' + id + '-' + port.id}
                     aria-label={entity.name + ' ' + label}
                     onContextMenu={(event) => data.portMenu(event, port.id)}
@@ -203,17 +236,30 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
     );
   return (
     <article
-      className={styles.node}
+      className={cn(
+        entityFrame,
+        kindColor[entity.kind],
+        'group/entity rounded-lg bg-ui-paper shadow-(--shadow-card) data-[status=처리_중]:outline-2 data-[status=처리_중]:outline-ui-accent',
+      )}
       data-kind={entity.kind}
       data-selected={selected}
       data-status={status}
       data-testid={'node-' + id}
     >
-      <header>
+      <header
+        className={cn(
+          divider,
+          'flex min-h-[39px] items-center gap-1.5 rounded-t-[7px] bg-[color-mix(in_srgb,var(--kind-color)_12%,var(--color-paper))] px-2 py-[5px]',
+        )}
+      >
         <KindIcon kind={entity.kind} size={17} />
-        <strong title={entity.name}>{entity.name}</strong>
+        <strong className="min-w-0 flex-1 truncate text-sm" title={entity.name}>
+          {entity.name}
+        </strong>
         {(status || resourceRoles[entity.kind]) && (
-          <small>{status ?? resourceRoles[entity.kind]}</small>
+          <small className={cn('whitespace-nowrap text-[11px] text-ui-muted', entityStatus)}>
+            {status ?? resourceRoles[entity.kind]}
+          </small>
         )}
       </header>
       {entity.kind === 'service' && (
@@ -222,10 +268,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
           type="source"
           position={Position.Right}
           isConnectable={false}
-          className={styles.routeAnchor}
+          className="pointer-events-none! opacity-0"
         />
       )}
-      <div className={styles.ports}>
+      <div className="grid grid-cols-2 py-[3px]">
         {(['in', 'out'] as const).map((direction) => (
           <div key={direction}>
             {entity.ports
@@ -236,7 +282,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                 return (
                   <div
                     key={port.id}
-                    className={styles.portRow}
+                    className={cn(
+                      materialColor[port.material],
+                      'group/port relative flex h-7 items-center gap-[3px] whitespace-nowrap pr-0.5 pl-2.5 text-[11px] data-[direction=out]:justify-end data-[direction=out]:pr-2.5 data-[direction=out]:pl-0.5 [&>span]:truncate [&>svg]:shrink-0 [&>svg]:text-(--port-color)',
+                    )}
                     data-direction={direction}
                     data-material={port.material}
                     data-connected={data.connected.has(port.id)}
@@ -255,7 +304,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                           direction === 'in'
                         )
                       }
-                      className={styles.handle}
+                      className={cn(
+                        portHandle,
+                        'z-[3]! group-data-[recommended=true]/port:before:shadow-[0_0_0_4px_color-mix(in_srgb,var(--port-color)_25%,transparent)]',
+                      )}
                       data-testid={'port-' + id + '-' + port.id}
                       aria-label={
                         entity.name + ' ' + label + (direction === 'in' ? ' 입력' : ' 출력')
@@ -304,14 +356,14 @@ function ResizeGrip({
     <>
       <span
         ref={preview}
-        className={styles.resizePreview}
+        className="pointer-events-none absolute top-0 left-0 z-4 rounded-lg outline-2 outline-dashed outline-ui-accent"
         data-testid={'resize-preview-' + entity.id}
         hidden
         aria-hidden="true"
       />
       <button
         type="button"
-        className={styles.resize + ' nodrag nopan'}
+        className="nodrag nopan absolute -right-[5px] -bottom-[5px] size-4 touch-none rounded-(--radius-input) border-2 border-solid border-ui-paper bg-ui-accent p-0 [cursor:nwse-resize]"
         data-testid={'resize-' + entity.id}
         aria-label={entity.name + ' 영역 크기 조절'}
         onPointerDown={(e) => {
@@ -473,7 +525,7 @@ export function Canvas({
           ...(groupSize
             ? { ...groupSize, measured: groupSize }
             : { style: { width: size(entity).width } }),
-          dragHandle: entity.type === 'system' ? '.' + styles.areaHeader : undefined,
+          dragHandle: entity.type === 'system' ? '.system-lab-area-header' : undefined,
           draggable: editable,
           deletable: false,
           selected: entity.id === selected,
@@ -608,9 +660,13 @@ export function Canvas({
       labelBgStyle: { fill: 'var(--color-paper)' },
     });
   return (
-    <div ref={element} className={styles.canvas} data-testid="system-lab-canvas">
-      <div className={styles.canvasTools}>
-        <button
+    <div
+      ref={element}
+      className="relative isolate min-h-0 min-w-0 bg-ui-paper-2 group-data-[focused=false]/lab:max-[1023px]:min-h-[360px] max-[540px]:[&_.react-flow]:h-[calc(100%-46px)]! motion-reduce:[&_.react-flow__edge.animated_path]:animate-none! [&_.react-flow__controls]:overflow-hidden [&_.react-flow__controls]:rounded-md [&_.react-flow__controls]:border [&_.react-flow__controls]:border-solid [&_.react-flow__controls]:border-ui-rule-2 [&_.react-flow__controls]:shadow-(--shadow-card) [&_.react-flow__controls-button]:min-h-7 [&_.react-flow__controls-button]:p-[5px]"
+      data-testid="system-lab-canvas"
+    >
+      <div className="pointer-events-none absolute inset-x-2.5 top-[9px] z-5 flex flex-wrap items-center gap-1.5 [&>*]:pointer-events-auto [&>*]:max-w-full max-[540px]:relative max-[540px]:inset-auto max-[540px]:px-2.5 max-[540px]:pt-2 max-[540px]:pb-1 max-[540px]:[&>button]:text-xs! max-[540px]:[&>select]:text-xs!">
+        <Button
           type="button"
           onClick={() => {
             select(rootId);
@@ -619,8 +675,8 @@ export function Canvas({
           }}
         >
           <Layers size={15} /> 전체 서비스
-        </button>
-        <select
+        </Button>
+        <NativeSelect
           aria-label="캔버스에서 항목 찾기"
           value={selected}
           onChange={(event) => {
@@ -641,8 +697,12 @@ export function Canvas({
                 {e.name}
               </option>
             ))}
-        </select>
-        {focusId && <span className={styles.focusLabel}>{entityMap.get(focusId)?.name}</span>}
+        </NativeSelect>
+        {focusId && (
+          <span className="rounded bg-ui-paper px-2 py-1 text-ui-ink-2">
+            {entityMap.get(focusId)?.name}
+          </span>
+        )}
       </div>
       <ReactFlow<CanvasNode>
         defaultNodes={nodeList}

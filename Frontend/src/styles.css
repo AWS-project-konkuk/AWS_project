@@ -7,6 +7,27 @@
 @import './theme.css';
 @import './tokens.css';
 @import './base.css';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' source(none);
+@source './components/ui';
+@source './systemLab';
+
+@theme inline {
+  --color-ui-paper: var(--color-paper);
+  --color-ui-paper-2: var(--color-paper-2);
+  --color-ui-paper-3: var(--color-paper-3);
+  --color-ui-ink: var(--color-ink);
+  --color-ui-ink-2: var(--color-ink-2);
+  --color-ui-muted: var(--color-muted);
+  --color-ui-rule: var(--color-rule);
+  --color-ui-rule-2: var(--color-rule-2);
+  --color-ui-accent: var(--color-accent);
+  --color-ui-accent-ink: var(--color-accent-ink);
+  --color-ui-accent-wash: var(--color-accent-wash);
+  --color-ui-accent-deep: var(--color-accent-deep);
+  --color-ui-error: var(--color-error);
+  --color-ui-success: var(--color-success);
+}
 @font-face {
   font-family: 'Pretendard';
   font-style: normal;

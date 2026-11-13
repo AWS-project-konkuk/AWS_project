@@ -24,9 +24,16 @@ import {
   type Version,
 } from './model';
 import { KindIcon } from './Canvas';
-import styles from './SystemLab.module.css';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { NativeSelect } from '../components/ui/native-select';
+import { hint } from './appearance';
 
 type Dispatch = (command: Command) => boolean;
+const settingActions =
+  'flex flex-wrap items-center justify-between gap-[5px] [&>button]:px-[7px] [&>button]:text-xs';
+const portControls = 'flex gap-[5px] [&>select]:min-w-0 [&>select]:flex-1 [&>button]:px-1.5';
+
 function PortRow({
   node,
   graph,
@@ -42,9 +49,9 @@ function PortRow({
   const attached = graph.connections.filter((e) => e.to.node === node.id && e.to.port === port.id);
   const label = portLabel(node.ports ?? [], port);
   return (
-    <div className={styles.portEditor}>
-      <div className={styles.portControls}>
-        <select
+    <div className="[&_label]:my-[5px]">
+      <div className={portControls}>
+        <NativeSelect
           aria-label={label + ' 타입'}
           value={port.material}
           onChange={(e) =>
@@ -61,9 +68,9 @@ function PortRow({
               {materials[type]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {port.direction === 'in' && (
-          <select
+          <NativeSelect
             aria-label={label + ' 연결 수'}
             value={port.multiple ? 'many' : 'one'}
             onChange={(e) => {
@@ -78,20 +85,20 @@ function PortRow({
           >
             <option value="one">단일</option>
             <option value="many">여러 개</option>
-          </select>
+          </NativeSelect>
         )}
-        <button
+        <Button
           type="button"
           aria-label={label + ' 포트 삭제'}
           onClick={() => dispatch({ type: 'port-remove', id: node.id, port: port.id })}
         >
           <Minus size={15} />
-        </button>
+        </Button>
       </div>
       {choose && port.multiple && attached.length > 1 && (
         <label>
           유지할 연결
-          <select
+          <NativeSelect
             value=""
             onChange={(e) => {
               if (!e.target.value) return;
@@ -111,10 +118,10 @@ function PortRow({
                 {graph.entities.find((n) => n.id === e.from.node)?.name} · {e.from.port}
               </option>
             ))}
-          </select>
-          <button type="button" onClick={() => setChoose(false)}>
+          </NativeSelect>
+          <Button type="button" onClick={() => setChoose(false)}>
             취소
-          </button>
+          </Button>
         </label>
       )}
     </div>
@@ -136,15 +143,18 @@ function PortList({
   const title = direction === 'in' ? '입력' : '출력';
   if (!choices.length) return null;
   return (
-    <section className={styles.portGroup} aria-label={title + ' 포트'}>
+    <section
+      className="grid gap-1.5 border-0 border-t border-solid border-ui-rule pt-2 [&_h4]:m-0 [&_h4]:text-[13px]"
+      aria-label={title + ' 포트'}
+    >
       <h4>{title}</h4>
       {node.ports
         ?.filter((p) => p.direction === direction)
         .map((p) => (
           <PortRow key={p.id} node={node} graph={graph} port={p} dispatch={dispatch} />
         ))}
-      <div className={styles.portControls}>
-        <select
+      <div className={portControls}>
+        <NativeSelect
           aria-label={'추가할 ' + title + ' 타입'}
           value={draft}
           onChange={(e) => setDraft(e.target.value as Material)}
@@ -154,8 +164,8 @@ function PortList({
               {materials[type]}
             </option>
           ))}
-        </select>
-        <button
+        </NativeSelect>
+        <Button
           type="button"
           onClick={() =>
             dispatch({
@@ -168,7 +178,7 @@ function PortList({
           }
         >
           <Plus size={15} /> {title} 추가
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -211,7 +221,7 @@ export function Inspector({
   );
   return (
     <>
-      <header className={styles.inspectHeader}>
+      <header className="flex items-center gap-[9px] [&_h3]:m-0 [&_h3]:text-base [&_h3]:[overflow-wrap:anywhere] [&_small]:text-ui-muted">
         <KindIcon kind={node.kind} size={21} />
         <div>
           <h3>{node.name}</h3>
@@ -220,9 +230,9 @@ export function Inspector({
           </small>
         </div>
       </header>
-      <p className={styles.hint}>{hints[node.kind]}</p>
+      <p className={hint}>{hints[node.kind]}</p>
       {node.kind === 'start' && (
-        <section className={styles.portSpec}>
+        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
           <h4>제공 데이터</h4>
           <ol>
             <li>
@@ -238,7 +248,7 @@ export function Inspector({
         </section>
       )}
       {node.kind === 'end' && (
-        <section className={styles.portSpec}>
+        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
           <h4>응답 입력 · 완료 조건</h4>
           <ol>
             <li>서로 다른 Pod {definition.requiredPods}개 이상이 요청을 처리해야 합니다.</li>
@@ -252,12 +262,15 @@ export function Inspector({
           <p>실행에 성공한 뒤 왼쪽 패널의 이해 확인을 완료하세요.</p>
         </section>
       )}
-      <fieldset className={styles.settings} disabled={busy}>
+      <fieldset
+        className="m-0 grid min-w-0 gap-2.5 border-0 p-0 [&_label]:grid [&_label]:gap-1"
+        disabled={busy}
+      >
         {!locked && (
           <>
             <label>
               이름{' '}
-              <input
+              <Input
                 key={node.name}
                 defaultValue={node.name}
                 maxLength={63}
@@ -274,45 +287,46 @@ export function Inspector({
               />
             </label>
             {runnable && (
-              <div className={styles.settingLine}>
+              <div className={settingActions}>
                 <span>실행 상태</span>
-                <button
+                <Button
                   type="button"
                   role="switch"
+                  className="aria-checked:bg-ui-accent-wash aria-checked:text-ui-success aria-[checked=false]:text-ui-error"
                   aria-label={node.name + ' 실행 상태'}
                   aria-checked={node.enabled}
                   onClick={() => dispatch({ type: 'toggle', id: node.id, enabled: !node.enabled })}
                 >
                   {node.enabled ? '실행' : '정지'}
-                </button>
+                </Button>
               </div>
             )}
-            {blocked && <p className={styles.hint}>{blocked} 정지로 차단</p>}
+            {blocked && <p className={hint}>{blocked} 정지로 차단</p>}
           </>
         )}
         {node.type === 'system' && !locked && (
-          <button type="button" onClick={() => dispatch({ type: 'compact', id: node.id })}>
+          <Button type="button" onClick={() => dispatch({ type: 'compact', id: node.id })}>
             <Minimize2 size={15} /> 크기 정리
-          </button>
+          </Button>
         )}
         {node.type === 'system' && (
-          <div className={styles.settingLine}>
-            <button
+          <div className={settingActions}>
+            <Button
               type="button"
               onClick={() =>
                 dispatch({ type: 'toggle', id: node.id, enabled: true, children: true })
               }
             >
               내부 일괄 실행
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() =>
                 dispatch({ type: 'toggle', id: node.id, enabled: false, children: true })
               }
             >
               내부 일괄 정지
-            </button>
+            </Button>
           </div>
         )}
         {node.type === 'system' &&
@@ -324,13 +338,13 @@ export function Inspector({
             return (
               <>
                 <h4>Deployment</h4>
-                <p className={styles.hint}>
+                <p className={hint}>
                   이미지는 Kubernetes 옆면에, 요청은 내부 Service에 연결하세요.
                 </p>
                 <PortList node={node} graph={graph} direction="in" dispatch={dispatch} />
                 <label>
                   원하는 Pod 수
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={10}
@@ -344,7 +358,7 @@ export function Inspector({
                 </label>
                 <label>
                   배포 Pod 라벨
-                  <input
+                  <Input
                     key={config.workloadLabel}
                     defaultValue={config.workloadLabel}
                     onBlur={(e) => {
@@ -356,7 +370,7 @@ export function Inspector({
                 <h4>Service</h4>
                 <label>
                   대상 Pod 라벨
-                  <input
+                  <Input
                     key={config.serviceSelector}
                     defaultValue={config.serviceSelector}
                     onBlur={(e) => {
@@ -367,7 +381,7 @@ export function Inspector({
                 </label>
                 <label>
                   Service 포트
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={65535}
@@ -387,7 +401,7 @@ export function Inspector({
             {node.type === 'resource' && node.kind === 'pod' && (
               <label>
                 Pod 라벨
-                <input
+                <Input
                   key={appLabel(node)}
                   defaultValue={appLabel(node)}
                   onBlur={(e) => {
@@ -399,7 +413,7 @@ export function Inspector({
             )}
             <label>
               소속 시스템
-              <select
+              <NativeSelect
                 value={node.parent}
                 onChange={(event) => {
                   const parent = parents.find((p) => p.id === event.target.value);
@@ -411,12 +425,12 @@ export function Inspector({
                     {p.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             {node.type === 'resource' && ['model', 'image', 'deployment'].includes(node.kind) && (
               <label>
                 {node.kind === 'model' ? '모델 버전' : '이미지 태그'}
-                <select
+                <NativeSelect
                   value={node.version}
                   onChange={(e) =>
                     dispatch({ type: 'settings', id: node.id, version: e.target.value as Version })
@@ -424,13 +438,13 @@ export function Inspector({
                 >
                   <option value="v1">v1</option>
                   <option value="v2">v2</option>
-                </select>
+                </NativeSelect>
               </label>
             )}
             {node.type === 'resource' && node.kind === 'deployment' && (
               <label>
                 원하는 Pod 수
-                <select
+                <NativeSelect
                   value={node.replicas}
                   onChange={(e) =>
                     dispatch({ type: 'settings', id: node.id, replicas: Number(e.target.value) })
@@ -441,7 +455,7 @@ export function Inspector({
                       {i + 1}개
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
             )}
             {node.type === 'resource' && (
@@ -451,22 +465,20 @@ export function Inspector({
               </>
             )}
             {required ? (
-              <p className={styles.hint}>실습에 필요한 항목입니다.</p>
+              <p className={hint}>실습에 필요한 항목입니다.</p>
             ) : (
-              <button
+              <Button
                 type="button"
-                className={styles.danger}
+                variant="destructive"
                 onClick={() => dispatch({ type: 'remove', id: node.id })}
               >
                 <Trash2 size={15} />{' '}
                 {node.type === 'system' ? '시스템과 내부 항목 삭제' : '노드 삭제'}
-              </button>
+              </Button>
             )}
           </>
         )}
-        {node.id === rootId && (
-          <p className={styles.hint}>설정할 노드나 시스템 영역을 선택하세요.</p>
-        )}
+        {node.id === rootId && <p className={hint}>설정할 노드나 시스템 영역을 선택하세요.</p>}
       </fieldset>
     </>
   );

@@ -329,11 +329,24 @@ for (const width of [1440, 1024, 390]) {
     await expect(lab.getByText(/이미지는 Kubernetes.*도착에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
+    const runButton = lab.getByRole('button', { name: '실습 실행', exact: true });
+    const hasAccentBackground = () =>
+      runButton.evaluate((button) => {
+        const probe = document.createElement('span');
+        probe.style.color = 'var(--color-accent)';
+        button.appendChild(probe);
+        const accent = getComputedStyle(probe).color;
+        probe.remove();
+        const styles = getComputedStyle(button);
+        return styles.backgroundImage === 'none' && styles.backgroundColor === accent;
+      });
+    expect(await hasAccentBackground()).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-' + width + '.png' });
     await page.evaluate(() => localStorage.setItem('pilot-test-dark', '1'));
     await page.reload();
     await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await hasAccentBackground()).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-dark-' + width + '.png' });
   });
 }
