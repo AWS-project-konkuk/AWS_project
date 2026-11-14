@@ -1,0 +1,33 @@
+backend:
+  image:
+    repository: blockml-backend
+    tag: ""
+    pullPolicy: IfNotPresent
+  port: 8080
+  replicas: 1
+  secretName: backend-secret
+  vllm:
+    baseUrl: ""
+  javaOpts: "-XX:MaxRAMPercentage=70"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+frontend:
+  image:
+    repository: blockml-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+  port: 80
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

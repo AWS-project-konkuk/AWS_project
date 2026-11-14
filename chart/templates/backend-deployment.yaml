@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    app: {{ .Release.Name }}-backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-backend
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ required "backend.image.tag 를 지정하세요" .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.port }}
+          env:
+            - name: SUPABASE_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.secretName }}
+                  key: SUPABASE_DB_URL
+            - name: VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.secretName }}
+                  key: VLLM_API_KEY
+                  optional: true
+            {{- with .Values.backend.vllm.baseUrl }}
+            - name: VLLM_BASE_URL
+              value: {{ . | quote }}
+            {{- end }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.backend.javaOpts | quote }}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.backend.port }}
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.backend.port }}
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
