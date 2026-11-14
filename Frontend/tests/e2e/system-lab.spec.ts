@@ -21,33 +21,44 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await expect(lab.getByRole('button', { name: 'EC2 추가' })).toBeEnabled();
   await lab.getByRole('button', { name: '내부 일괄 실행', exact: true }).click();
   const canvas = lab.getByTestId('system-lab-canvas');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(3);
+  const finder = lab.getByLabel('캔버스에서 항목 찾기');
+  await finder.selectOption('kubernetes');
+  const selector = lab.getByLabel('대상 Pod 라벨');
+  await selector.fill('other');
+  await selector.press('Tab');
   await expect(canvas.locator('.react-flow__edge')).toHaveCount(1);
+  await selector.fill('review');
+  await selector.press('Tab');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(3);
+  const inputs = lab.getByRole('region', { name: '입력 포트' });
+  await inputs.getByRole('button', { name: '이미지 포트 삭제' }).click();
+  await expect(lab.getByTestId('port-kubernetes-in-image')).toHaveCount(0);
+  await inputs.getByRole('button', { name: '입력 추가' }).click();
+  const imageInput = canvas.getByLabel('Kubernetes 이미지 입력', { exact: true });
+  await expect(imageInput).toBeVisible();
+  await lab.getByRole('button', { name: '전체 서비스', exact: true }).click();
+  await lab.getByTestId('port-image-out-image').click();
+  await imageInput.click();
   for (const pod of ['pod-a', 'pod-b']) {
-    for (const [node, type] of [
-      ['image', 'image'],
-      ['model', 'model'],
-      ['deployment', 'control'],
-    ]) {
-      await lab.getByTestId('port-' + node + '-out-' + type).click();
-      await lab.getByTestId('port-' + pod + '-in-' + type).click();
-    }
+    await lab.getByTestId('port-start-out-model').click();
+    await lab.getByTestId('port-' + pod + '-in-model').click();
     await lab.getByTestId('port-' + pod + '-out-prediction').click();
     await lab.getByTestId('port-end-in-prediction').click();
   }
-  await lab.getByTestId('port-service-out-request').click();
-  await lab.getByTestId('port-pod-a-in-request').click();
-  const source = await lab.getByTestId('port-service-out-request').boundingBox();
-  const target = await lab.getByTestId('port-pod-b-in-request').boundingBox();
-  if (!source || !target) throw new Error('요청 포트가 보이지 않습니다.');
-  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 14 });
-  await page.mouse.up();
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await expect(lab.getByRole('status').first()).toContainText('응답 10건이 중복 없이');
+  await expect(lab.getByRole('status').first()).toHaveAttribute('data-tone', 'success');
+  await expect(lab.getByTestId('node-pod-a')).toHaveAttribute('data-status', '성공');
   await expect(lab.getByRole('button', { name: '실행 결과 접기' })).toHaveAttribute(
     'aria-expanded',
     'true',
+  );
+  const modelWire = canvas.getByRole('group', { name: '출발 → Pod 1 모델', exact: true });
+  await modelWire.focus();
+  await page.keyboard.press('Enter');
+  await expect(lab.getByRole('status').filter({ hasText: '출발 → Pod 1' })).toContainText(
+    'model.pkl · v1',
   );
   await lab.getByRole('radio').first().check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
@@ -56,7 +67,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await expect(lab.getByRole('status').first()).toHaveText('현재 구성 실행 성공');
   await lab.getByTestId('port-pod-b-in-model').click({ button: 'right' });
-  await lab.getByRole('button', { name: '모델 파일 연결 삭제' }).click();
+  await lab.getByRole('button', { name: '출발 연결 삭제' }).click();
   await expect(page.getByRole('button', { name: '다음 강의', exact: true })).toBeDisabled();
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
@@ -66,7 +77,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await expect(lab.getByRole('button', { name: '입력 추가' })).toBeVisible();
   await lab.getByRole('button', { name: '노드 삭제', exact: true }).click();
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
-  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(13);
+  await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(11);
   await lab.getByRole('button', { name: '초기 복원' }).click();
   await expect(lab.getByTestId('node-pod-b')).toHaveAttribute('data-status', '정지');
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
@@ -82,12 +93,16 @@ test('실패한 실행도 왼쪽 결과를 펼치고 오른쪽 설정은 좁게 
   const before = (await canvas.boundingBox())!;
   await settings.getByRole('button', { name: '설정 접기' }).click();
   const collapsed = settings.getByRole('button', { name: '설정 펼치기' });
+  await expect(settings.getByText('설정', { exact: true })).toBeVisible();
+  await expect(results.getByText('실행 결과', { exact: true })).toBeVisible();
   await expect(collapsed.locator('.lucide-chevron-left')).toBeVisible();
   expect((await settings.boundingBox())!.width).toBeLessThan(50);
   expect((await canvas.boundingBox())!.width).toBeGreaterThan(before.width);
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await expect(results.getByRole('button', { name: '실행 결과 접기' })).toBeVisible();
   await expect(results.getByRole('status').first()).toContainText('0 / 10');
+  await expect(results.getByRole('status').first()).toHaveAttribute('data-tone', 'error');
+  await expect(lab.getByTestId('node-end')).toHaveAttribute('data-status', '실패');
   const left = (await results.boundingBox())!;
   expect(left.x + left.width).toBeLessThanOrEqual((await canvas.boundingBox())!.x + 1);
   await results.getByRole('button', { name: '실행 결과 접기' }).click();
@@ -101,7 +116,7 @@ test('실패한 실행도 왼쪽 결과를 펼치고 오른쪽 설정은 좁게 
   );
 
   const connected = canvas.getByTestId('port-start-out-request');
-  const empty = canvas.getByTestId('port-pod-a-in-request');
+  const empty = canvas.getByTestId('port-pod-a-in-model');
   const painted = (el: Element) => {
     const paint = getComputedStyle(el, '::before');
     return paint.backgroundColor === paint.borderTopColor;
@@ -133,10 +148,12 @@ test('패널 폭을 따로 선택하고 실행 가능한 항목에서만 스위�
   );
 
   const finder = lab.getByLabel('캔버스에서 항목 찾기');
-  for (const id of ['deployment', 'service', 'model', 'image']) {
+  for (const id of ['image']) {
     await finder.selectOption(id);
     await expect(settings.getByRole('switch')).toHaveCount(0);
-    await expect(lab.getByTestId('node-' + id).locator('header small')).toHaveCount(0);
+    await expect(lab.getByTestId('node-' + id).locator('header small')).toHaveText(
+      /진입점|실행 자료/,
+    );
   }
   await finder.selectOption('pod-a');
   await expect(settings.getByRole('switch', { name: 'Pod 1 실행 상태' })).toBeVisible();
@@ -156,7 +173,7 @@ test('처음부터 포트와 도구를 편집하고 드롭 한 번으로 위치�
     await lab.getByTestId('node-pod-a').locator('header').evaluate(iconColor),
   );
   expect(await lab.getByTestId('node-pod-a').locator('header').evaluate(iconColor)).not.toBe(
-    await lab.getByTestId('node-service').locator('header').evaluate(iconColor),
+    await lab.getByTestId('node-image').locator('header').evaluate(iconColor),
   );
   await finder.selectOption('pod-a');
   await expect(lab.getByRole('button', { name: '입력 추가' })).toBeEnabled();
@@ -195,7 +212,8 @@ test('영역을 접고, 선을 우클릭해 삭제한 뒤 되돌린다', async (
   const canvas = lab.getByTestId('system-lab-canvas');
   await lab.getByRole('button', { name: 'Kubernetes 접기', exact: true }).click();
   await expect(canvas.getByTestId('node-pod-a')).toHaveCount(0);
-  await expect(canvas.getByText('숨겨진 항목 4개')).toBeVisible();
+  await expect(canvas.getByText('숨겨진 항목 3개')).toBeVisible();
+  await expect(canvas.getByTestId('port-kubernetes-in-image')).toBeVisible();
   await expect(canvas.getByText('연결 1', { exact: true }).first()).toBeVisible();
   await lab.getByRole('button', { name: 'Kubernetes 펼치기', exact: true }).click();
   const edge = canvas.getByRole('group', { name: '출발 → Service 요청', exact: true });
@@ -203,7 +221,7 @@ test('영역을 접고, 선을 우클릭해 삭제한 뒤 되돌린다', async (
     Number(getComputedStyle(element.closest('svg')!).zIndex),
   );
   const nodeLayer = await canvas
-    .getByTestId('node-service')
+    .getByTestId('node-image')
     .evaluate((element) => Number(getComputedStyle(element.closest('.react-flow__node')!).zIndex));
   expect(edgeLayer).toBeGreaterThan(nodeLayer);
   const point = await edge
@@ -234,8 +252,18 @@ test('영역 크기 조절은 한 번의 편집으로 되돌릴 수 있다', asy
   await page.mouse.move(origin.x + origin.width / 2, origin.y + origin.height / 2);
   await page.mouse.down();
   await page.mouse.move(origin.x + 65, origin.y + 30, { steps: 8 });
-  await expect.poll(async () => (await area.boundingBox())!.width).toBeGreaterThan(old.width + 30);
+  await expect
+    .poll(async () => (await lab.getByTestId('resize-preview-docker').boundingBox())?.width ?? 0)
+    .toBeGreaterThan(old.width + 30);
   await page.mouse.up();
+  await expect.poll(async () => (await area.boundingBox())!.width).toBeGreaterThan(old.width + 30);
+  const expanded = (await area.boundingBox())!.width;
+  await lab.getByRole('button', { name: '크기 정리' }).click();
+  await expect.poll(async () => (await area.boundingBox())!.width).toBeLessThan(expanded - 30);
+  await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
+  await expect
+    .poll(async () => Math.round((await area.boundingBox())!.width))
+    .toBe(Math.round(expanded));
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
   await expect
     .poll(async () => Math.round((await area.boundingBox())!.width))
@@ -267,6 +295,24 @@ test('손상된 시범 저장만 보호하고 초기화한다', async ({ page })
   );
 });
 
+test('생성 도구가 캔버스 위에 있고 전체 화면에서 실습에 집중한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 695 });
+  const lab = await openLab(page);
+  const canvas = lab.getByTestId('system-lab-canvas');
+  const tool = lab.getByRole('button', { name: 'EC2 추가' });
+  await expect(tool).toBeInViewport({ ratio: 1 });
+  await expect(lab.getByTestId('node-pod-b')).toBeInViewport({ ratio: 0.99 });
+  const height = (await canvas.boundingBox())!.height;
+  expect((await tool.boundingBox())!.y).toBeLessThan((await canvas.boundingBox())!.y);
+  await lab.getByRole('button', { name: '실습 전체 화면' }).click();
+  await expect(lab.getByRole('button', { name: '전체 화면 나가기' })).toBeVisible();
+  await expect.poll(async () => (await canvas.boundingBox())!.height).toBeGreaterThan(height + 140);
+  expect((await lab.boundingBox())!.y).toBe(0);
+  await expect(lab.getByTestId('node-pod-b')).toBeInViewport({ ratio: 0.99 });
+  await page.keyboard.press('Escape');
+  await expect(lab.getByRole('button', { name: '실습 전체 화면' })).toBeVisible();
+});
+
 for (const width of [1440, 1024, 390]) {
   test(width + 'px에서 캔버스와 패널이 겹치지 않는다', async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
@@ -280,14 +326,27 @@ for (const width of [1440, 1024, 390]) {
     const labBounds = (await lab.boundingBox())!;
     expect(labBounds.y + labBounds.height).toBeGreaterThanOrEqual(practice.y + practice.height - 1);
     await expect(lab.getByRole('button', { name: '실습 힌트' })).toHaveCount(0);
-    await expect(lab.getByText(/두 Pod에 실행 이미지.*10건/)).toBeVisible();
+    await expect(lab.getByText(/이미지는 Kubernetes.*도착에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
+    const runButton = lab.getByRole('button', { name: '실습 실행', exact: true });
+    const hasAccentBackground = () =>
+      runButton.evaluate((button) => {
+        const probe = document.createElement('span');
+        probe.style.color = 'var(--color-accent)';
+        button.appendChild(probe);
+        const accent = getComputedStyle(probe).color;
+        probe.remove();
+        const styles = getComputedStyle(button);
+        return styles.backgroundImage === 'none' && styles.backgroundColor === accent;
+      });
+    expect(await hasAccentBackground()).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-' + width + '.png' });
     await page.evaluate(() => localStorage.setItem('pilot-test-dark', '1'));
     await page.reload();
     await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await hasAccentBackground()).toBe(true);
     await page.screenshot({ path: 'test-results/system-lab-dark-' + width + '.png' });
   });
 }
