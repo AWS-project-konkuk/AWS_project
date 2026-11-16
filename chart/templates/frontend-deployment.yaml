@@ -25,6 +25,11 @@ spec:
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: BACKEND_HOST
+              value: {{ .Release.Name }}-backend
+            - name: BACKEND_PORT
+              value: {{ .Values.backend.port | quote }}
           readinessProbe:
             httpGet:
               path: /
