@@ -1,3 +1,11 @@
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  path: /
+  pathType: Prefix
+  annotations: {}
+
 backend:
   image:
     repository: blockml-backend
