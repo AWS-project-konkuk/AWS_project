@@ -1,15 +1,18 @@
 import axios from 'axios';
-
-const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 130_000,
-});
+import { api } from './client';
 
 export async function requestChat(message: string, signal?: AbortSignal): Promise<string> {
   if (!message.trim() || message.length > 32_000) {
     throw new Error('요청 내용은 공백이 아닌 32,000자 이내여야 합니다. 작성한 이유를 줄여 주세요.');
   }
-  const { data } = await client.post<{ answer: string }>('/chat', { message }, { signal });
+  const { data } = await api.post<{ answer: string }>(
+    '/chat',
+    { message },
+    {
+      signal,
+      timeout: 130_000,
+    },
+  );
   if (typeof data?.answer !== 'string' || !data.answer.trim()) {
     throw new Error('AI 답변이 비어 있거나 올바르지 않습니다. 다시 요청해 주세요.');
   }

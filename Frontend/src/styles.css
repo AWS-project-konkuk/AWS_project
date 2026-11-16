@@ -12,6 +12,8 @@
 @source './components/ui';
 @source './components/ErrorPage.tsx';
 @source './systemLab';
+@source './board';
+@source './playground';
 
 @theme inline {
   --color-ui-paper: var(--color-paper);

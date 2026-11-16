@@ -149,6 +149,31 @@ test('이전 AWS Playground 그래프 복원과 잘못된 주소', async ({ page
   await expect(page).toHaveURL(/#\/learn$/);
 });
 
+test('강의 화면을 불러오지 못하면 500을 표시하고 다시 열 수 있다', async ({ page }) => {
+  const lessonModule = '**/src/learning/LessonPage.tsx*';
+  await page.route(lessonModule, (route) => route.abort());
+  await page.goto('/#/learn/week2-workflow');
+  await expect(page.getByRole('heading', { name: '500', exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('화면을 불러오는 중 문제가 발생했습니다.');
+  await page.unroute(lessonModule);
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.getByRole('heading', { name: '500', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '실습 영역 확장' })).toBeVisible();
+});
+
+test('라우터가 기본 주소, Playground, 404와 브라우저 뒤로 가기를 처리한다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle('BlockML | MLOps 학습 과정');
+  await page.getByRole('link', { name: 'Playground', exact: true }).click();
+  await expect(page).toHaveURL(/#\/playground$/);
+  await expect(page).toHaveTitle('Playground | BlockML');
+  await page.goBack();
+  await expect(page).toHaveTitle('BlockML | MLOps 학습 과정');
+  await page.goto('/#/unknown');
+  await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
+  await expect(page.getByText('페이지를 찾을 수 없습니다.', { exact: true })).toBeVisible();
+});
+
 test('오류 화면에 응답 상태와 설명을 표시하고 다시 시도할 수 있다', async ({ page }) => {
   const module = '**/src/learning/LessonPage.tsx*';
   await page.route(module, (route) =>
