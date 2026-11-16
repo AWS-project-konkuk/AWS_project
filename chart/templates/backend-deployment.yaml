@@ -41,6 +41,14 @@ spec:
             - name: VLLM_BASE_URL
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.backend.vllm.model }}
+            - name: VLLM_MODEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.backend.cors.allowedOrigins }}
+            - name: CORS_ALLOWED_ORIGINS
+              value: {{ . | quote }}
+            {{- end }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.backend.javaOpts | quote }}
           startupProbe:

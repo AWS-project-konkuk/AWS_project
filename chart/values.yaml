@@ -8,6 +8,9 @@ backend:
   secretName: backend-secret
   vllm:
     baseUrl: ""
+    model: ""
+  cors:
+    allowedOrigins: ""
   javaOpts: "-XX:MaxRAMPercentage=70"
   resources:
     requests:
