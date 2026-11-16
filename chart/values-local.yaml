@@ -1,0 +1,13 @@
+backend:
+  image:
+    pullPolicy: IfNotPresent
+  vllm:
+    model: "qwen3:8b"
+  cors:
+    allowedOrigins: "http://localhost:8081,http://blockml.local"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: blockml.local
+  path: /
