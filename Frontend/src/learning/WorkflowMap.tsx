@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import type { Lesson } from '../curriculum/types';
 import styles from './LessonLayout.module.css';
 
@@ -41,10 +42,10 @@ export function WorkflowMap({ lesson }: { lesson: Lesson }) {
           <ol>
             {lane.stages.map(([id, title, detail, target]) => (
               <li key={id} data-current={lesson.mapStages?.includes(id)}>
-                <a href={`#/learn/${target}`}>
+                <Link to={`/learn/${target}`}>
                   <strong>{title}</strong>
                   <span>{detail}</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ol>

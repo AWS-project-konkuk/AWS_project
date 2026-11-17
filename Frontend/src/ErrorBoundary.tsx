@@ -1,20 +1,29 @@
 import { Component, type ReactNode } from 'react';
+import { isAxiosError } from 'axios';
+import { ErrorPage } from './components/ErrorPage';
 
-export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
+interface ErrorState {
+  code: number | null;
+  description?: string;
+}
 
-  static getDerivedStateFromError() {
-    return { failed: true };
+export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorState> {
+  state: ErrorState = { code: null };
+
+  static getDerivedStateFromError(error: unknown): ErrorState {
+    const status = isAxiosError(error) ? error.response?.status : undefined;
+    if (status && status >= 400 && status <= 599) return { code: status };
+    return { code: 500, description: '화면을 불러오는 중 문제가 발생했습니다.' };
   }
 
   render() {
-    if (this.state.failed) {
+    if (this.state.code !== null) {
       return (
-        <main className="recovery" role="alert">
-          <h1>학습실을 다시 열어주세요</h1>
-          <p>화면 처리 중 문제가 발생했습니다. 브라우저에 저장된 구성은 유지됩니다.</p>
-          <button onClick={() => window.location.reload()}>저장된 구성으로 다시 열기</button>
-        </main>
+        <ErrorPage
+          code={this.state.code}
+          description={this.state.description}
+          onRetry={() => window.location.reload()}
+        />
       );
     }
     return this.props.children;

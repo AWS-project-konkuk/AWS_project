@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronDown, X } from 'lucide-react';
 import { chapters, chapterLabel, lessons } from '../curriculum/catalog';
@@ -36,10 +37,10 @@ export function CourseSidebar({
   const content = (
     <>
       <header className={styles.sidebarHeader}>
-        <a href="#/learn">
+        <Link to="/learn">
           <ArrowLeft size={16} />
           학습 과정
-        </a>
+        </Link>
         <button type="button" onClick={onClose} aria-label="강의 목차 닫기">
           <X size={18} />
         </button>
@@ -64,9 +65,9 @@ export function CourseSidebar({
               </summary>
               <div>
                 {items.map((item) => (
-                  <a
+                  <Link
                     key={item.id}
-                    href={`#/learn/${item.id}`}
+                    to={`/learn/${item.id}`}
                     aria-current={item.id === lesson.id ? 'page' : undefined}
                     onClick={() => {
                       if (narrow) onClose();
@@ -95,7 +96,7 @@ export function CourseSidebar({
                         </div>
                       ) : null}
                     </div>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </details>

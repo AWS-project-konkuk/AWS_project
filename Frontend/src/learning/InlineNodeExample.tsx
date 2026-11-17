@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { ResultFeedback } from './ResultFeedback';
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import {
@@ -484,10 +485,10 @@ export function InlineNodeExample({
       {spec.nextLesson && (
         <footer>
           <span>작은 예제로 관계를 익힌 뒤 종합 실습에서 여러 조건을 함께 판단합니다.</span>
-          <a href={`#/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">
+          <Link to={`/learn/${spec.nextLesson}`} aria-label="관련 종합 실습으로 →">
             관련 종합 실습으로
             <ArrowRight size={16} aria-hidden="true" />
-          </a>
+          </Link>
         </footer>
       )}
     </section>
