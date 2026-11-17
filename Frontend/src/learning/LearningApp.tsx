@@ -1,5 +1,16 @@
 import { ThemeControl } from '../settings/ThemeControl';
+import { ErrorPage } from '../components/ErrorPage';
 import { lazy, Suspense, useEffect, useState } from 'react';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useMatch,
+  useParams,
+} from 'react-router';
 import {
   ArrowDown,
   ArrowRight,
@@ -18,14 +29,21 @@ import { useLessonCompletion } from '../systemLab/store';
 import { useLearning } from './LearningStore';
 import styles from './Learning.module.css';
 
-const href = (id: string) => `#/learn/${id}`;
+const lessonPath = (id: string) => `/learn/${id}`;
 const LessonPage = lazy(() =>
   import('./LessonPage').then((module) => ({ default: module.LessonPage })),
 );
 const PlaygroundPage = lazy(() =>
   import('../playground/PlaygroundPage').then((module) => ({ default: module.PlaygroundPage })),
 );
-function Header() {
+const BoardPage = lazy(() =>
+  import('../board/BoardPage').then((module) => ({ default: module.BoardPage })),
+);
+const BoardPost = lazy(() =>
+  import('../board/BoardPage').then((module) => ({ default: module.BoardPost })),
+);
+
+function Header({ isCourse }: { isCourse: boolean }) {
   const { state, saveStatus, recover } = useLearning();
   const [recovery, setRecovery] = useState(false);
   const isComplete = useLessonCompletion(state.data);
@@ -33,7 +51,7 @@ function Header() {
   return (
     <>
       <header className={styles.header}>
-        <a className={styles.logo} href="#/learn" aria-label="BlockML 학습 과정 홈">
+        <Link className={styles.logo} to="/learn" aria-label="BlockML 학습 과정 홈">
           <span>
             <GraduationCap size={24} />
           </span>
@@ -41,17 +59,15 @@ function Header() {
             Block<span>ML</span>
           </strong>
           <small>MLOps 학습실</small>
-        </a>
+        </Link>
         <nav>
-          <a href="#/learn" aria-current={location.hash !== '#/playground' ? 'page' : undefined}>
+          <Link to="/learn" aria-current={isCourse ? 'page' : undefined}>
             학습 과정
-          </a>
-          <a
-            href="#/playground"
-            aria-current={location.hash === '#/playground' ? 'page' : undefined}
-          >
+          </Link>
+          <NavLink to="/playground" end>
             Playground
-          </a>
+          </NavLink>
+          <NavLink to="/board">게시판</NavLink>
           <span className={styles.progressPill}>
             <CheckCircle2 size={14} />
             {count} / {lessons.length} 완료
@@ -126,25 +142,14 @@ function LearningHub() {
             직접 해결해 보세요.
           </h1>
           <p>AWS 기초부터 모델 운영까지, 읽고 연결하며 전체 흐름을 익힙니다.</p>
-          <a className={styles.primary} href={href(next.id)}>
+          <Link className={styles.primary} to={lessonPath(next.id)}>
             {count ? '이어서 학습하기' : '첫 강의 시작하기'}
             <ArrowRight size={16} />
-          </a>
-          <a
-            className={styles.heroSecondary}
-            href="#curriculum"
-            onClick={(event) => {
-              event.preventDefault();
-              document.getElementById('curriculum')?.scrollIntoView({
-                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-                  ? 'instant'
-                  : 'smooth',
-              });
-            }}
-          >
+          </Link>
+          <Link className={styles.heroSecondary} to="#curriculum">
             전체 과정 살펴보기
             <ArrowDown size={13} />
-          </a>
+          </Link>
         </div>
         <aside className={styles.journey}>
           <strong>읽고, 연결하고, 설명하기</strong>
@@ -263,9 +268,9 @@ function LearningHub() {
                 {items.map((lesson) => {
                   const complete = isComplete(lesson.id);
                   return (
-                    <a
+                    <Link
                       key={lesson.id}
-                      href={href(lesson.id)}
+                      to={lessonPath(lesson.id)}
                       className={styles.lessonCard}
                       data-testid={`lesson-card-${lesson.id}`}
                     >
@@ -315,7 +320,7 @@ function LearningHub() {
                           <ArrowUpRight size={15} aria-hidden="true" />
                         </span>
                       </footer>
-                    </a>
+                    </Link>
                   );
                 })}
               </div>
@@ -345,60 +350,118 @@ function LearningHub() {
   );
 }
 
-function RoutedLearning() {
-  const [hash, setHash] = useState(location.hash);
+function findLesson(id: string) {
+  return Object.hasOwn(lessonById, id) ? lessonById[id] : undefined;
+}
+
+function AppLayout() {
+  const location = useLocation();
+  const lesson = findLesson(useMatch('/learn/:lessonId')?.params.lessonId ?? '');
+  const isPlayground = useMatch('/playground') !== null;
+
   useEffect(() => {
-    const change = () => {
-      setHash(location.hash);
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener('hashchange', change);
-    return () => window.removeEventListener('hashchange', change);
-  }, []);
-  const slug = hash.startsWith('#/learn/') ? hash.slice('#/learn/'.length) : '';
-  const lesson = Object.hasOwn(lessonById, slug) ? lessonById[slug] : undefined;
-  const isPlayground = hash === '#/playground';
-  useEffect(() => {
-    document.title = isPlayground
-      ? 'Playground | BlockML'
-      : lesson
-        ? `${lesson.title} | BlockML`
-        : 'BlockML | MLOps 학습 과정';
-  }, [lesson, isPlayground]);
+    if (location.hash === '#curriculum') {
+      const curriculum = document.getElementById('curriculum');
+      if (curriculum) {
+        curriculum.scrollIntoView({
+          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        });
+        return;
+      }
+    }
+    window.scrollTo(0, 0);
+  }, [location]);
+
   return (
     <div className={styles.appFrame} data-lesson={Boolean(lesson) || isPlayground}>
-      <Header />
-      {isPlayground ? (
-        <Suspense
-          fallback={
-            <main className={styles.lessonLoading} aria-busy="true">
-              Playground를 여는 중입니다.
-            </main>
-          }
-        >
-          <PlaygroundPage />
-        </Suspense>
-      ) : slug && !lesson ? (
-        <main className={styles.notFound}>
-          <h1>강의를 찾을 수 없습니다.</h1>
-          <a href="#/learn">학습 과정으로 돌아가기</a>
-        </main>
-      ) : lesson ? (
-        <Suspense
-          fallback={
-            <main className={styles.lessonLoading} aria-busy="true">
-              강의를 여는 중입니다.
-            </main>
-          }
-        >
-          <LessonPage key={lesson.id} lesson={lesson} />
-        </Suspense>
-      ) : (
-        <LearningHub />
-      )}
+      <Header isCourse={location.pathname === '/' || /^\/learn(?:\/|$)/i.test(location.pathname)} />
+      <Outlet />
     </div>
   );
 }
+
+function PageTitle({ title }: { title: string }) {
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+  return null;
+}
+
+function CourseRoute() {
+  return (
+    <>
+      <PageTitle title="BlockML | MLOps 학습 과정" />
+      <LearningHub />
+    </>
+  );
+}
+
+function LessonRoute() {
+  const lesson = findLesson(useParams().lessonId ?? '');
+  if (!lesson) return <NotFoundRoute missingLesson />;
+  return (
+    <>
+      <PageTitle title={lesson.title + ' | BlockML'} />
+      <Suspense fallback={<LoadingPage>강의를 여는 중입니다.</LoadingPage>}>
+        <LessonPage key={lesson.id} lesson={lesson} />
+      </Suspense>
+    </>
+  );
+}
+
+function PlaygroundRoute() {
+  return (
+    <>
+      <PageTitle title="Playground | BlockML" />
+      <Suspense fallback={<LoadingPage>Playground를 여는 중입니다.</LoadingPage>}>
+        <PlaygroundPage />
+      </Suspense>
+    </>
+  );
+}
+
+function LoadingPage({ children }: { children: string }) {
+  return (
+    <main className={styles.lessonLoading} aria-busy="true">
+      {children}
+    </main>
+  );
+}
+
+function BoardRoute({ mode }: { mode?: 'read' | 'new' | 'edit' }) {
+  return (
+    <>
+      <PageTitle title="워크플로우 게시판 | BlockML" />
+      <Suspense fallback={<LoadingPage>게시판을 여는 중입니다.</LoadingPage>}>
+        {mode ? <BoardPost key={mode} mode={mode} /> : <BoardPage />}
+      </Suspense>
+    </>
+  );
+}
+
+function NotFoundRoute({ missingLesson = false }: { missingLesson?: boolean }) {
+  return (
+    <>
+      <PageTitle title="404 | BlockML" />
+      <ErrorPage code={404} description={missingLesson ? '강의를 찾을 수 없습니다.' : undefined} />
+    </>
+  );
+}
+
 export function LearningApp() {
-  return <RoutedLearning />;
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<CourseRoute />} />
+        <Route path="learn" element={<CourseRoute />} />
+        <Route path="learn/:lessonId" element={<LessonRoute />} />
+        <Route path="playground" element={<PlaygroundRoute />} />
+        <Route path="board" element={<BoardRoute />} />
+        <Route path="board/new" element={<BoardRoute mode="new" />} />
+        <Route path="board/:postId" element={<BoardRoute mode="read" />} />
+        <Route path="board/:postId/edit" element={<BoardRoute mode="edit" />} />
+        <Route path="*" element={<NotFoundRoute />} />
+      </Route>
+    </Routes>
+  );
 }

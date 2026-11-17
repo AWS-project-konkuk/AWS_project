@@ -320,6 +320,14 @@
   margin: 0;
   border-left: 0;
 }
+@media (min-width: 1024px) {
+  .content:has(> .practice[data-system-lab='true']) {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .content:not([data-view='reading']) > .practice[data-system-lab='true'] {
+    display: flex;
+  }
+}
 .footer {
   display: flex;
   align-items: center;

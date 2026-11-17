@@ -735,10 +735,6 @@
   font-size: 12px;
   border-color: var(--c-3c4c69);
 }
-.notFound {
-  padding: 100px;
-  text-align: center;
-}
 .labCanvas :global(.react-flow__controls-button) {
   background: var(--c-1b273d);
   color: var(--c-a5b6d7);

@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useState } from 'react';
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
 import { ArrowRight, CheckCircle2, Circle, Trash2 } from 'lucide-react';
@@ -221,7 +222,7 @@ export function LessonLab({ lesson }: { lesson: Lesson }) {
         {lesson.id === 'pipeline-capstone' && (
           <p className={styles.inlineHint}>
             모니터링 → 원본 데이터는 개선 피드백 선입니다. 데이터 실행 순서의 순환과 구분합니다.{' '}
-            <a href="#/playground">자유 Playground에서 이어서 구성하기</a>
+            <Link to="/playground">자유 Playground에서 이어서 구성하기</Link>
           </p>
         )}
         <button

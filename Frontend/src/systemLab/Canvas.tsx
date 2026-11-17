@@ -30,17 +30,19 @@ import {
   Send,
   Server,
 } from 'lucide-react';
-import { groupMinimum, size, type Command } from './commands';
+import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
 import { blockedBy, type RunResult } from './engine';
 import {
   absolute,
   connection,
-  connectionIssue,
+  manualConnectionIssue,
+  serviceRoutes,
   descendants,
   findPort,
   hasRunState,
   materials,
   portLabel,
+  resourceRoles,
   rootId,
   starterTasks,
   type Connection,
@@ -50,7 +52,17 @@ import {
   type Material,
   type Point,
 } from './model';
-import styles from './SystemLab.module.css';
+import { Button } from '../components/ui/button';
+import { NativeSelect } from '../components/ui/native-select';
+import { cn } from '../components/ui/styles';
+import {
+  divider,
+  entityFrame,
+  entityStatus,
+  kindColor,
+  materialColor,
+  portHandle,
+} from './appearance';
 
 const icons = {
   root: Layers,
@@ -68,7 +80,14 @@ const icons = {
 };
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
   const Icon = icons[kind];
-  return <Icon size={size} aria-hidden className={styles.kindIcon} data-kind-icon={kind} />;
+  return (
+    <Icon
+      size={size}
+      aria-hidden
+      className={cn('shrink-0 text-(--kind-color)', kindColor[kind])}
+      data-kind-icon={kind}
+    />
+  );
 }
 const materialIcons = {
   request: Send,
@@ -92,7 +111,7 @@ interface CanvasData extends Record<string, unknown> {
   collapse: () => void;
   focus: () => void;
   minimum?: { width: number; height: number };
-  resize: (width: number, height: number, commit: boolean) => void;
+  resize: (width: number, height: number) => void;
   portMenu: (event: MouseEvent, port: string) => void;
 }
 type CanvasNode = Node<CanvasData, 'entity'>;
@@ -100,7 +119,7 @@ type CanvasNode = Node<CanvasData, 'entity'>;
 function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   const { entity } = data;
   const update = useUpdateNodeInternals();
-  const ports = entity.type === 'resource' ? entity.ports : null;
+  const ports = entity.ports;
   const portSignature = ports?.map((p) => p.id + p.direction + p.material).join('|');
   useLayoutEffect(() => {
     update(id);
@@ -119,19 +138,31 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   if (entity.type === 'system')
     return (
       <section
-        className={styles.area}
+        className={cn(
+          entityFrame,
+          kindColor[entity.kind],
+          'group/entity size-full rounded-[10px] bg-[color-mix(in_srgb,var(--kind-color)_6%,var(--color-paper-2))]',
+        )}
         data-kind={entity.kind}
+        data-status={status}
         data-collapsed={data.collapsed}
         data-selected={selected}
         data-testid={'system-' + id}
       >
-        <div className={styles.areaHeader}>
+        <div
+          className={cn(
+            'system-lab-area-header flex h-9 items-center gap-[7px] rounded-t-[10px] bg-[color-mix(in_srgb,var(--kind-color)_14%,var(--color-paper))] px-2 text-ui-ink [&>strong]:flex-1 [&>strong]:truncate [&>strong]:text-base',
+            divider,
+          )}
+        >
           <KindIcon kind={entity.kind} size={18} />
           <strong title={entity.name}>{entity.name}</strong>
-          <span className={styles.state}>{status}</span>
-          <button
+          <span className={cn('whitespace-nowrap text-[13px] text-ui-muted', entityStatus)}>
+            {status}
+          </span>
+          <Button
             type="button"
-            className="nodrag"
+            className="nodrag size-[25px] min-h-0 shrink-0 p-0"
             aria-label={entity.name + (data.collapsed ? ' 펼치기' : ' 접기')}
             onClick={(event) => {
               event.stopPropagation();
@@ -139,10 +170,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             }}
           >
             {data.collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="nodrag"
+            className="nodrag size-[25px] min-h-0 shrink-0 p-0"
             aria-label={entity.name + ' 집중 보기'}
             onClick={(event) => {
               event.stopPropagation();
@@ -150,40 +181,97 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             }}
           >
             <Maximize size={13} />
-          </button>
+          </Button>
         </div>
-        {data.collapsed && <span className={styles.areaSummary}>숨겨진 항목 {data.count}개</span>}
+        {data.collapsed && (
+          <span className="block px-2.5 py-2 text-ui-muted">숨겨진 항목 {data.count}개</span>
+        )}
         <Handle
           type="target"
           position={Position.Left}
           id="summary-in"
           isConnectable={false}
-          className={styles.proxy}
+          className="pointer-events-none! size-[9px]! border-ui-paper! bg-ui-muted! opacity-0 group-data-[collapsed=true]/entity:opacity-100"
         />
         <Handle
           type="source"
           position={Position.Right}
           id="summary-out"
           isConnectable={false}
-          className={styles.proxy}
+          className="pointer-events-none! size-[9px]! border-ui-paper! bg-ui-muted! opacity-0 group-data-[collapsed=true]/entity:opacity-100"
         />
+        {ports && (
+          <div className="absolute top-16 left-0">
+            {ports.map((port) => {
+              const label = portLabel(ports, port) + ' 입력';
+              const Icon = materialIcons[port.material];
+              return (
+                <div
+                  key={port.id}
+                  className={cn(
+                    'group/port relative flex h-7 items-center gap-1 pl-4 text-[11px] text-(--port-color)',
+                    materialColor[port.material],
+                  )}
+                  data-connected={data.connected.has(port.id)}
+                >
+                  <Handle
+                    id={port.id}
+                    type="target"
+                    position={Position.Left}
+                    isConnectable={data.editable}
+                    className={portHandle}
+                    data-testid={'port-' + id + '-' + port.id}
+                    aria-label={entity.name + ' ' + label}
+                    onContextMenu={(event) => data.portMenu(event, port.id)}
+                  />
+                  <Icon size={12} />
+                  <span>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {selected && data.editable && !data.collapsed && <ResizeGrip entity={entity} data={data} />}
       </section>
     );
   return (
     <article
-      className={styles.node}
+      className={cn(
+        entityFrame,
+        kindColor[entity.kind],
+        'group/entity rounded-lg bg-ui-paper shadow-(--shadow-card) data-[status=처리_중]:outline-2 data-[status=처리_중]:outline-ui-accent',
+      )}
       data-kind={entity.kind}
       data-selected={selected}
       data-status={status}
       data-testid={'node-' + id}
     >
-      <header>
+      <header
+        className={cn(
+          divider,
+          'flex min-h-[39px] items-center gap-1.5 rounded-t-[7px] bg-[color-mix(in_srgb,var(--kind-color)_12%,var(--color-paper))] px-2 py-[5px]',
+        )}
+      >
         <KindIcon kind={entity.kind} size={17} />
-        <strong title={entity.name}>{entity.name}</strong>
-        {status && <small>{status}</small>}
+        <strong className="min-w-0 flex-1 truncate text-sm" title={entity.name}>
+          {entity.name}
+        </strong>
+        {(status || resourceRoles[entity.kind]) && (
+          <small className={cn('whitespace-nowrap text-[11px] text-ui-muted', entityStatus)}>
+            {status ?? resourceRoles[entity.kind]}
+          </small>
+        )}
       </header>
-      <div className={styles.ports}>
+      {entity.kind === 'service' && (
+        <Handle
+          id="service-route"
+          type="source"
+          position={Position.Right}
+          isConnectable={false}
+          className="pointer-events-none! opacity-0"
+        />
+      )}
+      <div className="grid grid-cols-2 py-[3px]">
         {(['in', 'out'] as const).map((direction) => (
           <div key={direction}>
             {entity.ports
@@ -194,7 +282,10 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                 return (
                   <div
                     key={port.id}
-                    className={styles.portRow}
+                    className={cn(
+                      materialColor[port.material],
+                      'group/port relative flex h-7 items-center gap-[3px] whitespace-nowrap pr-0.5 pl-2.5 text-[11px] data-[direction=out]:justify-end data-[direction=out]:pr-2.5 data-[direction=out]:pl-0.5 [&>span]:truncate [&>svg]:shrink-0 [&>svg]:text-(--port-color)',
+                    )}
                     data-direction={direction}
                     data-material={port.material}
                     data-connected={data.connected.has(port.id)}
@@ -204,8 +295,19 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                       id={port.id}
                       type={direction === 'in' ? 'target' : 'source'}
                       position={direction === 'in' ? Position.Left : Position.Right}
-                      isConnectable={data.editable}
-                      className={styles.handle}
+                      isConnectable={
+                        data.editable &&
+                        !(entity.kind === 'service' && direction === 'out') &&
+                        !(
+                          entity.kind === 'pod' &&
+                          port.material === 'request' &&
+                          direction === 'in'
+                        )
+                      }
+                      className={cn(
+                        portHandle,
+                        'z-[3]! group-data-[recommended=true]/port:before:shadow-[0_0_0_4px_color-mix(in_srgb,var(--port-color)_25%,transparent)]',
+                      )}
                       data-testid={'port-' + id + '-' + port.id}
                       aria-label={
                         entity.name + ' ' + label + (direction === 'in' ? ' 입력' : ' 출력')
@@ -232,50 +334,67 @@ function ResizeGrip({
 }) {
   const { getZoom } = useReactFlow();
   const start = useRef<Point | null>(null);
+  const preview = useRef<HTMLSpanElement>(null);
   const resize = (x: number, y: number, commit: boolean) => {
     const origin = start.current;
     if (!origin) return;
     const zoom = getZoom();
     const width = Math.max(data.minimum?.width ?? 220, entity.width + (x - origin.x) / zoom);
     const height = Math.max(data.minimum?.height ?? 110, entity.height + (y - origin.y) / zoom);
-    data.resize(width, height, commit);
+    if (commit) data.resize(width, height);
+    else if (preview.current) {
+      preview.current.hidden = false;
+      preview.current.style.width = width + 'px';
+      preview.current.style.height = height + 'px';
+    }
+  };
+  const clear = () => {
+    start.current = null;
+    if (preview.current) preview.current.hidden = true;
   };
   return (
-    <button
-      type="button"
-      className={styles.resize + ' nodrag nopan'}
-      data-testid={'resize-' + entity.id}
-      aria-label={entity.name + ' 영역 크기 조절'}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        e.stopPropagation();
-        start.current = { x: e.clientX, y: e.clientY };
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }}
-      onPointerMove={(e) => resize(e.clientX, e.clientY, false)}
-      onPointerUp={(e) => {
-        resize(e.clientX, e.clientY, true);
-        start.current = null;
-      }}
-      onPointerCancel={() => {
-        start.current = null;
-        data.resize(entity.width, entity.height, true);
-      }}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        const changes: Partial<Record<string, [number, number]>> = {
-          ArrowRight: [24, 0],
-          ArrowLeft: [-24, 0],
-          ArrowDown: [0, 24],
-          ArrowUp: [0, -24],
-        };
-        const change = changes[e.key];
-        if (!change) return;
-        e.preventDefault();
-        e.stopPropagation();
-        data.resize(entity.width + change[0], entity.height + change[1], true);
-      }}
-    />
+    <>
+      <span
+        ref={preview}
+        className="pointer-events-none absolute top-0 left-0 z-4 rounded-lg outline-2 outline-dashed outline-ui-accent"
+        data-testid={'resize-preview-' + entity.id}
+        hidden
+        aria-hidden="true"
+      />
+      <button
+        type="button"
+        className="nodrag nopan absolute -right-[5px] -bottom-[5px] size-4 touch-none rounded-(--radius-input) border-2 border-solid border-ui-paper bg-ui-accent p-0 [cursor:nwse-resize]"
+        data-testid={'resize-' + entity.id}
+        aria-label={entity.name + ' 영역 크기 조절'}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          e.stopPropagation();
+          start.current = { x: e.clientX, y: e.clientY };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => resize(e.clientX, e.clientY, false)}
+        onPointerUp={(e) => {
+          resize(e.clientX, e.clientY, true);
+          clear();
+        }}
+        onPointerCancel={clear}
+        onLostPointerCapture={clear}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          const changes: Partial<Record<string, [number, number]>> = {
+            ArrowRight: [24, 0],
+            ArrowLeft: [-24, 0],
+            ArrowDown: [0, 24],
+            ArrowUp: [0, -24],
+          };
+          const change = changes[e.key];
+          if (!change) return;
+          e.preventDefault();
+          e.stopPropagation();
+          data.resize(entity.width + change[0], entity.height + change[1]);
+        }}
+      />
+    </>
   );
 }
 const nodeTypes = { entity: EntityView };
@@ -317,9 +436,6 @@ export function Canvas({
   const element = useRef<HTMLDivElement>(null);
   const [folded, setFolded] = useState<string[]>([]);
   const dragging = useRef(false);
-  const [resizing, setResizing] = useState<{ id: string; width: number; height: number }>();
-  const resizeFrame = useRef(0);
-  useEffect(() => () => cancelAnimationFrame(resizeFrame.current), []);
   const [focusId, setFocusId] = useState<string | null>(null);
   const entityMap = new Map(graph.entities.map((e) => [e.id, e]));
   function proxy(id: string) {
@@ -342,17 +458,16 @@ export function Canvas({
     });
   };
   const fitInitial = useRef(() => {
-    const narrow = (element.current?.clientWidth ?? 0) < 560;
-    void flow.fitView({ padding: 0.12, minZoom: narrow ? 0.48 : 0.18, maxZoom: 1 });
+    void flow.fitView({ padding: 0.14, minZoom: 0.12, maxZoom: 1 });
   });
   useEffect(() => {
     if (!element.current) return;
     let frame = 0;
-    let visibleBefore = false;
     const observer = new ResizeObserver(([entry]) => {
-      const visibleNow = entry.contentRect.width > 0 && entry.contentRect.height > 0;
-      if (visibleNow && !visibleBefore) frame = requestAnimationFrame(fitInitial.current);
-      visibleBefore = visibleNow;
+      cancelAnimationFrame(frame);
+      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+        frame = requestAnimationFrame(fitInitial.current);
+      }
     });
     observer.observe(element.current);
     return () => {
@@ -360,14 +475,17 @@ export function Canvas({
       cancelAnimationFrame(frame);
     };
   }, []);
-  const nextTask = starterTasks.find((task) => !connectionIssue(graph, task));
+  const nextTask = starterTasks.find((task) => !manualConnectionIssue(graph, task));
   const recommended = nextTask ? [nextTask.from, nextTask.to] : [];
   const shownSteps = run?.steps.slice(0, cursor) ?? [];
   const active = editable ? undefined : run?.steps[cursor];
   const byNode = new Map(shownSteps.map((step) => [step.node, step]));
   const transfers = new Set(shownSteps.flatMap((step) => step.transfers.map((t) => t.edge)));
+  const generated = serviceRoutes(graph);
+  const derived = new Set(generated.map((edge) => edge.id));
+  const connections = [...graph.connections, ...generated];
   const connected = new Map<string, Set<string>>();
-  for (const { from, to } of graph.connections) {
+  for (const { from, to } of connections) {
     for (const { node, port } of [from, to]) {
       const ports = connected.get(node) ?? new Set<string>();
       ports.add(port);
@@ -381,29 +499,21 @@ export function Canvas({
       .forEach((entity) => {
         const collapsed = folded.includes(entity.id);
         const step = byNode.get(entity.id);
-        const status = !hasRunState(entity.kind)
-          ? undefined
+        const status = step
+          ? { success: '성공', failed: '실패', blocked: '차단' }[step.status]
           : active?.node === entity.id
             ? '처리 중'
-            : step
-              ? { success: '성공', failed: '실패', blocked: '차단' }[step.status]
-              : entity.enabled && blockedBy(graph, entity.id)
-                ? '차단'
-                : run && entity.type === 'resource' && cursor < run.steps.length
-                  ? '대기'
-                  : undefined;
+            : entity.enabled && blockedBy(graph, entity.id)
+              ? '차단'
+              : undefined;
         const groupSize =
           entity.type === 'system'
             ? {
-                width: Math.round(
-                  collapsed
-                    ? Math.min(280, entity.width)
-                    : resizing?.id === entity.id
-                      ? resizing.width
-                      : entity.width,
-                ),
+                width: Math.round(collapsed ? Math.min(280, entity.width) : entity.width),
                 height: Math.round(
-                  collapsed ? 78 : resizing?.id === entity.id ? resizing.height : entity.height,
+                  collapsed
+                    ? Math.max(78, clusterPortHeight(entity.ports?.length ?? 0))
+                    : entity.height,
                 ),
               }
             : undefined;
@@ -415,7 +525,7 @@ export function Canvas({
           ...(groupSize
             ? { ...groupSize, measured: groupSize }
             : { style: { width: size(entity).width } }),
-          dragHandle: entity.type === 'system' ? '.' + styles.areaHeader : undefined,
+          dragHandle: entity.type === 'system' ? '.system-lab-area-header' : undefined,
           draggable: editable,
           deletable: false,
           selected: entity.id === selected,
@@ -440,16 +550,7 @@ export function Canvas({
               fit(entity.id);
             },
             minimum: entity.type === 'system' ? groupMinimum(graph, entity.id) : undefined,
-            resize: (width, height, commit) => {
-              cancelAnimationFrame(resizeFrame.current);
-              if (commit) {
-                dispatch({ type: 'resize', id: entity.id, width, height });
-                setResizing(undefined);
-              } else
-                resizeFrame.current = requestAnimationFrame(() =>
-                  setResizing({ id: entity.id, width, height }),
-                );
-            },
+            resize: (width, height) => dispatch({ type: 'resize', id: entity.id, width, height }),
             portMenu: (event, port) => {
               const attached = graph.connections.filter((e) =>
                 [e.from, e.to].some((p) => p.node === entity.id && p.port === port),
@@ -489,7 +590,7 @@ export function Canvas({
     }
   >();
   const edges: Edge[] = [];
-  for (const e of graph.connections) {
+  for (const e of connections) {
     const source = proxy(e.from.node),
       target = proxy(e.to.node);
     const sourceHandle = source === e.from.node ? e.from.port : 'summary-out';
@@ -527,6 +628,7 @@ export function Canvas({
       markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color },
       style: {
         stroke: color,
+        strokeDasharray: derived.has(e.id) ? '5 4' : undefined,
         strokeWidth: cycle || transfers.has(e.id) || selectedEdge === e.id ? 3 : 2.4,
       },
       animated: !!active && transfers.has(e.id),
@@ -558,9 +660,13 @@ export function Canvas({
       labelBgStyle: { fill: 'var(--color-paper)' },
     });
   return (
-    <div ref={element} className={styles.canvas} data-testid="system-lab-canvas">
-      <div className={styles.canvasTools}>
-        <button
+    <div
+      ref={element}
+      className="relative isolate min-h-0 min-w-0 bg-ui-paper-2 group-data-[focused=false]/lab:max-[1023px]:min-h-[360px] max-[540px]:[&_.react-flow]:h-[calc(100%-46px)]! motion-reduce:[&_.react-flow__edge.animated_path]:animate-none! [&_.react-flow__controls]:overflow-hidden [&_.react-flow__controls]:rounded-md [&_.react-flow__controls]:border [&_.react-flow__controls]:border-solid [&_.react-flow__controls]:border-ui-rule-2 [&_.react-flow__controls]:shadow-(--shadow-card) [&_.react-flow__controls-button]:min-h-7 [&_.react-flow__controls-button]:p-[5px]"
+      data-testid="system-lab-canvas"
+    >
+      <div className="pointer-events-none absolute inset-x-2.5 top-[9px] z-5 flex flex-wrap items-center gap-1.5 [&>*]:pointer-events-auto [&>*]:max-w-full max-[540px]:relative max-[540px]:inset-auto max-[540px]:px-2.5 max-[540px]:pt-2 max-[540px]:pb-1 max-[540px]:[&>button]:text-xs! max-[540px]:[&>select]:text-xs!">
+        <Button
           type="button"
           onClick={() => {
             select(rootId);
@@ -569,8 +675,8 @@ export function Canvas({
           }}
         >
           <Layers size={15} /> 전체 서비스
-        </button>
-        <select
+        </Button>
+        <NativeSelect
           aria-label="캔버스에서 항목 찾기"
           value={selected}
           onChange={(event) => {
@@ -591,14 +697,18 @@ export function Canvas({
                 {e.name}
               </option>
             ))}
-        </select>
-        {focusId && <span className={styles.focusLabel}>{entityMap.get(focusId)?.name}</span>}
+        </NativeSelect>
+        {focusId && (
+          <span className="rounded bg-ui-paper px-2 py-1 text-ui-ink-2">
+            {entityMap.get(focusId)?.name}
+          </span>
+        )}
       </div>
       <ReactFlow<CanvasNode>
         defaultNodes={nodeList}
         edges={edges}
         nodeTypes={nodeTypes}
-        minZoom={0.16}
+        minZoom={0.12}
         maxZoom={2}
         connectOnClick
         deleteKeyCode={null}
@@ -618,17 +728,25 @@ export function Canvas({
           selectEdge('');
           select(node.id);
         }}
+        onEdgesChange={(changes) => {
+          const selected = changes.find((change) => change.type === 'select' && change.selected);
+          if (selected?.type === 'select' && edgeLookup.has(selected.id)) selectEdge(selected.id);
+        }}
         onEdgeClick={(_, edge) => {
           clearMenu();
           if (edgeLookup.has(edge.id)) selectEdge(edge.id);
         }}
         onEdgeContextMenu={(event, edge) => {
-          if (edgeLookup.has(edge.id)) onMenu(event, [{ label: '연결 삭제', ids: [edge.id] }]);
+          if (edgeLookup.has(edge.id) && !derived.has(edge.id))
+            onMenu(event, [{ label: '연결 삭제', ids: [edge.id] }]);
         }}
         isValidConnection={(e) =>
           !!e.sourceHandle &&
           !!e.targetHandle &&
-          !connectionIssue(graph, connection(e.source, e.sourceHandle, e.target, e.targetHandle))
+          !manualConnectionIssue(
+            graph,
+            connection(e.source, e.sourceHandle, e.target, e.targetHandle),
+          )
         }
         onConnect={(e) => {
           if (editable && e.sourceHandle && e.targetHandle)
@@ -673,7 +791,8 @@ export function Canvas({
             );
           });
           const newParent = group?.id ?? rootId;
-          const offset = group ? absolute(graph, group) : { x: 0, y: 0 };
+          const destination = entityMap.get(newParent);
+          const offset = destination ? absolute(graph, destination) : { x: 0, y: 0 };
           const moved = dispatch({
             type: 'move',
             id: node.id,

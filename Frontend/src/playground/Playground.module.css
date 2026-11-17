@@ -59,7 +59,7 @@
   margin-right: var(--space-xs);
   border-color: var(--color-muted);
 }
-.actions > button:nth-child(2),
+.actions > button[data-primary],
 .empty button {
   background: var(--color-accent);
   border-color: var(--color-accent);
@@ -70,7 +70,7 @@
 .resourceRow button:hover {
   background: var(--color-paper-2);
 }
-.actions > button:nth-child(2):hover:not(:disabled),
+.actions > button[data-primary]:hover:not(:disabled),
 .empty button:hover {
   background: var(--color-accent-deep);
 }
