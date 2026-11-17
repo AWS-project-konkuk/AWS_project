@@ -29,6 +29,7 @@ jobs:
               build: '🛠️ build',
               ci: '🛠️ build',
               refactor: '🧰 refactor',
+              test: '📝 test'
             };
             const managedLabels = new Set(Object.values(prefixLabels));
             const pullNumber = context.payload.pull_request.number;
