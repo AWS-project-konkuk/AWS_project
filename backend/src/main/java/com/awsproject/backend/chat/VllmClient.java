@@ -154,6 +154,14 @@ public class VllmClient {
                     "vLLM 응답을 해석할 수 없습니다.");
         }
     }
+    public Map<String, Object> ask(ChatRequest request, Map<String, Object> schema, String name, double temperature){
+        PostResult result = post(request, schema, name, temperature);
+        Map<String, Object> parsed = objectMapper.readValue(
+            result.content(),
+            new TypeReference<Map<String, Object>>() {}
+        );
+        
+    } 
 
     
     public record Completion(List<Choice> choices) {}
