@@ -55,9 +55,16 @@ public class VllmClient {
                 messages.add(new ChatRequest.Message("system", systemPrompt));
             }
             messages.addAll(request.conversation());
+
+            var body = new LinkedHashMap<String, Object>();
+            body.put("model", model);
+            body.put("messages", messages);
+            body.put("stream", false);
+            body.put("chat_template_kwargs", Map.of("enable_thinking", enableThinking));
+
             var response = client.post().uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                    .body(Map.of("model", model, "messages", messages, "stream", false))
+                    .body(body)
                     .retrieve().body(Completion.class);
             if (response == null || response.choices() == null || response.choices().isEmpty()
                     || response.choices().getFirst() == null
