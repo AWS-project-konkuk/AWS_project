@@ -1,0 +1,34 @@
+# quota.yaml — minikube에서 kubectl apply -n <네임스페이스> -f quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-quota
+spec:
+  hard:
+    requests.cpu: 300m
+    limits.cpu: 600m
+    requests.memory: 1Gi
+    limits.memory: 1Gi
+    pods: "4"
+    services: "5"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+    persistentvolumeclaims: "2"
+    requests.storage: 5Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: team-limits
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 128Mi
+      default:
+        cpu: 200m
+        memory: 256Mi
+      max:
+        cpu: 300m
+        memory: 512Mi
