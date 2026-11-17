@@ -17,6 +17,8 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Component
 @EnableConfigurationProperties(VllmProperties.class)
 public class VllmClient {
@@ -93,7 +95,68 @@ public class VllmClient {
         }
     }
 
+    public record PostResult(String content, String finishReason){}
+
+    public PostResult post(
+        ChatRequest request,
+        Map<String, Object> schema,
+        String name,
+        double temperature
+    ){
+        try {
+            // Build a fresh list for every request; no conversation is stored here.
+            var messages = new ArrayList<ChatRequest.Message>();
+            if (!systemPrompt.isBlank()) {
+                messages.add(new ChatRequest.Message("system", systemPrompt));
+                //system prompt 수정 필요
+            }
+            messages.addAll(request.conversation());
+
+            var body = new LinkedHashMap<String, Object>();
+            body.put("model", model);
+            body.put("temperature", temperature);
+            body.put("max_tokens", 800);
+            body.put("messages", messages);
+            body.put("stream", false);
+            body.put("chat_template_kwargs", Map.of("enable_thinking", enableThinking));
+            body.put("response_format", Map.of(
+                "type", "json_schema",
+                "json_schema", Map.of("name", name, "schema", schema)));
+
+            var response = client.post().uri("/v1/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve().body(Completion.class);
+            if (response == null || response.choices() == null || response.choices().isEmpty()
+                    || response.choices().getFirst() == null
+                    || response.choices().getFirst().message() == null
+                    || response.choices().getFirst().message().content() == null
+                    || response.choices().getFirst().finishReason() == null) {
+                throw new VllmException(HttpStatus.BAD_GATEWAY, "VLLM_INVALID_RESPONSE",
+                        "vLLM 응답에 답변이 없습니다.");
+            }
+            return new PostResult(response.choices().getFirst().message().content(), response.choices().getFirst().finishReason());
+        } catch (ResourceAccessException ex) {
+            for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+                if (cause instanceof HttpTimeoutException || cause instanceof SocketTimeoutException) {
+                    throw new VllmException(HttpStatus.GATEWAY_TIMEOUT, "VLLM_TIMEOUT",
+                            "vLLM 응답 대기 시간이 초과되었습니다.");
+                }
+            }
+            throw new VllmException(HttpStatus.BAD_GATEWAY, "VLLM_UNAVAILABLE",
+                    "vLLM 서버에 연결할 수 없습니다.");
+        } catch (RestClientResponseException ex) {
+            // Do not expose upstream bodies, credentials, or infrastructure details to browsers.
+            throw new VllmException(HttpStatus.BAD_GATEWAY, "VLLM_UPSTREAM_ERROR",
+                    "vLLM 서버가 요청을 처리하지 못했습니다.");
+        } catch (RestClientException ex) {
+            throw new VllmException(HttpStatus.BAD_GATEWAY, "VLLM_INVALID_RESPONSE",
+                    "vLLM 응답을 해석할 수 없습니다.");
+        }
+    }
+
+    
     public record Completion(List<Choice> choices) {}
-    public record Choice(Reply message) {}
+    public record Choice(Reply message, @JsonProperty("finish_reason") String finishReason) {}
     public record Reply(String content) {}
 }
