@@ -1,16 +1,16 @@
 package com.awsproject.backend.chat;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
 import java.net.http.HttpTimeoutException;
-import java.net.SocketTimeoutException;
-import java.time.Duration;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.springframework.core.io.Resource;
-import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -18,37 +18,35 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
 
 @Component
+@EnableConfigurationProperties(VllmProperties.class)
 public class VllmClient {
     private final RestClient client;
     private final String model;
+    private final String baseUrl;
     private final String systemPrompt;
+    private final boolean enableThinking;
 
-    public VllmClient(
-            @Value("${vllm.base-url}") String baseUrl,
-            @Value("${vllm.model}") String model,
-            @Value("${vllm.api-key}") String apiKey,
-            @Value("${vllm.connect-timeout}") Duration connectTimeout,
-            @Value("${vllm.read-timeout}") Duration readTimeout,
-            @Value("${vllm.system-prompt:classpath:prompts/system.txt}") Resource promptResource) throws IOException {
-        this.model = model;
-        this.systemPrompt = promptResource.getContentAsString(StandardCharsets.UTF_8).strip();
+    public VllmClient(VllmProperties props) throws IOException {
+        this.model = props.model();
+        this.baseUrl = props.baseUrl().replaceAll("/+$", "");
+        this.enableThinking = props.enableThinking();
+        this.systemPrompt = props.systemPrompt().getContentAsString(StandardCharsets.UTF_8).strip();
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(connectTimeout)
+                .connectTimeout(props.connectTimeout())
                 .build());
-        factory.setReadTimeout(readTimeout);
-        var builder = RestClient.builder().baseUrl(baseUrl.replaceAll("/+$", ""))
-                .requestFactory(factory);
-        if (!apiKey.isBlank()) {
-            builder.defaultHeader("Authorization", "Bearer " + apiKey);
+        factory.setReadTimeout(props.readTimeout());
+        var builder = RestClient.builder().baseUrl(baseUrl).requestFactory(factory);
+        if (!props.apiKey().isBlank()) {
+            builder.defaultHeader("Authorization", "Bearer " + props.apiKey());
         }
         this.client = builder.build();
     }
 
     public String complete(ChatRequest request) {
-        if (model.isBlank()) {
+        if (model.isBlank() || baseUrl.isBlank()) {
             throw new VllmException(HttpStatus.SERVICE_UNAVAILABLE, "VLLM_NOT_CONFIGURED",
-                    "vLLM 모델이 설정되지 않았습니다.");
+                    "vLLM 서버 주소 또는 모델이 설정되지 않았습니다.");
         }
         try {
             // Build a fresh list for every request; no conversation is stored here.
@@ -57,9 +55,16 @@ public class VllmClient {
                 messages.add(new ChatRequest.Message("system", systemPrompt));
             }
             messages.addAll(request.conversation());
+
+            var body = new LinkedHashMap<String, Object>();
+            body.put("model", model);
+            body.put("messages", messages);
+            body.put("stream", false);
+            body.put("chat_template_kwargs", Map.of("enable_thinking", enableThinking));
+
             var response = client.post().uri("/v1/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                    .body(Map.of("model", model, "messages", messages, "stream", false))
+                    .body(body)
                     .retrieve().body(Completion.class);
             if (response == null || response.choices() == null || response.choices().isEmpty()
                     || response.choices().getFirst() == null
