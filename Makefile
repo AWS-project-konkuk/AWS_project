@@ -77,6 +77,11 @@ test:
 	body=$$(curl -s --max-time 130 -X POST $$base/api/chat -H 'Content-Type: application/json; charset=UTF-8' -d '{"message":"안녕"}'); \
 	if echo "$$body" | grep -q '"answer"'; then echo "OK   3) AI 채팅          POST /api/chat   -> answer 수신 (BE -> vLLM)"; \
 	else echo "FAIL 3) AI 채팅          POST /api/chat   -> $$(echo "$$body" | head -c 200)"; fail=1; fi; \
+	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/explain \
+		-H 'Content-Type: application/json; charset=UTF-8' \
+		-d '{"lessonId":"lesson-01","question":"EC2와 S3의 역할은 무엇인가요?","options":["EC2는 컴퓨팅, S3는 데이터 저장을 담당한다.","EC2는 데이터 저장, S3는 컴퓨팅을 담당한다."],"correct":0,"explanation":"EC2는 컴퓨팅 서비스이고 S3는 객체 스토리지 서비스입니다.","selected":0,"reason":"EC2는 프로그램을 실행하고 S3는 파일을 저장하기 때문입니다."}'); \
+	if echo "$$body" | grep -q '"verdict"'; then echo "OK   4) AI 답안 평가      POST /api/chat/ai/explain -> verdict 수신 (BE -> vLLM)"; \
+	else echo "FAIL 4) AI 답안 평가      POST /api/chat/ai/explain -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
 	exit $$fail
 
 clean:
