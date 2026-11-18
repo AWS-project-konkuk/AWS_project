@@ -17,7 +17,7 @@ HELM	:= helm --kube-context minikube
 envval = grep '^$(1)=' $(ENV_FILE) | cut -d= -f2-
 
 .DEFAULT_GOAL := lint
-.PHONY: up build build-be build-fe load lint check-env namespace quota secret deploy test clean
+.PHONY: up build build-be build-fe load lint check-env namespace quota secret deploy test test-ai clean
 
 up: build load deploy test
 
@@ -77,6 +77,29 @@ test:
 	body=$$(curl -s --max-time 130 -X POST $$base/api/chat -H 'Content-Type: application/json; charset=UTF-8' -d '{"message":"안녕"}'); \
 	if echo "$$body" | grep -q '"answer"'; then echo "OK   3) AI 채팅          POST /api/chat   -> answer 수신 (BE -> vLLM)"; \
 	else echo "FAIL 3) AI 채팅          POST /api/chat   -> $$(echo "$$body" | head -c 200)"; fail=1; fi; \
+	exit $$fail
+
+test-ai:
+	@$(KUBECTL) wait --for=condition=available deploy/$(RELEASE)-backend deploy/$(RELEASE)-frontend -n $(NAMESPACE) --timeout=120s
+	@$(KUBECTL) port-forward -n $(NAMESPACE) svc/$(RELEASE)-frontend $(TEST_PORT):80 >/dev/null 2>&1 & \
+	PF=$$!; trap 'kill $$PF 2>/dev/null' EXIT; \
+	base=http://localhost:$(TEST_PORT); fail=0; \
+	for i in $$(seq 1 30); do curl -s -o /dev/null $$base/ && break; sleep 1; done; \
+	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/explain \
+		-H 'Content-Type: application/json; charset=UTF-8' \
+		-d '{"lessonId":"lesson-01","question":"EC2와 S3의 역할은 무엇인가요?","options":["EC2는 컴퓨팅, S3는 데이터 저장을 담당한다.","EC2는 데이터 저장, S3는 컴퓨팅을 담당한다."],"correct":0,"explanation":"EC2는 컴퓨팅 서비스이고 S3는 객체 스토리지 서비스입니다.","selected":0,"reason":"EC2는 프로그램을 실행하고 S3는 파일을 저장하기 때문입니다."}'); \
+	if echo "$$body" | grep -q '"verdict"'; then echo "OK   1) AI 답안 평가      POST /api/chat/ai/explain -> verdict 수신 (BE -> vLLM)"; \
+	else echo "FAIL 1) AI 답안 평가      POST /api/chat/ai/explain -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
+	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/hint \
+		-H 'Content-Type: application/json; charset=UTF-8' \
+		-d '{"lessonId":"canary","nodes":[{"id":"router","purpose":"사용자 요청 분배"},{"id":"new-model","purpose":"새 모델 응답 생성"}],"edges":[],"settings":{},"ruleCheck":{"success":false,"issues":["라우터와 새 모델 사이의 연결이 없습니다."],"first_failure":"새 모델로 요청이 전달되지 않습니다."}}'); \
+	if echo "$$body" | grep -q '"hint"'; then echo "OK   2) AI 실습 힌트      POST /api/chat/ai/hint -> hint 수신 (BE -> vLLM)"; \
+	else echo "FAIL 2) AI 실습 힌트      POST /api/chat/ai/hint -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
+	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/chat \
+		-H 'Content-Type: application/json; charset=UTF-8' \
+		-d '{"question":"Shadow 배포와 Canary 배포는 무엇이 다른가요?","lessonId":"canary"}'); \
+	if echo "$$body" | grep -q '"answer"' && echo "$$body" | grep -q '"source"'; then echo "OK   3) AI 강의 질문      POST /api/chat/ai/chat -> answer/source 수신 (BE -> BM25 -> vLLM)"; \
+	else echo "FAIL 3) AI 강의 질문      POST /api/chat/ai/chat -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
 	exit $$fail
 
 clean:
