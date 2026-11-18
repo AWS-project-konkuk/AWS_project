@@ -16,21 +16,23 @@ async function openLab(page: Page) {
 
 test('실패 후 수동 요청, 오류와 fallback 재시도, 평문 표시, 작은 화면', async ({ page }) => {
   let calls = 0;
-  await page.route('**/api/ai/hint', async (route) => {
+  await page.route('**/api/chat/ai/hint', async (route) => {
     calls++;
     const body = route.request().postDataJSON();
     expect(body.lessonId).toBe('week2-workflow');
     expect(body.ruleCheck.success).toBe(false);
-    expect(body.workflow.nodes.find((node: { id: string }) => node.id === 'pod-a').parent).toBe(
+    expect(body.ruleCheck.first_failure).toContain('차단');
+    expect(body.nodes.find((node: { id: string }) => node.id === 'pod-a').parent).toBe(
       'kubernetes',
     );
-    expect(body.workflow.nodes[0].position).toBeUndefined();
+    expect(body.nodes[0].position).toBeUndefined();
+    expect(body.edges.some((edge: { kind: string }) => edge.kind === 'service-route')).toBe(true);
     if (calls === 1) await route.fulfill({ status: 503, json: {} });
     else if (calls === 2)
       await route.fulfill({
         json: {
           status: 'fallback',
-          concept: '지금은 힌트를 만들지 못했어요.',
+          conecpt: '지금은 힌트를 만들지 못했어요.',
           hint: '실행 결과를 확인할까요?',
         },
       });
@@ -38,7 +40,7 @@ test('실패 후 수동 요청, 오류와 fallback 재시도, 평문 표시, 작
       await route.fulfill({
         json: {
           status: 'ok',
-          concept:
+          conecpt:
             '상위 시스템이 정지하면 내부 Pod도 요청을 처리하지 못합니다. <script>실행 안 됨</script>',
           hint: 'EC2와 Kubernetes의 실행 상태를 확인했나요?',
         },
@@ -80,17 +82,22 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
     finish = resolve;
   });
   let calls = 0;
-  const runIds: string[] = [];
-  await page.route('**/api/ai/hint', async (route) => {
+  const ec2States: boolean[] = [];
+  await page.route('**/api/chat/ai/hint', async (route) => {
     calls++;
     const first = calls === 1;
-    runIds.push(route.request().postDataJSON().runId);
+    ec2States.push(
+      route
+        .request()
+        .postDataJSON()
+        .nodes.find((node: { id: string }) => node.id === 'ec2').enabled,
+    );
     if (first) await pending;
     await route
       .fulfill({
         json: {
           status: 'ok',
-          concept: first ? '오래된 실행의 조언' : '새 실행의 조언',
+          conecpt: first ? '오래된 실행의 조언' : '새 실행의 조언',
           hint: '입력을 확인할까요?',
         },
       })
@@ -110,7 +117,7 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await panel.getByRole('button', { name: 'AI 조언 받기', exact: true }).click();
   await expect(panel.getByText('새 실행의 조언')).toBeVisible();
-  expect(new Set(runIds).size).toBe(2);
+  expect(ec2States).toEqual([false, true]);
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await expect(panel.getByLabel('AI 조언 결과')).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'AI 조언 받기', exact: true })).toBeEnabled();
@@ -132,7 +139,7 @@ test('성공 실행은 AI 호출을 하지 않고 다른 단원에는 조언 패
     );
   }, graph);
   let calls = 0;
-  await page.route('**/api/ai/hint', async (route) => {
+  await page.route('**/api/chat/ai/hint', async (route) => {
     calls++;
     await route.abort();
   });

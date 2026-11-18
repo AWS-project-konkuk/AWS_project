@@ -1,17 +1,16 @@
 import { LoaderCircle } from 'lucide-react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import type { ExplainResponse } from '../api/explain';
 import { ResultFeedback } from './ResultFeedback';
 import styles from './QuizAi.module.css';
 
 export function QuizAiFeedback({
   loading,
-  answer,
+  evaluation,
   error,
   request,
 }: {
   loading: boolean;
-  answer: string;
+  evaluation: ExplainResponse | null;
   error: string;
   request: () => Promise<void>;
 }) {
@@ -31,14 +30,21 @@ export function QuizAiFeedback({
         </button>
       </ResultFeedback>
     );
-  if (!answer) return null;
+  if (!evaluation) return null;
+  const correct = evaluation.display === 'correct';
+  const needsWork = evaluation.display === 'needs_work';
   return (
-    <ResultFeedback tone="info" title="AI 검토 결과" label="AI 검토 결과">
-      <div className={styles.answer}>
-        <Markdown remarkPlugins={[remarkGfm]} disallowedElements={['img', 'input']}>
-          {answer}
-        </Markdown>
-      </div>
+    <ResultFeedback
+      tone={correct ? 'success' : 'info'}
+      title={correct ? '정확해요' : needsWork ? '보완이 필요해요' : 'AI 검토 안내'}
+      label="AI 검토 결과"
+    >
+      <p className={styles.feedback}>{evaluation.feedback}</p>
+      {evaluation.status === 'fallback' && (
+        <button type="button" onClick={() => void request()}>
+          다시 요청하기
+        </button>
+      )}
     </ResultFeedback>
   );
 }

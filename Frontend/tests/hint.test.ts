@@ -32,22 +32,38 @@ it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제�
     concept: '상위 시스템이 정지해 있습니다.',
     hint: 'EC2가 실행 중인가요?',
   };
-  post.mockResolvedValue({ data: reply });
+  post.mockResolvedValue({
+    data: {
+      status: reply.status,
+      conecpt: reply.concept,
+      hint: reply.hint,
+      errorBasis: '시스템 정지',
+      display: reply.concept + ' ' + reply.hint,
+    },
+  });
   const controller = new AbortController();
   await expect(requestHint(request, controller.signal)).resolves.toEqual(reply);
-  expect(post).toHaveBeenCalledWith('/ai/hint', request, {
+  expect(post).toHaveBeenCalledWith('/chat/ai/hint', request, {
     signal: controller.signal,
     timeout: 130_000,
   });
-  expect(request.workflow.nodes.find((node) => node.id === 'pod-a')).toMatchObject({
+  expect(Object.keys(request).sort()).toEqual([
+    'edges',
+    'lessonId',
+    'nodes',
+    'ruleCheck',
+    'settings',
+  ]);
+  expect(request.nodes.find((node) => node.id === 'pod-a')).toMatchObject({
     parent: 'kubernetes',
     enabled: false,
   });
-  expect(request.workflow.serviceRoutes.map((edge) => edge.to.node)).toEqual(['pod-a', 'pod-b']);
-  expect(request.workflow.nodes.every((node) => !('position' in node) && !('width' in node))).toBe(
-    true,
-  );
-  expect(request.ruleCheck.steps.some((step) => step.status === 'blocked')).toBe(true);
+  expect(
+    request.edges.filter((edge) => edge.kind === 'service-route').map((edge) => edge.to.node),
+  ).toEqual(['pod-a', 'pod-b']);
+  expect(request.nodes.every((node) => !('position' in node) && !('width' in node))).toBe(true);
+  expect(request.ruleCheck.first_failure).toContain('차단');
+  expect(request.ruleCheck.issues).toContain(request.ruleCheck.first_failure);
 });
 
 it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 만들지 않는다', () => {
@@ -81,8 +97,7 @@ it('성공 실행은 거절하고 API 호출도 성공·다른 단원 요청을 
   for (const invalid of [
     { ...request, ruleCheck: { ...request.ruleCheck, success: true } },
     { ...request, lessonId: 'week3-workflow' },
-    { ...request, schemaVersion: 2 },
-    { ...request, runId: ' ' },
+    { ...request, ruleCheck: { ...request.ruleCheck, first_failure: ' ' } },
   ]) {
     await expect(requestHint(invalid as unknown as HintRequest)).rejects.toThrow();
   }
@@ -101,27 +116,30 @@ it('단계 기록이 없는 순환 실패의 근거와 스냅샷을 보존한다
   expect(run.result.steps).toHaveLength(0);
   expect(run.result.cycle.length).toBeGreaterThan(0);
   const request = buildHintRequest(lesson, graph, run);
-  expect(request.ruleCheck.cycle).toEqual(run.result.cycle);
+  expect(request.settings.cycle).toEqual(run.result.cycle);
+  expect(request.ruleCheck.first_failure).toBe(run.result.message);
   graph.entities[1].name = '변경된 이름';
   graph.connections[0].to.node = 'edited';
   run.result.cycle.length = 0;
-  expect(request.workflow.nodes[1].name).not.toBe('변경된 이름');
-  expect(request.workflow.connections[0].to.node).not.toBe('edited');
-  expect(request.ruleCheck.cycle.length).toBeGreaterThan(0);
+  expect(request.nodes[1].name).not.toBe('변경된 이름');
+  expect(request.edges[0].to.node).not.toBe('edited');
+  expect(request.settings.cycle.length).toBeGreaterThan(0);
 });
 
-it('fallback은 정상 응답이며 잘못된 형식·길이·성공 template은 거절한다', async () => {
+it('fallback은 정상 응답이며 잘못된 형식·길이·빈 성공 응답은 거절한다', async () => {
   const fallback = {
     status: 'fallback',
     concept: '지금은 힌트를 만들지 못했어요.',
     hint: '실행 결과를 다시 확인할까요?',
   };
-  post.mockResolvedValue({ data: fallback });
+  post.mockResolvedValue({
+    data: { status: fallback.status, conecpt: fallback.concept, hint: fallback.hint },
+  });
   await expect(requestHint(payload())).resolves.toEqual(fallback);
   for (const data of [
     null,
     {},
-    { ...fallback, status: 'template' },
+    { status: 'ok', errorBasis: '', conecpt: '', hint: '', display: '모든 단계가 성공했어요!' },
     { ...fallback, concept: ' ' },
     { ...fallback, hint: null },
     { ...fallback, hint: '질문이 아님' },
