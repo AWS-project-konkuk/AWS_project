@@ -74,7 +74,7 @@ test:
 	if [ "$$code" = 200 ]; then echo "OK   1) FE 화면          GET  /           -> $$code"; else echo "FAIL 1) FE 화면          GET  /           -> $$code"; fail=1; fi; \
 	code=$$(curl -s -o /dev/null -w '%{http_code}' $$base/api/posts); \
 	if [ "$$code" = 200 ]; then echo "OK   2) 게시글 목록      GET  /api/posts  -> $$code (nginx -> BE -> DB)"; else echo "FAIL 2) 게시글 목록      GET  /api/posts  -> $$code"; fail=1; fi; \
-	body=$$(curl -s --max-time 130 -X POST $$base/api -H 'Content-Type: application/json; charset=UTF-8' -d '{"message":"안녕"}'); \
+	body=$$(curl -s --max-time 130 -X POST $$base/api/chat -H 'Content-Type: application/json; charset=UTF-8' -d '{"message":"안녕"}'); \
 	if echo "$$body" | grep -q '"answer"'; then echo "OK   3) AI 채팅          POST /api/chat   -> answer 수신 (BE -> vLLM)"; \
 	else echo "FAIL 3) AI 채팅          POST /api/chat   -> $$(echo "$$body" | head -c 200)"; fail=1; fi; \
 	exit $$fail
