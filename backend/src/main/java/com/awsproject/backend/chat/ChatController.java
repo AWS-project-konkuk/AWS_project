@@ -115,8 +115,7 @@ public class ChatController {
         }
 
         if(Boolean.TRUE.equals(request.ruleCheck().success())){
-            String display = "모든 단계가 성공했어요! 이번 실습의 핵심은 다음과 같아요." 
-                + request.lesson().takeaway();
+            String display = "모든 단계가 성공했어요! 이번 실습의 목표를 달성했습니다.";
             return new HintResponse("ok", "", "", "", display);
         }
 
@@ -180,7 +179,11 @@ public class ChatController {
     }
 
     @PostMapping("/ai/chat")
-    public ChatResponse chatWithAI(@Valid @RequestBody ChatRequest request) {
-        return new ChatResponse(null);
+    public ChatAiResponse chatWithAI(@Valid @RequestBody ChatAiRequest request) {
+        try {
+            return client.askChat(request.question(), request.lessonId());
+        } catch (AiResponseException exception) {
+            return ChatAiResponse.fallback();
+        }
     }
 }
