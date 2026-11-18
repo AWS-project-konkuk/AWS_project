@@ -17,7 +17,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/chat")
 public class ChatController {
     private final VllmClient client;
     private final ObjectMapper objectMapper;

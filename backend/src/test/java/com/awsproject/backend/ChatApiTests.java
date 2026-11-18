@@ -95,7 +95,7 @@ class ChatApiTests {
     @AfterAll static void stop() { upstream.stop(0); }
 
     @Test void forwardsQuestionAndReturnsAnswer() throws Exception {
-        mvc.perform(post("/api").contentType("application/json")
+        mvc.perform(post("/api/chat").contentType("application/json")
                 .content("{\"message\":\"안녕\"}"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
@@ -116,7 +116,7 @@ class ChatApiTests {
 
     @Test void forwardsConversationHistory() throws Exception {
         String messages = "[{\"role\":\"system\",\"content\":\"도우미\"},{\"role\":\"user\",\"content\":\"질문\"}]";
-        mvc.perform(post("/api").contentType("application/json")
+        mvc.perform(post("/api/chat").contentType("application/json")
                 .content("{\"messages\":" + messages + "}"))
                 .andExpect(status().isOk());
         var mapper = JsonMapper.builder().build();
@@ -131,7 +131,7 @@ class ChatApiTests {
 
     @Test void doesNotAccumulateMessagesAcrossRequests() throws Exception {
         for (String question : new String[]{"첫 질문", "두 번째 질문"}) {
-            mvc.perform(post("/api").contentType("application/json")
+            mvc.perform(post("/api/chat").contentType("application/json")
                     .content("{\"message\":\"" + question + "\"}"))
                     .andExpect(status().isOk());
             var messages = JsonMapper.builder().build().readTree(received).get("messages");
@@ -145,7 +145,7 @@ class ChatApiTests {
         for (String body : new String[]{"{}", "{\"message\":\" \"}", "{\"messages\":[]}",
                 "{\"messages\":[null]}", "{\"messages\":[{\"role\":\"bad\",\"content\":\"hi\"}]}",
                 "{\"message\":\"hi\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}", "{"}) {
-            mvc.perform(post("/api").contentType("application/json").content(body))
+            mvc.perform(post("/api/chat").contentType("application/json").content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(content().contentType("application/json;charset=UTF-8"))
                     .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -156,7 +156,7 @@ class ChatApiTests {
     @Test void hidesUpstreamErrors() throws Exception {
         upstreamStatus = 401;
         response = "{\"error\":\"private upstream details\"}";
-        mvc.perform(post("/api").contentType("application/json").content("{\"message\":\"hi\"}"))
+        mvc.perform(post("/api/chat").contentType("application/json").content("{\"message\":\"hi\"}"))
                 .andExpect(status().isBadGateway()).andExpect(jsonPath("$.code").value("VLLM_UPSTREAM_ERROR"))
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private"))));
@@ -165,14 +165,14 @@ class ChatApiTests {
     @Test void rejectsMalformedUpstreamResponses() throws Exception {
         for (String body : new String[]{"not json", "{\"choices\":[]}", "{\"choices\":[{\"message\":{}}]}"}) {
             response = body;
-            mvc.perform(post("/api").contentType("application/json").content("{\"message\":\"hi\"}"))
+            mvc.perform(post("/api/chat").contentType("application/json").content("{\"message\":\"hi\"}"))
                     .andExpect(status().isBadGateway()).andExpect(jsonPath("$.code").value("VLLM_INVALID_RESPONSE"));
         }
     }
 
     @Test void returnsGatewayTimeout() throws Exception {
         delay = 1500;
-        mvc.perform(post("/api").contentType("application/json").content("{\"message\":\"hi\"}"))
+        mvc.perform(post("/api/chat").contentType("application/json").content("{\"message\":\"hi\"}"))
                 .andExpect(status().isGatewayTimeout()).andExpect(jsonPath("$.code").value("VLLM_TIMEOUT"));
     }
 
