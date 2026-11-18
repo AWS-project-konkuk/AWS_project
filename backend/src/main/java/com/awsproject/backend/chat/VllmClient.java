@@ -16,10 +16,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.*;
-
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -167,15 +170,16 @@ public class VllmClient {
         String name
     ){
         if(name.equals("explain")){
-            if(!parsed.containsKey("verdict") || !parsed.containsKey("feedback")){
+            if(!parsed.containsKey("verdict") || !parsed.containsKey("feedback")|| !parsed.containsKey("compare")){
                 return false;
             }
-            if(!(parsed.get("verdict") instanceof String verdict) || !(parsed.get("feedback") instanceof String feedback)){
+            if(!(parsed.get("verdict") instanceof String verdict) || !(parsed.get("feedback") instanceof String feedback) || !(parsed.get("compare") instanceof String compare)){
                 return false;
             }
-            if(!Set.of("정확", "부분 정확", "오개념").contains(verdict) || feedback.length() > 250){
+            if(!Set.of("정확", "부분 정확", "오개념").contains(verdict) || feedback.length() > 250 || compare.length() > 300){
                 return false;
             }
+            
             return true;
         }else{
             return false;
@@ -203,10 +207,12 @@ public class VllmClient {
 
             return parsed;
             }catch (JacksonException e){
-
+                if(attempt == 1){
+                    throw new AiResponseException("AI 응답 JSON 파싱에 실패했습니다.");
+                }
             } 
         }
-        throw new IllegalStateException("AI응답을 JSON으로 변환하지 못했습니다.");
+        throw new AiResponseException("AI 응답 검증에 두번 실패했습니다.");
     } 
 
     
