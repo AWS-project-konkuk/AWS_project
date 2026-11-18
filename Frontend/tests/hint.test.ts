@@ -1,0 +1,151 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+const { post } = vi.hoisted(() => ({ post: vi.fn() }));
+vi.mock('../src/api/client', () => ({ api: { post } }));
+import { requestHint, type HintRequest } from '../src/api/hint';
+import { applyCommand } from '../src/systemLab/commands';
+import { runLab } from '../src/systemLab/engine';
+import { buildHintRequest, canRequestHint, type HintRun } from '../src/systemLab/hint';
+import { definition, signature, starterTasks, type Graph } from '../src/systemLab/model';
+
+const lesson = {
+  id: 'week2-workflow',
+  title: '학습된 모델을 Pod 안에서 서비스하기',
+  scenario: '두 Pod로 요청을 처리하세요.',
+  summary: '모델·이미지·요청 경로를 이해합니다.',
+};
+function completedRun(graph: Graph): HintRun {
+  const result = runLab(graph, 'run-1');
+  return { result, stamp: signature(graph), cursor: result.steps.length, stopped: false };
+}
+function payload() {
+  const graph = definition.initial();
+  return buildHintRequest(lesson, graph, completedRun(graph));
+}
+beforeEach(() => {
+  post.mockReset();
+});
+
+it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제외한다', async () => {
+  const request = payload();
+  const reply = {
+    status: 'ok',
+    concept: '상위 시스템이 정지해 있습니다.',
+    hint: 'EC2가 실행 중인가요?',
+  };
+  post.mockResolvedValue({ data: reply });
+  const controller = new AbortController();
+  await expect(requestHint(request, controller.signal)).resolves.toEqual(reply);
+  expect(post).toHaveBeenCalledWith('/ai/hint', request, {
+    signal: controller.signal,
+    timeout: 130_000,
+  });
+  expect(request.workflow.nodes.find((node) => node.id === 'pod-a')).toMatchObject({
+    parent: 'kubernetes',
+    enabled: false,
+  });
+  expect(request.workflow.serviceRoutes.map((edge) => edge.to.node)).toEqual(['pod-a', 'pod-b']);
+  expect(request.workflow.nodes.every((node) => !('position' in node) && !('width' in node))).toBe(
+    true,
+  );
+  expect(request.ruleCheck.steps.some((step) => step.status === 'blocked')).toBe(true);
+});
+
+it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 만들지 않는다', () => {
+  const graph = definition.initial();
+  const run = completedRun(graph);
+  expect(run.cursor).toBeGreaterThan(0);
+  for (const current of [null, { ...run, cursor: run.cursor - 1 }, { ...run, stopped: true }]) {
+    expect(canRequestHint(lesson.id, graph, current)).toBe(false);
+    expect(() => buildHintRequest(lesson, graph, current)).toThrow('끝까지 실행');
+  }
+  expect(() => buildHintRequest({ ...lesson, id: 'week3-workflow' }, graph, run)).toThrow();
+  const edited = applyCommand(graph, { type: 'toggle', id: 'ec2', enabled: true });
+  expect(canRequestHint(lesson.id, edited, run)).toBe(false);
+  const moved = structuredClone(graph);
+  moved.entities[1].position.x += 10;
+  expect(canRequestHint(lesson.id, moved, run)).toBe(true);
+});
+
+it('성공 실행은 거절하고 API 호출도 성공·다른 단원 요청을 방어한다', async () => {
+  let graph = applyCommand(definition.initial(), {
+    type: 'toggle',
+    id: 'root',
+    enabled: true,
+    children: true,
+  });
+  for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
+  const run = completedRun(graph);
+  expect(run.result.success).toBe(true);
+  expect(() => buildHintRequest(lesson, graph, run)).toThrow();
+  const request = payload();
+  for (const invalid of [
+    { ...request, ruleCheck: { ...request.ruleCheck, success: true } },
+    { ...request, lessonId: 'week3-workflow' },
+    { ...request, schemaVersion: 2 },
+    { ...request, runId: ' ' },
+  ]) {
+    await expect(requestHint(invalid as unknown as HintRequest)).rejects.toThrow();
+  }
+  expect(post).not.toHaveBeenCalled();
+});
+
+it('단계 기록이 없는 순환 실패의 근거와 스냅샷을 보존한다', () => {
+  const graph = definition.initial();
+  // A graph-level failure can finish without any animated steps.
+  graph.connections.push({
+    id: 'loop',
+    from: { node: 'service', port: 'out-request' },
+    to: { node: 'start', port: 'in-request' },
+  });
+  const run = completedRun(graph);
+  expect(run.result.steps).toHaveLength(0);
+  expect(run.result.cycle.length).toBeGreaterThan(0);
+  const request = buildHintRequest(lesson, graph, run);
+  expect(request.ruleCheck.cycle).toEqual(run.result.cycle);
+  graph.entities[1].name = '변경된 이름';
+  graph.connections[0].to.node = 'edited';
+  run.result.cycle.length = 0;
+  expect(request.workflow.nodes[1].name).not.toBe('변경된 이름');
+  expect(request.workflow.connections[0].to.node).not.toBe('edited');
+  expect(request.ruleCheck.cycle.length).toBeGreaterThan(0);
+});
+
+it('fallback은 정상 응답이며 잘못된 형식·길이·성공 template은 거절한다', async () => {
+  const fallback = {
+    status: 'fallback',
+    concept: '지금은 힌트를 만들지 못했어요.',
+    hint: '실행 결과를 다시 확인할까요?',
+  };
+  post.mockResolvedValue({ data: fallback });
+  await expect(requestHint(payload())).resolves.toEqual(fallback);
+  for (const data of [
+    null,
+    {},
+    { ...fallback, status: 'template' },
+    { ...fallback, concept: ' ' },
+    { ...fallback, hint: null },
+    { ...fallback, hint: '질문이 아님' },
+    { ...fallback, concept: '가'.repeat(201) },
+    { ...fallback, hint: '가'.repeat(160) + '?' },
+  ]) {
+    post.mockResolvedValue({ data });
+    await expect(requestHint(payload())).rejects.toThrow('올바르지');
+  }
+  const boundary = { status: 'ok', concept: '가'.repeat(200), hint: '가'.repeat(159) + '?' };
+  post.mockResolvedValue({ data: boundary });
+  await expect(requestHint(payload())).resolves.toEqual(boundary);
+});
+
+it('통신 오류를 그대로 전달하며 자동 재시도하지 않는다', async () => {
+  const error = new Error('timeout');
+  post.mockRejectedValue(error);
+  await expect(requestHint(payload())).rejects.toBe(error);
+  expect(post).toHaveBeenCalledTimes(1);
+});
+
+it('요청 취소 오류를 그대로 전달한다', async () => {
+  const cancelled = Object.assign(new Error('cancelled'), { code: 'ERR_CANCELED' });
+  post.mockRejectedValue(cancelled);
+  await expect(requestHint(payload())).rejects.toBe(cancelled);
+  expect(post).toHaveBeenCalledTimes(1);
+});
