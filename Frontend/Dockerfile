@@ -8,5 +8,6 @@ COPY . .
 RUN npm run lint && npm test && npm run build
 
 FROM nginx:stable-alpine
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /src/dist/ /usr/share/nginx/html/
 EXPOSE 80
