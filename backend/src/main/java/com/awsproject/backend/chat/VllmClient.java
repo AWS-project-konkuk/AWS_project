@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,11 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
 
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @EnableConfigurationProperties(VllmProperties.class)
@@ -27,12 +32,14 @@ public class VllmClient {
     private final String baseUrl;
     private final String systemPrompt;
     private final boolean enableThinking;
+    private final ObjectMapper objectMapper;
 
     public VllmClient(VllmProperties props) throws IOException {
         this.model = props.model();
         this.baseUrl = props.baseUrl().replaceAll("/+$", "");
         this.enableThinking = props.enableThinking();
         this.systemPrompt = props.systemPrompt().getContentAsString(StandardCharsets.UTF_8).strip();
+        this.objectMapper = new ObjectMapper();
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(props.connectTimeout())
@@ -154,13 +161,52 @@ public class VllmClient {
                     "vLLM 응답을 해석할 수 없습니다.");
         }
     }
+
+    private boolean isValidResponse(
+        Map<String, Object> parsed,
+        String name
+    ){
+        if(name.equals("explain")){
+            if(!parsed.containsKey("verdict") || !parsed.containsKey("feedback")){
+                return false;
+            }
+            if(!(parsed.get("verdict") instanceof String verdict) || !(parsed.get("feedback") instanceof String feedback)){
+                return false;
+            }
+            if(!Set.of("정확", "부분 정확", "오개념").contains(verdict) || feedback.length() > 250){
+                return false;
+            }
+            return true;
+        }else{
+            return false;
+        }
+            
+        
+    }
+
     public Map<String, Object> ask(ChatRequest request, Map<String, Object> schema, String name, double temperature){
-        PostResult result = post(request, schema, name, temperature);
-        Map<String, Object> parsed = objectMapper.readValue(
+        for(int attempt = 0; attempt < 2; attempt++){
+            try{
+            PostResult result = post(request, schema, name, temperature);
+            if("length".equals(result.finishReason())){
+                continue;
+            }
+
+            Map<String, Object> parsed = objectMapper.readValue(
             result.content(),
             new TypeReference<Map<String, Object>>() {}
-        );
-        
+            );
+
+            if(!isValidResponse(parsed, name)){
+                continue;
+            }
+
+            return parsed;
+            }catch (JacksonException e){
+
+            } 
+        }
+        throw new IllegalStateException("AI응답을 JSON으로 변환하지 못했습니다.");
     } 
 
     
