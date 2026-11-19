@@ -1,21 +1,59 @@
 import { defineMdxLesson } from '../../defineLesson';
+import { createChoiceActivity } from './git-large.lesson';
+
+export const Activity = createChoiceActivity({
+  title: '지난 실험을 다시 할 준비가 됐나요?',
+  context: '지난주 모델을 다시 학습하려고 합니다. 준비한 조건을 하나씩 늘려 보세요.',
+  note: '조건을 맞춰도 GPU 계산 방식 등에 따라 작은 수치 차이는 남을 수 있습니다.',
+  choices: [
+    {
+      label: '코드만 준비',
+      result: '사용했던 데이터를 더 찾아야 합니다.',
+      cards: [
+        { title: '코드', value: '지난주 버전', detail: 'Git에서 선택' },
+        { title: '데이터', value: '아직 확인 안 함', detail: '지난주 파일 필요' },
+        { title: '환경·설정', value: '아직 확인 안 함', detail: '라이브러리와 설정 필요' },
+      ],
+      reason: '같은 코드도 다른 자료를 읽으면 다른 결과를 만듭니다.',
+    },
+    {
+      label: '데이터도 준비',
+      result: '입력은 맞췄습니다. 실행 조건을 확인하세요.',
+      cards: [
+        { title: '코드·데이터', value: '지난주 버전', detail: 'DVC로 데이터 복원' },
+        { title: '환경·설정', value: '확인 필요', detail: '학습 횟수·라이브러리 등' },
+      ],
+      reason: '같은 자료라도 학습 설정이나 프로그램 버전이 다르면 결과가 달라질 수 있습니다.',
+    },
+    {
+      label: '환경·설정까지 준비',
+      result: '이제 다시 학습하고 결과를 비교합니다.',
+      cards: [
+        { title: '코드·데이터', value: '확인 완료', detail: '사용한 버전 기록' },
+        { title: '환경·설정', value: '확인 완료', detail: '이미지·설정·난수 시드 기록' },
+        { title: '다음 단계', value: '결과 비교', detail: '지난 모델의 점수와 비교' },
+      ],
+      reason: '무엇을 사용했는지 기록해야 차이가 생겼을 때 원인을 찾을 수 있습니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'week4-workflow',
   unit: 3,
   order: 7,
-  title: '과거 실험의 코드와 데이터 되찾기',
+  title: '과거 실험을 재현하는 전체 흐름',
   summary:
-    '주차 종합 실습 · Git은 코드·포인터를, DVC 캐시·원격은 실제 데이터 내용을 관리합니다. 포인터 변경과 복원은 다른 동작입니다.',
+    '종합 실습 · 지난주 코드와 데이터를 맞추고, 같은 실험에 필요한 설정과 환경도 확인합니다.',
   minutes: 18,
   scenario:
     'Git 메타데이터와 실제 데이터 경로를 나눠 연결하세요. Git 이동만으로 생긴 불일치를 관찰한 뒤 캐시·원격에서 v1을 복원하세요.',
   concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      title: '심화 · 재현 가능한 실험의 범위',
+      body: '과거 실험을 되살리려면 Git 커밋, DVC 데이터 해시, 파이프라인 파라미터, 실행 환경을 함께 식별해야 합니다. Lakehouse 스냅샷을 입력으로 쓴다면 스냅샷 ID나 시점도 기록합니다. 파일을 찾는 단계와 모델 수치까지 재현하는 단계는 구분해서 검증하세요.',
     },
   ],
   caution:

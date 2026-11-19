@@ -1,15 +1,52 @@
 import { defineMdxLesson } from '../../defineLesson';
+import { createChoiceActivity } from './git-large.lesson';
+
+export const Activity = createChoiceActivity({
+  title: '공유할 때와 가져올 때, 어디로 이동할까요?',
+  context: 'Git에는 데이터 이름표가 있고 실제 데이터는 내 컴퓨터와 팀 저장소에서 관리합니다.',
+  note: '이 버튼은 동작을 설명합니다. 실제 Git 또는 DVC 명령을 실행하지 않습니다.',
+  choices: [
+    {
+      label: '이름표 공유 · git push',
+      result: '코드와 데이터 이름표를 Git 원격에 보냅니다.',
+      cards: [
+        { title: '출발', value: '내 Git 기록', detail: '코드와 .dvc 파일' },
+        { title: '도착', value: '팀 Git 저장소', detail: '팀원이 버전을 확인' },
+      ],
+      reason: '이 동작만으로 큰 데이터 파일이 팀 저장소에 올라가지는 않습니다.',
+    },
+    {
+      label: '데이터 공유 · dvc push',
+      result: '내 캐시의 실제 데이터를 팀 저장소에 보냅니다.',
+      cards: [
+        { title: '출발', value: '내 캐시', detail: '내 컴퓨터의 보관본' },
+        { title: '도착', value: '데이터 원격', detail: 'S3 같은 팀 보관소' },
+      ],
+      reason: '팀원도 같은 파일을 받을 수 있도록 실제 내용을 공유합니다.',
+    },
+    {
+      label: '데이터 받기 · dvc pull',
+      result: '필요한 데이터를 받아 작업 폴더에 준비합니다.',
+      cards: [
+        { title: '찾을 기준', value: '.dvc 이름표', detail: '원하는 데이터 내용을 식별' },
+        { title: '가져오는 곳', value: '원격 → 캐시', detail: '캐시에 없는 내용만 받기' },
+        { title: '사용할 곳', value: '작업 폴더', detail: '학습 코드가 읽을 파일' },
+      ],
+      reason: '이미 캐시에 있는 내용은 재사용하고, 없는 내용은 데이터 원격에서 가져옵니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'dvc-architecture',
   unit: 3,
-  order: 5,
-  title: 'DVC의 Git·캐시·원격 저장소',
-  summary: '코드·메타데이터와 실제 데이터의 저장 경로를 나눕니다.',
+  order: 3,
+  title: 'DVC 아키텍처: Git·캐시·데이터 원격',
+  summary: 'Git의 데이터 이름표, 내 컴퓨터의 캐시, 팀의 보관소가 하는 일을 구분합니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['Git 코드·포인터', 'DVC 로컬 캐시', '데이터 원격 저장소', '작업 공간'],
+    '팀원이 코드는 받았지만 사진 파일은 없습니다. 데이터 이름표와 실제 파일을 어디에 공유해야 할지 확인해 보세요.',
+  concepts: ['데이터 이름표', '파일의 지문', '내 보관함', '팀 보관소', '작업 폴더'],
   assessment: {
     question: 'Git에 커밋하는 DVC 관련 정보는?',
     options: ['데이터 식별 정보를 담은 메타데이터', '항상 전체 데이터셋 바이너리'],
@@ -18,8 +55,8 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      title: '심화 · 내용 주소화와 캐시 재사용',
+      body: 'DVC는 데이터 내용을 식별하는 해시를 이용해 캐시 경로와 메타데이터를 연결합니다. 같은 내용은 캐시에서 재사용할 수 있지만 원격에 해당 객체가 없거나 권한이 없다면 다른 환경에서 복원할 수 없습니다. 메타데이터를 커밋하는 것과 실제 데이터를 dvc push로 공유하는 것을 한 작업으로 착각하지 않아야 합니다.',
     },
   ],
   caution: '실제 데이터는 캐시와 원격 저장소가 담당합니다.',
@@ -30,7 +67,7 @@ export default defineMdxLesson({
       url: 'https://www.notion.so/ea3ebb1cb38a827a91d381487e388ad4',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: 'DVC 공식 · .dvc 파일',
       url: 'https://doc.dvc.org/user-guide/project-structure/dvcyaml-files',
     },
     {
@@ -38,7 +75,7 @@ export default defineMdxLesson({
       url: 'https://doc.dvc.org/user-guide/how-to/stop-tracking-data',
     },
     {
-      title: '공식 자료 · 더 알아보기',
+      title: 'DVC 공식 · 시작하기',
       url: 'https://doc.dvc.org/start',
     },
   ],
@@ -85,25 +122,25 @@ export default defineMdxLesson({
     {
       id: 'n0',
       title: 'Git 코드·포인터',
-      detail: 'DVC의 Git·캐시·원격 저장소 · 1번째 구성 요소',
+      detail: '코드와 어떤 데이터를 썼는지 적은 이름표입니다.',
       tone: '#b49b70',
     },
     {
       id: 'n1',
       title: 'DVC 로컬 캐시',
-      detail: 'DVC의 Git·캐시·원격 저장소 · 2번째 구성 요소',
+      detail: '내 컴퓨터에 다시 쓸 데이터를 보관합니다.',
       tone: '#b49b70',
     },
     {
       id: 'n2',
       title: '데이터 원격 저장소',
-      detail: 'DVC의 Git·캐시·원격 저장소 · 3번째 구성 요소',
+      detail: '팀이 실제 데이터를 함께 보관합니다.',
       tone: '#b49b70',
     },
     {
       id: 'n3',
       title: '작업 공간',
-      detail: 'DVC의 Git·캐시·원격 저장소 · 4번째 구성 요소',
+      detail: '학습 코드가 실제로 읽는 파일을 준비합니다.',
       tone: '#b49b70',
     },
   ],

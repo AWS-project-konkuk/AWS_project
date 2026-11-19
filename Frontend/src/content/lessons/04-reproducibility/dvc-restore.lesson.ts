@@ -1,15 +1,51 @@
 import { defineMdxLesson } from '../../defineLesson';
+import { createChoiceActivity } from './git-large.lesson';
+
+export const Activity = createChoiceActivity({
+  title: '지난주 데이터를 다시 쓰려면?',
+  context: '목표는 지난주 v1입니다. 현재 작업 폴더에는 이번 주 v2가 있습니다.',
+  note: '복원에 필요한 파일을 원격에 보관했고 읽기 권한이 있다고 가정합니다.',
+  choices: [
+    {
+      label: 'Git만 v1로 변경',
+      result: '아직 코드와 데이터가 서로 다릅니다.',
+      cards: [
+        { title: '코드·이름표', value: 'v1', detail: '지난주 기록' },
+        { title: '작업 데이터', value: 'v2', detail: '이번 주 파일이 남음' },
+      ],
+      reason: 'Git이 관리하지 않는 큰 데이터 파일은 따로 복원해야 합니다.',
+    },
+    {
+      label: '캐시에 v1 있음',
+      result: 'dvc checkout으로 내 보관본을 꺼냅니다.',
+      cards: [
+        { title: '가져오는 곳', value: '로컬 캐시 v1', detail: '내 컴퓨터에 이미 있음' },
+        { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
+      ],
+      reason: '필요한 파일이 가까이 있으므로 다시 내려받을 필요가 없습니다.',
+    },
+    {
+      label: '캐시에 v1 없음',
+      result: 'dvc pull로 팀 보관소에서 가져옵니다.',
+      cards: [
+        { title: '가져오는 곳', value: '데이터 원격 v1', detail: '캐시를 거쳐 복원' },
+        { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
+      ],
+      reason: '이름표만으로 데이터가 생기지는 않습니다. 실제 파일을 받아야 합니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'dvc-restore',
   unit: 3,
-  order: 6,
-  title: '과거 코드와 데이터를 함께 복원',
-  summary: 'Git 포인터 변경과 작업 공간의 데이터 복원을 구분합니다.',
+  order: 5,
+  title: '과거 코드와 데이터를 함께 복원하기',
+  summary: '지난주 코드를 고른 뒤 내 캐시나 팀 보관소에서 지난주 데이터도 꺼내 봅니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['Git 버전', 'DVC 캐시', '작업 공간 데이터'],
+    '지난 실험의 Git 커밋으로 이동했지만 작업 공간에는 최신 데이터가 남아 있습니다. 메타데이터가 가리키는 내용을 캐시 또는 원격에서 찾아 정확한 버전으로 복원하세요.',
+  concepts: ['Git checkout', 'dvc checkout', 'dvc pull', '캐시 적중·부재', '작업 공간 검증'],
   assessment: {
     question: 'Git 이동 후 데이터가 그대로라면?',
     options: ['Git 포인터를 읽었으므로 이미 복원된 것이다', 'DVC로 해당 데이터 버전을 복원한다'],
@@ -18,8 +54,8 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      title: '심화 · 파일 복원과 실험 재현은 다릅니다',
+      body: 'dvc checkout이나 dvc pull로 같은 데이터 파일을 복원해도 라이브러리 버전, 하드웨어, 난수 시드, 외부 서비스가 달라지면 학습 수치가 달라질 수 있습니다. 데이터 복원 성공을 먼저 검증한 뒤 코드·파라미터·실행 환경까지 같은 실험 식별자에 연결해야 합니다.',
     },
   ],
   caution: '메타데이터와 실제 파일 상태를 둘 다 확인합니다.',
@@ -30,16 +66,20 @@ export default defineMdxLesson({
       url: 'https://www.notion.so/ea3ebb1cb38a827a91d381487e388ad4',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: 'DVC 공식 · dvc checkout',
+      url: 'https://dvc.org/doc/command-reference/checkout',
+    },
+    {
+      title: 'DVC 공식 · dvc pull',
+      url: 'https://dvc.org/doc/command-reference/pull',
+    },
+    {
+      title: 'DVC 공식 · .dvc 파일',
       url: 'https://doc.dvc.org/user-guide/project-structure/dvcyaml-files',
     },
     {
       title: 'DVC · 데이터 추적과 Git 제외',
       url: 'https://doc.dvc.org/user-guide/how-to/stop-tracking-data',
-    },
-    {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://doc.dvc.org/start',
     },
   ],
   sourceWeek: 5,
@@ -168,19 +208,19 @@ export default defineMdxLesson({
     {
       id: 'n0',
       title: 'Git 버전',
-      detail: '과거 코드와 데이터를 함께 복원 · 1번째 구성 요소',
+      detail: '다시 사용할 코드와 데이터 이름표를 고릅니다.',
       tone: '#b49b70',
     },
     {
       id: 'n1',
       title: 'DVC 캐시',
-      detail: '과거 코드와 데이터를 함께 복원 · 2번째 구성 요소',
+      detail: '내 컴퓨터에 보관한 지난 데이터를 찾습니다.',
       tone: '#b49b70',
     },
     {
       id: 'n2',
       title: '작업 공간 데이터',
-      detail: '과거 코드와 데이터를 함께 복원 · 3번째 구성 요소',
+      detail: '선택한 버전의 파일을 꺼내 학습에 사용합니다.',
       tone: '#b49b70',
     },
   ],

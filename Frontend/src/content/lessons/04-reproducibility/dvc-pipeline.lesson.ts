@@ -1,16 +1,55 @@
 import { defineMdxLesson } from '../../defineLesson';
+import { createChoiceActivity } from './git-large.lesson';
+
+export const Activity = createChoiceActivity({
+  title: '어디부터 다시 계산할까요?',
+  context:
+    '자료 준비 → 모델 학습 → 점수 확인 순서입니다. 입력이 바뀌면 영향을 받는 단계도 달라집니다.',
+  note: '같은 결과가 캐시에 있다면 실제 재실행 범위는 더 줄어들 수 있습니다.',
+  choices: [
+    {
+      label: '학습 설정만 변경',
+      result: '준비한 자료는 쓰고, 학습부터 다시 합니다.',
+      cards: [
+        { title: '자료 준비', value: '재사용', detail: '자료와 준비 방법은 그대로' },
+        { title: '모델 학습', value: '다시 실행', detail: '학습 설정이 바뀜' },
+        { title: '점수 확인', value: '다시 실행', detail: '새 모델로 점수 계산' },
+      ],
+      reason: '학습 설정은 자료를 준비하는 단계에 영향을 주지 않습니다.',
+    },
+    {
+      label: '원본 데이터 변경',
+      result: '자료 준비부터 모두 다시 확인합니다.',
+      cards: [
+        { title: '자료 준비', value: '다시 실행', detail: '입력 데이터가 바뀜' },
+        { title: '모델 학습', value: '다시 실행', detail: '새 자료로 학습' },
+        { title: '점수 확인', value: '다시 실행', detail: '새 모델과 자료로 평가' },
+      ],
+      reason: '앞 단계의 결과를 뒷 단계가 사용하므로 변경의 영향이 이어집니다.',
+    },
+    {
+      label: '변경 없음',
+      result: '기존 결과가 남아 있다면 재사용합니다.',
+      cards: [
+        { title: '자료 준비', value: '재사용', detail: '같은 입력' },
+        { title: '모델 학습', value: '재사용', detail: '같은 코드와 설정' },
+        { title: '점수 확인', value: '재사용', detail: '같은 모델과 평가 자료' },
+      ],
+      reason: '같은 일을 반복하지 않도록 이전 결과를 활용합니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'dvc-pipeline',
   unit: 3,
-  order: 1,
-  title: '입력이 바뀌면 어느 단계부터 다시 실행할까',
-  summary:
-    '학습 코드 한 줄을 바꿨는데 데이터 다운로드와 전처리까지 매번 다시 실행됩니다. 반대로 필요한 재학습을 건너뛰면 오래된 모델을 평가할 수 있습니다.',
+  order: 4,
+  title: 'DVC 파이프라인과 실험 재현성',
+  summary: '학습 설정이나 데이터가 바뀌었을 때 어느 작업을 다시 해야 하는지 비교합니다.',
   scenario:
     '학습 코드 한 줄을 바꿨는데 데이터 다운로드와 전처리까지 매번 다시 실행됩니다. 반대로 필요한 재학습을 건너뛰면 오래된 모델을 평가할 수 있습니다.',
-  concepts: ['같은 실험으로 돌아가기', '입력이 바뀌면 어느 단계부터 다시 실행할까'],
+  concepts: ['작업 순서표', '설정 메모', '실행 기록', '입력과 결과', '결과 재사용'],
   assessment: {
     question: '학습 코드만 바뀌었을 때 우선 영향을 받는 것은?',
     options: [
@@ -23,12 +62,12 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      title: '심화 · 선언한 입력만 추적됩니다',
+      body: 'DVC는 dvc.yaml에 선언한 deps, params, outs와 dvc.lock의 실행 상태를 바탕으로 재실행 범위를 판단합니다. 코드가 읽는 환경 변수나 외부 API처럼 선언하지 않은 입력은 자동으로 추적되지 않습니다. 재현성을 높이려면 데이터와 코드뿐 아니라 파라미터, 실행 환경, 난수 조건도 명시적으로 기록해야 합니다.',
     },
   ],
   caution:
-    'Git 체크아웃은 메타데이터를 바꾸며 DVC 체크아웃은 캐시의 실제 내용을 작업 공간에 반영합니다. 필요한 내용이 캐시에 없으면 원격에서 가져와야 합니다. 환경·난수·외부 입력까지 고정하지 않으면 동일한 학습 결과는 보장되지 않습니다.',
+    '의존성을 빠뜨리면 DVC는 그 변경을 알 수 없습니다. 캐시 적중은 이전 출력을 재사용할 수 있다는 뜻이지 모든 실행 환경이 동일하다는 보장은 아닙니다.',
   reflection: '학습 코드만 바뀌었을 때 우선 영향을 받는 것은?',
   references: [
     {
@@ -36,8 +75,12 @@ export default defineMdxLesson({
       url: 'https://www.notion.so/ea3ebb1cb38a827a91d381487e388ad4',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: 'DVC 공식 · dvc.yaml 파일',
       url: 'https://doc.dvc.org/user-guide/project-structure/dvcyaml-files',
+    },
+    {
+      title: 'DVC 공식 · params.yaml 파일',
+      url: 'https://doc.dvc.org/user-guide/project-structure/params-file',
     },
   ],
   sourceWeek: 5,

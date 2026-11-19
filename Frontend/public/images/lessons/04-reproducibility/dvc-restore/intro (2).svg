@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-label="Git checkout restores code v1 but externally stored data remains v2">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#64748b" stroke-width="1.8"/></marker></defs>
+<rect width="1200" height="650" fill="#fff"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#253347">
+<text x="600" y="65" font-size="31" font-weight="700" text-anchor="middle">Restoring an earlier Git version</text>
+<text x="600" y="101" font-size="18" text-anchor="middle" fill="#687588">Code is restored, but externally managed data stays unchanged</text>
+<rect x="435" y="137" width="330" height="63" rx="9" fill="#f3f5f7" stroke="#cbd5df" stroke-width="2"/>
+<text x="600" y="177" text-anchor="middle" font-family="monospace" font-size="23" fill="#334155">git checkout v1.0</text>
+<path d="M600 200 V238" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M600 238 H305 V270 M600 238 H895 V270" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="95" y="277" width="420" height="239" rx="13" fill="#f0f6fc" stroke="#94b7dc" stroke-width="2"/>
+<rect x="685" y="277" width="420" height="239" rx="13" fill="#fff6f2" stroke="#e8b1a2" stroke-width="2"/>
+<rect x="128" y="310" width="62" height="75" rx="5" fill="#fff" stroke="#80a4d2" stroke-width="2"/>
+<path d="M176 310 V325 H190" fill="none" stroke="#80a4d2" stroke-width="2"/>
+<text x="159" y="358" text-anchor="middle" font-size="19" fill="#4c75a5">&lt;/&gt;</text>
+<rect x="718" y="310" width="62" height="75" rx="5" fill="#fff" stroke="#d9a18e" stroke-width="2"/>
+<path d="M766 310 V325 H780" fill="none" stroke="#d9a18e" stroke-width="2"/>
+<text x="749" y="357" text-anchor="middle" font-size="16" fill="#b77863">CSV</text>
+<text x="214" y="337" font-size="23" font-weight="700">Code</text>
+<text x="804" y="337" font-size="23" font-weight="700">Dataset</text>
+<text x="214" y="370" font-family="monospace" font-size="18" fill="#64748b">train.py</text>
+<text x="804" y="370" font-family="monospace" font-size="18" fill="#64748b">dataset.csv</text>
+<text x="305" y="431" font-size="43" font-weight="700" text-anchor="middle" fill="#3169a3">v1.0</text>
+<text x="895" y="431" font-size="43" font-weight="700" text-anchor="middle" fill="#b96752">v2.0</text>
+<text x="305" y="476" font-size="20" text-anchor="middle" fill="#3169a3">✓ Restored by Git</text>
+<text x="895" y="476" font-size="20" text-anchor="middle" fill="#b96752">✕ Not restored by Git</text>
+<path d="M515 404 H685" stroke="#d47d67" stroke-width="3" stroke-dasharray="8 7"/>
+<rect x="530" y="387" width="140" height="34" rx="17" fill="#fff" stroke="#d47d67" stroke-width="1.5"/>
+<text x="600" y="409" text-anchor="middle" font-size="15" font-weight="700" fill="#b4533e">Mismatch</text>
+<rect x="315" y="553" width="570" height="58" rx="9" fill="#fff8f5" stroke="#e6b6a7" stroke-width="1.6"/>
+<text x="600" y="589" text-anchor="middle" font-size="21" font-weight="700" fill="#9c4e3b">Code v1.0 ≠ Dataset v2.0</text>
+</g></svg>

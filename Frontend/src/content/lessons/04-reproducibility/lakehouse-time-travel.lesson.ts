@@ -1,16 +1,59 @@
 import { defineMdxLesson } from '../../defineLesson';
+import { createChoiceActivity } from './git-large.lesson';
+
+export const Activity = createChoiceActivity({
+  title: '어느 시점의 표를 읽을까요?',
+  context:
+    '어제 주문 100건에 오늘 20건이 추가되었습니다. 두 시점의 기록과 파일이 보존되어 있습니다.',
+  note: '과거 조회는 현재 표를 바꾸지 않습니다. 기록이나 파일을 삭제한 시점은 조회할 수 없습니다.',
+  choices: [
+    {
+      label: '오늘 표 조회',
+      result: '현재 주문 120건을 읽습니다.',
+      cards: [
+        { title: '읽는 데이터', value: '120건', detail: '오늘까지의 주문' },
+        { title: '현재 표', value: '120건', detail: '현재 상태 유지' },
+      ],
+      reason: '별도 시점을 지정하지 않으면 현재 테이블을 읽습니다.',
+    },
+    {
+      label: '어제 표 조회',
+      result: '어제 주문 100건만 읽습니다.',
+      cards: [
+        { title: '읽는 데이터', value: '100건', detail: '어제 스냅샷을 선택' },
+        { title: '현재 표', value: '120건', detail: '조회해도 바뀌지 않음' },
+      ],
+      reason: '타임 트래블은 과거 시점의 표를 선택해서 읽는 기능입니다.',
+    },
+    {
+      label: '새 열 추가',
+      result: '표의 구조도 버전으로 관리합니다.',
+      cards: [
+        { title: '표 구조', value: '배송 상태 열 추가', detail: '새 열을 사용할 수 있음' },
+        { title: '과거 행', value: '값 확인 필요', detail: '새 열은 값이 없을 수 있음' },
+        { title: '학습 코드', value: '호환성 확인', detail: '새 열 처리 방법 점검' },
+      ],
+      reason: '열을 추가했다고 과거 행의 배송 상태가 자동으로 채워지지는 않습니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'lakehouse-time-travel',
   unit: 3,
-  order: 2,
-  title: '파일 묶음에 테이블과 시점을 부여하기',
-  summary:
-    'S3의 CSV를 계속 덮어써서 지난 실험 시점의 행과 스키마를 찾을 수 없습니다. 여러 작업이 동시에 파일을 갱신하면 어느 상태가 유효한지도 불분명합니다.',
+  order: 6,
+  title: 'Data Lakehouse와 타임 트래블',
+  summary: '파일을 표처럼 관리하고, 어제의 표를 다시 읽거나 새 열을 추가하는 방법을 알아봅니다.',
   scenario:
     'S3의 CSV를 계속 덮어써서 지난 실험 시점의 행과 스키마를 찾을 수 없습니다. 여러 작업이 동시에 파일을 갱신하면 어느 상태가 유효한지도 불분명합니다.',
-  concepts: ['같은 실험으로 돌아가기', '파일 묶음에 테이블과 시점을 부여하기'],
+  concepts: [
+    'Data Warehouse·Lake·Lakehouse',
+    '오픈 테이블 포맷',
+    '원자적 커밋',
+    '타임 트래블',
+    '스키마 진화',
+  ],
   assessment: {
     question: '과거 데이터 조회를 가능하게 하는 추가 관리 정보는?',
     options: [
@@ -24,11 +67,11 @@ export default defineMdxLesson({
   advanced: [
     {
       title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      body: 'Iceberg는 스냅샷과 매니페스트 계층으로 유효한 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그와 체크포인트로 테이블 상태를 구성합니다. 새 데이터 파일을 먼저 쓰고 마지막에 새 메타데이터 버전을 원자적으로 공개합니다. 타임 트래블은 메타데이터와 과거 데이터 파일이 보존된 범위에서만 가능합니다.',
     },
   ],
   caution:
-    'Git 체크아웃은 메타데이터를 바꾸며 DVC 체크아웃은 캐시의 실제 내용을 작업 공간에 반영합니다. 필요한 내용이 캐시에 없으면 원격에서 가져와야 합니다. 환경·난수·외부 입력까지 고정하지 않으면 동일한 학습 결과는 보장되지 않습니다.',
+    '객체 저장소에 파일이 남아 있다는 사실만으로 테이블의 과거 상태가 보장되지는 않습니다. 스냅샷·로그와 참조 파일의 보존 정책을 함께 확인하세요.',
   reflection: '과거 데이터 조회를 가능하게 하는 추가 관리 정보는?',
   references: [
     {
@@ -36,8 +79,12 @@ export default defineMdxLesson({
       url: 'https://www.notion.so/ea3ebb1cb38a827a91d381487e388ad4',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://doc.dvc.org/user-guide/project-structure/dvcyaml-files',
+      title: 'Apache Iceberg 공식 · 소개',
+      url: 'https://iceberg.apache.org/docs/latest/',
+    },
+    {
+      title: 'Delta Lake 공식 · 소개',
+      url: 'https://docs.delta.io/latest/index.html',
     },
   ],
   sourceWeek: 5,
