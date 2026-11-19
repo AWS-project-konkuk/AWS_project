@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="850" viewBox="0 0 1600 850">
+<rect width="1600" height="850" fill="#fff"/>
+<rect x="75" y="115" width="660" height="455" rx="24" fill="#f8fbff" stroke="#c6dcff" stroke-width="3"/>
+<path d="M75 139 Q75 115 99 115 H711 Q735 115 735 139 V210 H75Z" fill="#dbeafe"/>
+<rect x="865" y="115" width="660" height="455" rx="24" fill="#fbfaff" stroke="#d9d0ff" stroke-width="3"/>
+<path d="M865 139 Q865 115 889 115 H1501 Q1525 115 1525 139 V210 H865Z" fill="#e9e4ff"/>
+<g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#172033">
+<text x="405" y="171" font-size="43" font-weight="700">Training data</text><text x="1195" y="171" font-size="43" font-weight="700">Serving data</text>
+</g>
+<g stroke="#7b8494" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M175 252 V495 H677"/><path d="M165 264 L175 252 L185 264"/><path d="M665 485 L677 495 L665 505"/><path d="M965 252 V495 H1467"/><path d="M955 264 L965 252 L975 264"/><path d="M1455 485 L1467 495 L1455 505"/><path d="M753 350 H847 M769 334 L753 350 L769 366 M831 334 L847 350 L831 366" stroke-width="6"/></g>
+<g fill="#669fec"><rect x="180" y="461" width="67" height="34"/><rect x="250" y="418" width="67" height="77"/><rect x="320" y="337" width="67" height="158"/><rect x="390" y="302" width="67" height="193"/><rect x="460" y="367" width="67" height="128"/><rect x="530" y="431" width="67" height="64"/><rect x="600" y="461" width="67" height="34"/></g>
+<g fill="#9d80e8"><rect x="970" y="486" width="67" height="9"/><rect x="1040" y="473" width="67" height="22"/><rect x="1110" y="460" width="67" height="35"/><rect x="1180" y="436" width="67" height="59"/><rect x="1250" y="398" width="67" height="97"/><rect x="1320" y="343" width="67" height="152"/><rect x="1390" y="302" width="67" height="193"/></g>
+<g font-family="Arial, Helvetica, sans-serif" fill="#202a3b" font-size="26" text-anchor="middle"><text x="420" y="538">Feature value</text><text x="1210" y="538">Feature value</text><text x="120" y="379" transform="rotate(-90 120 379)">Frequency</text><text x="910" y="379" transform="rotate(-90 910 379)">Frequency</text></g>
+<rect x="295" y="640" width="1010" height="142" rx="32" fill="#fff0f0"/>
+<g font-family="Arial, Helvetica, sans-serif" text-anchor="middle"><text x="800" y="705" font-size="42" font-weight="700" fill="#c52e2e">⚠ Training–Serving Skew</text><text x="800" y="752" font-size="28" fill="#343b48">Different input distributions between training and serving</text></g>
+</svg>

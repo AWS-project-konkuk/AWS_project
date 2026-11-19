@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="913" height="481" viewBox="0 0 913 481">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#666"/></marker></defs>
+<rect width="913" height="481" fill="#fff"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#383838">
+<rect x="225" y="17" width="312" height="444" rx="5" fill="none" stroke="#b6b6b6" stroke-width="2.5"/>
+<text x="381" y="57" font-size="29" text-anchor="middle">Storage</text>
+<text x="54" y="250" font-size="26" text-anchor="middle">Feature</text><text x="54" y="281" font-size="26" text-anchor="middle">data</text>
+<path d="M120 259 H253 Q263 259 263 249 V185 Q263 174 274 174 H298" fill="none" stroke="#666" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M253 259 Q263 259 263 269 V339 Q263 350 274 350 H298" fill="none" stroke="#666" stroke-width="2.5" marker-end="url(#arrow)"/>
+<g stroke="#666" stroke-width="2.5" fill="#f69b91">
+<path d="M303 110 C303 90 459 90 459 110 V237 C459 258 303 258 303 237 Z"/>
+<ellipse cx="381" cy="110" rx="78" ry="16"/>
+<path d="M303 285 C303 265 459 265 459 285 V411 C459 432 303 432 303 411 Z"/>
+<ellipse cx="381" cy="285" rx="78" ry="16"/>
+</g>
+<text x="381" y="166" font-size="23" font-weight="bold" text-anchor="middle">Online</text>
+<text x="381" y="194" font-size="23" text-anchor="middle">Storage</text>
+<text x="381" y="222" font-size="22" font-style="italic" text-anchor="middle">(kv store)</text>
+<text x="381" y="341" font-size="23" font-weight="bold" text-anchor="middle">Offline</text>
+<text x="381" y="369" font-size="23" text-anchor="middle">Storage</text>
+<text x="381" y="396" font-size="22" font-style="italic" text-anchor="middle">(data lake)</text>
+<path d="M459 174 H691" stroke="#666" stroke-width="2.5" stroke-dasharray="6 10" fill="none" marker-end="url(#arrow)"/>
+<path d="M459 349 H691" stroke="#666" stroke-width="2.5" stroke-dasharray="6 10" fill="none" marker-end="url(#arrow)"/>
+<rect x="693" y="122" width="209" height="104" rx="8" fill="#fff" stroke="#666" stroke-width="2.5"/>
+<rect x="693" y="296" width="209" height="105" rx="8" fill="#fff" stroke="#666" stroke-width="2.5"/>
+<text x="797" y="161" font-size="28" text-anchor="middle">Model</text><text x="797" y="194" font-size="28" text-anchor="middle">Serving</text>
+<text x="797" y="336" font-size="28" text-anchor="middle">Model</text><text x="797" y="369" font-size="28" text-anchor="middle">Training</text>
+</g></svg>

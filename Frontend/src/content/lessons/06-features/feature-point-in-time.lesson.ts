@@ -5,30 +5,30 @@ export default defineMdxLesson({
   id: 'feature-point-in-time',
   unit: 5,
   order: 1,
-  title: '과거 시점에 알 수 있었던 피처만 사용하기',
+  title: 'Training-Serving Skew: 학습과 서비스 입력 맞추기',
   summary:
-    '어제의 구매 예측을 학습하는데 오늘 확정된 결제 결과를 피처로 붙이면 오프라인 정확도가 비정상적으로 높아집니다.',
+    '학습할 때 만든 피처와 실제 서비스가 모델에 넣는 피처가 달라지는 이유와 해결 기준을 알아봅니다.',
   scenario:
-    '어제의 구매 예측을 학습하는데 오늘 확정된 결제 결과를 피처로 붙이면 오프라인 정확도가 비정상적으로 높아집니다.',
-  concepts: ['학습과 추론의 피처 맞추기', '과거 시점에 알 수 있었던 피처만 사용하기'],
+    '학습에서는 최근 1시간 클릭 수를 사용했지만 서비스에서는 최근 24시간 클릭 수를 넣어 예측 품질이 낮아졌습니다.',
+  concepts: ['Training-Serving Skew', '공통 전처리 정의', '데이터 변화', '시점 정확성'],
   assessment: {
-    question: '1월 1일의 예측을 재현할 때 사용할 값은?',
-    options: ['그 예측 시점에 실제로 이용 가능했던 피처', '정답을 포함한 현재 최신 피처'],
+    question: '학습과 서비스의 피처 불일치를 줄이는 가장 중요한 기준은?',
+    options: ['같은 입력을 같은 피처 정의로 계산한다', '온라인 저장소의 크기만 늘린다'],
     correct: 0,
     explanation:
-      '원천 이벤트 → 공통 피처 계산 → 과거 시점 학습 조회와 최신 온라인 조회로 분기합니다. Offline Store는 대량 과거 자료를, Online Store는 낮은 지연의 키 조회를 담당합니다. 배치 materialization이나 스트리밍 갱신의 주기는 요구 신선도에 맞추며 지연·누락을 관측합니다.',
+      '같은 원천 입력은 학습과 서비스에서 같은 전처리·집계 기준을 거쳐 같은 의미의 피처가 되어야 합니다. 저장소가 빠르기만 해서는 계산 정의의 차이를 해결할 수 없습니다.',
   },
   caution:
-    'Feature Store를 설치하는 것만으로 정의 불일치와 미래 정보 누출이 사라지지 않습니다. 과거 예측 시점에 실제로 알 수 있었던 값만 조인하고, 온라인 갱신의 지연·실패도 관측해야 합니다.',
-  reflection: '1월 1일의 예측을 재현할 때 사용할 값은?',
+    'Training-Serving Skew와 Data Drift는 결과가 비슷해 보여도 원인이 다릅니다. 전자는 두 처리 경로의 불일치이고, 후자는 시간에 따라 실제 데이터 분포나 관계가 변하는 문제입니다.',
+  reflection: '같은 고객 데이터가 학습과 서비스에서 서로 다른 피처가 되는 경우를 설명해 보세요.',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://docs.feast.dev/getting-started/architecture/overview',
+      title: 'JFrog ML · What is training-serving skew?',
+      url: 'https://www.qwak.com/post/training-serving-skew-in-machine-learning',
     },
   ],
   sourceWeek: 6,
