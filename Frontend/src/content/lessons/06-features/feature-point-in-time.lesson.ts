@@ -33,4 +33,55 @@ export default defineMdxLesson({
   ],
   sourceWeek: 6,
   mapStages: ['data', 'training', 'serving'],
+  nodeExample: {
+    id: 'feature-definition-two-paths',
+    title: '같은 정의에서 갈라지는 두 피처 경로',
+    prompt: '공통 피처 정의를 학습용 과거 피처와 서비스용 최신 피처에 각각 연결해 보세요.',
+    nodes: [
+      {
+        id: 'definition',
+        title: '공통 피처 정의',
+        purpose: '최근 1시간 클릭 수의 집계 범위와 누락값 처리 기준을 관리합니다.',
+        x: 0,
+        y: 120,
+      },
+      {
+        id: 'training',
+        title: '학습용 과거 피처',
+        purpose: '예측 시점에 이용 가능했던 값으로 학습 자료를 만듭니다.',
+        x: 330,
+        y: 0,
+      },
+      {
+        id: 'serving',
+        title: '서비스용 최신 피처',
+        purpose: '같은 정의로 계산한 최신 값을 실시간 추론에 제공합니다.',
+        x: 330,
+        y: 240,
+      },
+    ],
+    links: [
+      {
+        id: 'definition-training',
+        source: 'definition',
+        target: 'training',
+        label: '같은 계산 기준',
+        detail: '과거 시점의 입력에 공통 집계·전처리 정의를 적용합니다.',
+        material: 'metadata',
+      },
+      {
+        id: 'definition-serving',
+        source: 'definition',
+        target: 'serving',
+        label: '같은 계산 기준',
+        detail: '현재 입력에도 같은 집계·전처리 정의를 적용합니다.',
+        material: 'metadata',
+      },
+    ],
+    practiceHint:
+      '두 경로가 모두 같은 공통 정의에서 시작하는지 확인하세요. 저장 시점은 달라도 피처의 의미는 같아야 합니다.',
+    nextLesson: 'feature-store',
+    kind: '자료 전달',
+    afterSection: 3,
+  },
 });
