@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: '파일의 lifecycle과 공유 조건 판단하기',
   summary: '어떤 기준으로 Storage를 선택해야하는가?',
   scenario:
-    '기본적인 Storage의 lifecycle과 공유 조건을 판단하고, 어떤 Storage를 선택할지 학습합니다.',
+    '컨테이너 재시작, Pod 교체, 노드 이동 뒤에 어떤 파일이 남는지 비교합니다. 학습 데이터셋, 임시 파일, 체크포인트에 필요한 보존 범위와 공유 조건을 각각 정해 보세요.',
   concepts: ['데이터를 보존하고 공급하기', '파일의 lifecycle과 share 조건 판단하기'],
   assessment: {
     question:

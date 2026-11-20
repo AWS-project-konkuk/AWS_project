@@ -14,6 +14,24 @@ const sources = Object.fromEntries(
 );
 
 describe('레슨 편집 기준', () => {
+  it('강의별 할 일과 인트로에서 요약을 반복하지 않는다', () => {
+    const scenarios = new Set<string>();
+    const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
+    for (const { lesson } of lessonDocuments) {
+      const summary = normalize(lesson.summary);
+      const scenario = normalize(lesson.scenario);
+      const intro = normalize(lesson.reading[0].body);
+
+      expect(scenario, lesson.id).not.toBe('');
+      expect(scenario, lesson.id).not.toContain(summary);
+      expect(scenarios.has(scenario), lesson.id).toBe(false);
+      expect(intro, lesson.id).not.toBe('');
+      expect(intro, lesson.id).not.toContain(summary);
+      expect(intro, lesson.id).not.toContain(scenario);
+      scenarios.add(scenario);
+    }
+  });
+
   it('54개 레슨의 첫 문제 제기 뒤에 설명이 있는 도입 이미지를 제공한다', () => {
     expect(Object.keys(sources)).toHaveLength(54);
     for (const [path, source] of Object.entries(sources)) {

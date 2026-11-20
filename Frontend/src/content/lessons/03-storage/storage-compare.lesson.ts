@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: 'Block·File·Object의 접근 방식',
   summary: '저장소의 형태와 요청 크기를 함께 비교합니다.',
   scenario:
-    '쿠버네티스 환경에서 AI 모델을 학습하기 위해 저장소를 선택하려고 합니다, 어떤 저장소를 선택해야할지 생각해보세요.',
+    '서버 부팅용 디스크, 여러 Pod의 공유 폴더, 배포에 넘길 모델 파일에 알맞은 저장 방식을 골라 보세요. 세 방식에서 각각 블록 장치, 파일 경로, 객체 키로 데이터를 찾는 이유를 비교합니다.',
   concepts: ['Block Storage', 'File Storage', 'Object Storage', '지연과 처리량'],
   assessment: {
     question: '스토리지 성능을 비교할 때 함께 봐야 하는 것은?',

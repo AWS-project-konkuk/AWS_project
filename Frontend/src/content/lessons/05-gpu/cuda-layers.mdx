@@ -1,14 +1,12 @@
-## 문제 상황과 전체 맥락
+## GPU는 보이는데 PyTorch는 왜 못 쓸까요?
 
-Python 연산은 어떻게 GPU까지 도달할까요? PyTorch의 연산 요청이 GPU에 도달하는 계층을 따라갑니다.
+새 GPU가 잘 꽂혔는지 `nvidia-smi`를 실행했습니다. GPU 이름이 멀쩡히 뜹니다. 안심하고 학습을 눌렀더니 이번엔 PyTorch가 GPU를 쓸 수 없다고 합니다. 한 화면에서는 보이고 다른 화면에서는 안 보이는 GPU, 어디부터 확인해야 할까요?
 
 <Figure
   src="/images/lessons/05-gpu/cuda-layers/intro.svg"
-  alt="Python 연산은 어떻게 GPU까지 도달할까요? 그림에 프레임워크, CUDA 계층, GPU 장치의 모습을 표시했습니다."
+  alt="프레임워크의 연산 요청이 CUDA 계층을 거쳐 GPU 장치에 전달되는 흐름"
   caption="프레임워크 · CUDA 계층 · GPU 장치"
 />
-
-그림의 **프레임워크**, **CUDA 계층**, **GPU 장치**에 주목해 보세요. 프레임워크의 연산은 연산 라이브러리·런타임·드라이버 같은 계층을 통해 NVIDIA GPU에서 수행됩니다.
 
 ## 개념 이해
 

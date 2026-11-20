@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: 'MLOps에서 Object Storage를 쓰는 이유',
   summary: '큰 데이터셋과 모델 파일의 공통 보관소를 구성합니다.',
   scenario:
-    '학습 서버를 교체해도 같은 데이터셋을 읽고, 완성된 모델을 다음 배포 작업에서 찾을 수 있도록 연산 자원과 공통 보관소를 분리하세요.',
+    '객체 작업 예제에서 버킷과 객체 키로 데이터셋과 모델을 찾습니다. 원본이 데이터 로더와 GPU 학습을 거쳐 모델 아티팩트로 보관되는 경로를 따라가 보세요.',
   concepts: ['Object Storage', '데이터 로더', 'GPU 학습', '모델 아티팩트'],
   assessment: {
     question: '객체 저장소의 역할에 맞는 것은?',
