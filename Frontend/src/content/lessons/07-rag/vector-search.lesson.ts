@@ -14,21 +14,28 @@ export default defineMdxLesson({
     question: '벡터 검색이 후보를 고르는 대표 기준은?',
     options: ['임베딩 사이의 거리·유사도', '문서 ID가 같은지 여부만'],
     correct: 0,
-    explanation: '벡터 검색은 의미 표현의 가까움을 검색 기준으로 사용합니다.',
+    explanation:
+      '벡터 검색은 질문 임베딩과 문서 임베딩의 거리·유사도로 가까운 top-k를 고릅니다. 정확한 값이나 범위는 B+Tree 같은 조건 검색이 적합하며, 실제 서비스에서는 메타데이터 필터와 유사도 검색을 함께 쓰기도 합니다.',
   },
-  caution: '벡터 검색은 의미 표현의 가까움을 검색 기준으로 사용합니다.',
-  reflection: '벡터 검색이 후보를 고르는 대표 기준은?',
+  caution:
+    '벡터 검색은 의미 표현의 가까움을 기준으로 항상 top-k를 돌려주므로, 관련 문서가 없어도 결과가 나옵니다. 정확한 조건이 필요한 질문은 조건 검색과 함께 사용합니다.',
+  reflection:
+    '"주문번호 A-1234 배송 상태"와 "달콤한 과일 추천"은 각각 어떤 검색 방식이 적합합니까? 두 질문을 함께 처리하는 시스템이라면 어떻게 설계하겠습니까?',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '공식 자료 · pgvector (PostgreSQL 벡터 확장)',
       url: 'https://github.com/pgvector/pgvector',
     },
     {
-      title: '공식 자료 · 더 알아보기',
+      title: '공식 자료 · Chroma 쿼리와 메타데이터 필터',
+      url: 'https://docs.trychroma.com/docs/querying-collections/query-and-get',
+    },
+    {
+      title: '공식 자료 · Chroma 임베딩 함수',
       url: 'https://docs.trychroma.com/docs/embeddings/embedding-functions',
     },
   ],

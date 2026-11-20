@@ -14,22 +14,29 @@ export default defineMdxLesson({
     question: '차원이 같으면 다른 모델의 벡터도 바로 비교해도 될까요?',
     options: ['네, 차원 수만 같으면 충분하다', '아니요, 같은 의미 공간인지 확인해야 한다'],
     correct: 1,
-    explanation: '동일 차원은 의미 공간 호환의 충분조건이 아닙니다.',
+    explanation:
+      '차원이 같으면 거리 계산은 가능하지만, 모델마다 학습한 의미 공간이 달라 두 벡터의 거리에는 의미가 없습니다. 문서와 질문은 같은 모델·전처리·거리 기준으로 임베딩해야 하며, 모델을 바꾸면 저장된 문서 전체를 다시 임베딩합니다.',
   },
-  caution: '동일 차원은 의미 공간 호환의 충분조건이 아닙니다.',
-  reflection: '차원이 같으면 다른 모델의 벡터도 바로 비교해도 될까요?',
+  caution:
+    '동일 차원은 의미 공간 호환의 충분조건이 아닙니다. 거리 기준(코사인·L2·내적)도 벡터 DB마다 기본값이 다르므로 컬렉션을 만들 때 지정합니다.',
+  reflection:
+    '영어 위주의 임베딩 모델로 한국어 사내 문서를 검색했더니 관련 문서가 잘 나오지 않습니다. 무엇을 바꾸어 비교해 보겠으며, 바꾼 뒤에 어떤 작업이 추가로 필요합니까?',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://github.com/pgvector/pgvector',
+      title: '공식 자료 · Chroma 임베딩 함수',
+      url: 'https://docs.trychroma.com/docs/embeddings/embedding-functions',
     },
     {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://docs.trychroma.com/docs/embeddings/embedding-functions',
+      title: '공식 자료 · Chroma 컬렉션 설정 (거리 기준·HNSW)',
+      url: 'https://docs.trychroma.com/docs/collections/configure',
+    },
+    {
+      title: '모델 카드 · all-MiniLM-L6-v2',
+      url: 'https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2',
     },
   ],
   sourceWeek: 6,
