@@ -12,8 +12,9 @@ import {
   manualConnectionIssue,
   hasRunState,
   isSystemKind,
+  isTreeLab,
   labels,
-  pilotLesson,
+  materials,
   portTypes,
   protectedKind,
   requiredLabEntities,
@@ -25,12 +26,14 @@ import {
   type Graph,
   type Kind,
   type KubernetesSettings,
+  type LabId,
 } from './model';
 import { runLab } from './engine';
+import { labs, type LabSpec } from './labs';
 import type { LearningData } from '../curriculum/types';
 
 export const storageKey = 'blockml:system-lab:week2-workflow:v1';
-interface Saved {
+export interface Saved {
   version: 1;
   graph: Graph;
   quiz: boolean;
@@ -496,10 +499,103 @@ function migrateModelSource(graph: Graph): boolean {
   ];
   return [...connectedVersions].every((oldVersion) => oldVersion === version);
 }
-function load() {
+/** 트리 실습(week2 이외)의 저장 데이터를 검증합니다. 이전 형식 호환이 필요 없어 구조만 확인합니다. */
+export function parseLabSaved(raw: string, spec: LabSpec): Saved {
+  const saved: unknown = JSON.parse(raw);
+  if (
+    !record(saved) ||
+    saved.version !== 1 ||
+    typeof saved.quiz !== 'boolean' ||
+    !(saved.proof === null || typeof saved.proof === 'string') ||
+    !record(saved.graph) ||
+    saved.graph.lab !== spec.id ||
+    !Array.isArray(saved.graph.entities) ||
+    !Array.isArray(saved.graph.connections)
+  )
+    return fail();
+  const entities: Entity[] = [];
+  const ids = new Set<string>();
+  for (const item of saved.graph.entities as unknown[]) {
+    if (
+      !record(item) ||
+      typeof item.id !== 'string' ||
+      !item.id ||
+      ids.has(item.id) ||
+      typeof item.name !== 'string' ||
+      !item.name.trim() ||
+      typeof item.kind !== 'string' ||
+      !Object.hasOwn(labels, item.kind) ||
+      typeof item.parent !== 'string' ||
+      !record(item.position) ||
+      !number(item.position.x) ||
+      !number(item.position.y) ||
+      (item.settings !== undefined &&
+        (!record(item.settings) ||
+          Object.values(item.settings).some((value) => typeof value !== 'string')))
+    )
+      return fail();
+    const kind = item.kind as Kind;
+    if (isSystemKind(kind) !== (item.type === 'system')) return fail();
+    if (item.type === 'system' && (!number(item.width) || !number(item.height))) return fail();
+    if (item.type === 'resource') {
+      if (!Array.isArray(item.ports)) return fail();
+      const ports = new Set<string>();
+      for (const port of item.ports as unknown[]) {
+        if (
+          !record(port) ||
+          typeof port.id !== 'string' ||
+          ports.has(port.id) ||
+          (port.direction !== 'in' && port.direction !== 'out') ||
+          typeof port.material !== 'string' ||
+          !Object.hasOwn(materials, port.material) ||
+          typeof port.multiple !== 'boolean'
+        )
+          return fail();
+        ports.add(port.id);
+      }
+    }
+    entities.push(item as unknown as Entity);
+    ids.add(item.id);
+  }
+  const lookup = new Map(entities.map((entity) => [entity.id, entity]));
+  if (![rootId, ...spec.required].every((id) => ids.has(id))) return fail();
+  for (const entity of entities) {
+    if (entity.id === rootId) continue;
+    const parent = lookup.get(entity.parent);
+    if (parent?.type !== 'system') return fail();
+  }
+  const graph: Graph = { lab: spec.id, entities, connections: [] };
+  for (const item of saved.graph.connections as unknown[]) {
+    if (
+      !record(item) ||
+      !record(item.from) ||
+      !record(item.to) ||
+      typeof item.from.node !== 'string' ||
+      typeof item.from.port !== 'string' ||
+      typeof item.to.node !== 'string' ||
+      typeof item.to.port !== 'string'
+    )
+      return fail();
+    const edge = connection(item.from.node, item.from.port, item.to.node, item.to.port);
+    if (connectionIssue(graph, edge)) return fail();
+    graph.connections.push(edge);
+  }
+  return {
+    version: 1,
+    graph,
+    quiz: saved.quiz,
+    proof: saved.proof === signature(graph) ? saved.proof : null,
+  };
+}
+interface LabStoreConfig {
+  storageKey: string;
+  fresh: () => Saved;
+  parse: (raw: string) => Saved;
+}
+function load({ storageKey, fresh, parse }: LabStoreConfig) {
   try {
     const raw = globalThis.localStorage?.getItem(storageKey);
-    return { saved: raw ? parseSaved(raw) : fresh(), blocked: false };
+    return { saved: raw ? parse(raw) : fresh(), blocked: false };
   } catch {
     return { saved: fresh(), blocked: true };
   }
@@ -522,71 +618,93 @@ const update = (saved: Saved, graph: Graph): Saved => ({
   graph,
   proof: saved.proof && signature(graph) === saved.proof ? saved.proof : null,
 });
-export const useSystemLab = create<Store>()((set, get) => ({
-  ...load(),
-  past: [],
-  future: [],
-  warning: '',
-  dispatch(command) {
-    const { saved, past } = get();
-    try {
-      const graph = applyCommand(saved.graph, command);
-      if (JSON.stringify(graph) === JSON.stringify(saved.graph) && command.type !== 'restore')
+function createLabStore(config: LabStoreConfig) {
+  const useStore = create<Store>()((set, get) => ({
+    ...load(config),
+    past: [],
+    future: [],
+    warning: '',
+    dispatch(command) {
+      const { saved, past } = get();
+      try {
+        const graph = applyCommand(saved.graph, command);
+        if (JSON.stringify(graph) === JSON.stringify(saved.graph) && command.type !== 'restore')
+          return false;
+        const next = update(saved, graph);
+        if (command.type === 'restore') next.proof = null;
+        set({ saved: next, past: [...past, saved.graph].slice(-50), future: [], warning: '' });
+        return true;
+      } catch (error) {
+        set({ warning: (error as Error).message });
         return false;
-      const next = update(saved, graph);
-      if (command.type === 'restore') next.proof = null;
-      set({ saved: next, past: [...past, saved.graph].slice(-50), future: [], warning: '' });
-      return true;
-    } catch (error) {
-      set({ warning: (error as Error).message });
-      return false;
+      }
+    },
+    undo() {
+      const { saved, past, future } = get();
+      const graph = past.at(-1);
+      if (graph)
+        set({
+          saved: update(saved, graph),
+          past: past.slice(0, -1),
+          future: [saved.graph, ...future],
+          warning: '',
+        });
+    },
+    redo() {
+      const { saved, past, future } = get();
+      const graph = future[0];
+      if (graph)
+        set({
+          saved: update(saved, graph),
+          past: [...past, saved.graph].slice(-50),
+          future: future.slice(1),
+          warning: '',
+        });
+    },
+    prove(proof) {
+      const { saved } = get();
+      if (proof === signature(saved.graph)) set({ saved: { ...saved, proof } });
+    },
+    quiz(correct) {
+      set(({ saved }) => ({ saved: { ...saved, quiz: correct } }));
+    },
+    recover() {
+      set({ blocked: false, saved: config.fresh(), past: [], future: [], warning: '' });
+    },
+  }));
+  useStore.subscribe((state, previous) => {
+    if (state.blocked || state.saved === previous.saved) return;
+    try {
+      globalThis.localStorage?.setItem(config.storageKey, JSON.stringify(state.saved));
+    } catch {
+      if (!state.warning)
+        useStore.setState({
+          warning: '저장하지 못했습니다. 현재 탭에서는 계속 편집할 수 있습니다.',
+        });
     }
-  },
-  undo() {
-    const { saved, past, future } = get();
-    const graph = past.at(-1);
-    if (graph)
-      set({
-        saved: update(saved, graph),
-        past: past.slice(0, -1),
-        future: [saved.graph, ...future],
-        warning: '',
-      });
-  },
-  redo() {
-    const { saved, past, future } = get();
-    const graph = future[0];
-    if (graph)
-      set({
-        saved: update(saved, graph),
-        past: [...past, saved.graph].slice(-50),
-        future: future.slice(1),
-        warning: '',
-      });
-  },
-  prove(proof) {
-    const { saved } = get();
-    if (proof === signature(saved.graph)) set({ saved: { ...saved, proof } });
-  },
-  quiz(correct) {
-    set(({ saved }) => ({ saved: { ...saved, quiz: correct } }));
-  },
-  recover() {
-    set({ blocked: false, saved: fresh(), past: [], future: [], warning: '' });
-  },
-}));
-useSystemLab.subscribe((state, previous) => {
-  if (state.blocked || state.saved === previous.saved) return;
-  try {
-    globalThis.localStorage?.setItem(storageKey, JSON.stringify(state.saved));
-  } catch {
-    if (!state.warning)
-      useSystemLab.setState({
-        warning: '저장하지 못했습니다. 현재 탭에서는 계속 편집할 수 있습니다.',
-      });
-  }
-});
+  });
+  return useStore;
+}
+export type LabStore = ReturnType<typeof createLabStore>;
+export const useSystemLab = createLabStore({ storageKey, fresh, parse: parseSaved });
+const labStore = (spec: LabSpec) =>
+  createLabStore({
+    storageKey: spec.storageKey,
+    fresh: () => ({ version: 1, graph: spec.initial(), quiz: false, proof: null }),
+    parse: (raw) => parseLabSaved(raw, spec),
+  });
+/** 강의별 트리 실습 저장소. week2 파일럿은 기존 저장 형식과 마이그레이션을 그대로 사용합니다. */
+export const labStores: Record<LabId, LabStore> = {
+  'week2-workflow': useSystemLab,
+  'week1-workflow': labStore(labs['week1-workflow']),
+  'rag-workflow': labStore(labs['rag-workflow']),
+};
+const solved = (state: Store) => !!state.saved.proof && state.saved.quiz;
 export function useLessonCompletion(data: LearningData) {
-  const pilot = useSystemLab((state) => !!state.saved.proof && state.saved.quiz);
-  return (id: string) => (id === pilotLesson ? pilot : !!data.lessons[id]?.completed);
+  const done: Record<LabId, boolean> = {
+    'week2-workflow': labStores['week2-workflow'](solved),
+    'week1-workflow': labStores['week1-workflow'](solved),
+    'rag-workflow': labStores['rag-workflow'](solved),
+  };
+  return (id: string) => (isTreeLab(id) ? done[id] : !!data.lessons[id]?.completed);
 }

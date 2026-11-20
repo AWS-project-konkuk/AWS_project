@@ -1,7 +1,6 @@
 import {
   absolute,
   manualConnectionIssue,
-  definition,
   descendants,
   hasRunState,
   labels,
@@ -10,7 +9,7 @@ import {
   protectedKind,
   requiredLabEntities,
   rootId,
-  tools,
+  toolsFor,
   type Connection,
   type Direction,
   type Entity,
@@ -22,6 +21,7 @@ import {
   type PortSpec,
   type Version,
 } from './model';
+import { labSpec } from './labs';
 
 export type Command =
   | { type: 'add'; parent: string; kind: Kind; id: string }
@@ -32,6 +32,7 @@ export type Command =
   | { type: 'cluster'; id: string; patch: Partial<KubernetesSettings> }
   | { type: 'pod-label'; id: string; value: string }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
+  | { type: 'config'; id: string; field: string; value: string }
   | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
   | { type: 'connect'; edge: Connection }
   | { type: 'disconnect'; ids: string[] }
@@ -51,7 +52,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     ...graph,
     entities: graph.entities.map((e) => (e.id === id ? fn(e) : e)),
   });
-  if (cmd.type === 'restore') return definition.initial();
+  if (cmd.type === 'restore') return labSpec(graph).initial();
   if (cmd.type === 'connect') {
     const error = manualConnectionIssue(graph, cmd.edge);
     if (error) throw new Error(error);
@@ -63,7 +64,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     const parent = graph.entities.find((e) => e.id === cmd.parent);
     if (
       parent?.type !== 'system' ||
-      !tools[parent.kind].includes(cmd.kind) ||
+      !toolsFor(graph, parent.kind).includes(cmd.kind) ||
       graph.entities.some((e) => e.id === cmd.id)
     )
       throw new Error('이 시스템에 추가할 수 없는 항목입니다.');
@@ -80,7 +81,10 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
   }
   const item = graph.entities.find((e) => e.id === cmd.id);
   if (!item) return graph;
-  if (cmd.type === 'remove' && requiredLabEntities(graph.entities).has(item.id)) {
+  if (
+    cmd.type === 'remove' &&
+    requiredLabEntities(graph.entities, labSpec(graph).required).has(item.id)
+  ) {
     throw new Error('실습에 필요한 항목은 삭제할 수 없습니다.');
   }
   if (cmd.type === 'move' && (item.kind === 'start' || item.kind === 'end')) {
@@ -99,6 +103,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     case 'remove': {
       const ids = descendants(graph, item.id);
       return {
+        ...graph,
         entities: graph.entities.filter((e) => !ids.has(e.id)),
         connections: graph.connections.filter((e) => !ids.has(e.from.node) && !ids.has(e.to.node)),
       };
@@ -107,7 +112,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       const parent = graph.entities.find((e) => e.id === (cmd.parent ?? item.parent));
       if (
         parent?.type !== 'system' ||
-        (!tools[parent.kind].includes(item.kind) &&
+        (!toolsFor(graph, parent.kind).includes(item.kind) &&
           !(item.kind === 'service' && parent.id === item.parent)) ||
         descendants(graph, item.id).has(parent.id)
       )
@@ -204,6 +209,15 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
         }),
       }));
     }
+    case 'config': {
+      const field = labSpec(graph).fields[item.kind]?.find((f) => f.id === cmd.field);
+      if (!field || !field.options.some((option) => option.value === cmd.value))
+        throw new Error('이 항목에서 고를 수 없는 설정입니다.');
+      return change(item.id, (e) => ({
+        ...e,
+        settings: { ...e.settings, [cmd.field]: cmd.value },
+      }));
+    }
     case 'toggle': {
       if (item.kind !== 'root' && !hasRunState(item.kind)) {
         throw new Error('이 항목은 실행 상태를 따로 설정하지 않습니다.');
@@ -232,11 +246,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
             ? cmd.changes.material
             : undefined;
       const direction = cmd.type === 'port-add' ? cmd.direction : current?.direction;
-      if (
-        material &&
-        direction &&
-        !editablePortTypes(item.kind, direction).includes(material)
-      )
+      if (material && direction && !editablePortTypes(item.kind, direction).includes(material))
         throw new Error('이 노드가 처리할 수 없는 타입입니다.');
       const attached = graph.connections.filter((edge) =>
         [edge.from, edge.to].some((p) => p.node === item.id && p.port === cmd.port),

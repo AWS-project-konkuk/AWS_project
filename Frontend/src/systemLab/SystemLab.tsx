@@ -12,7 +12,6 @@ import {
   Undo2,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
-import { resolveScenario } from '../weekly/scenarios';
 import { Canvas, KindIcon, type MenuItem } from './Canvas';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
@@ -25,9 +24,11 @@ import {
   rootId,
   serviceRoutes,
   signature,
-  tools,
+  toolsFor,
+  type LabId,
 } from './model';
-import { useSystemLab } from './store';
+import { labs } from './labs';
+import { labStores } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
 import { divider, hint, kindColor, panel, panelBody } from './appearance';
@@ -35,7 +36,6 @@ import type { Lesson } from '../curriculum/types';
 import { useSystemLabHint } from './useSystemLabHint';
 import { HintPanel } from './HintPanel';
 
-const question = resolveScenario(pilotLesson, {});
 const panelSizes = [
   ['small', '작게'],
   ['medium', '중간'],
@@ -86,6 +86,9 @@ interface Menu {
   items: MenuItem[];
 }
 export function SystemLab({ lesson }: { lesson: Lesson }) {
+  const spec = labs[lesson.id as LabId];
+  const useLab = labStores[spec.id];
+  const question = spec.question;
   const {
     saved,
     past,
@@ -98,7 +101,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     prove,
     quiz,
     recover,
-  } = useSystemLab();
+  } = useLab();
   const { graph } = saved;
   const stamp = signature(graph);
   const [selectedId, setSelected] = useState(rootId);
@@ -131,13 +134,16 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   const busy = !!active && !active.stopped && active.cursor < active.result.steps.length;
   const done = !!active && !busy && !active.stopped;
   const aiHint = useSystemLabHint(lesson, graph, run);
-  const hintUnavailableReason = busy
-    ? '실행이 끝난 뒤 실패한 경우에 조언을 받을 수 있어요.'
-    : active?.stopped
-      ? '실행이 중단되었습니다. 끝까지 실행한 뒤 요청해 주세요.'
-      : (done && active.result.success) || (!active && saved.proof)
-        ? '현재 구성은 실행에 성공했습니다. AI 조언은 실패한 실행에서 제공해요.'
-        : '현재 구성을 실행한 뒤 실패한 경우에 조언을 받을 수 있어요. 구성을 바꿨다면 다시 실행해 주세요.';
+  const hintUnavailableReason =
+    spec.id !== pilotLesson
+      ? '이 실습에서는 AI 조언을 아직 제공하지 않습니다. 실행 결과의 실패 메시지를 확인하세요.'
+      : busy
+        ? '실행이 끝난 뒤 실패한 경우에 조언을 받을 수 있어요.'
+        : active?.stopped
+          ? '실행이 중단되었습니다. 끝까지 실행한 뒤 요청해 주세요.'
+          : (done && active.result.success) || (!active && saved.proof)
+            ? '현재 구성은 실행에 성공했습니다. AI 조언은 실패한 실행에서 제공해요.'
+            : '현재 구성을 실행한 뒤 실패한 경우에 조언을 받을 수 있어요. 구성을 바꿨다면 다시 실행해 주세요.';
   const parent =
     selected.type === 'system' ? selected : graph.entities.find((e) => e.id === selected.parent);
   useEffect(() => {
@@ -189,7 +195,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   const dispatch = (command: Command) => {
     if (busy) return false;
     const changed = commit(command);
-    if (changed && signature(useSystemLab.getState().saved.graph) !== stamp) setRun(null);
+    if (changed && signature(useLab.getState().saved.graph) !== stamp) setRun(null);
     return changed;
   };
   const name = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
@@ -229,9 +235,9 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   const completed = !!saved.proof && saved.quiz;
   return (
     <section
-      className="group/lab flex min-h-full w-full min-w-0 flex-1 flex-col bg-ui-paper text-sm text-ui-ink data-[focused=true]:fixed data-[focused=true]:inset-0 data-[focused=true]:z-(--z-modal) data-[focused=true]:h-dvh data-[focused=true]:overflow-auto [--lab-request:var(--color-accent)] [--lab-prediction:var(--color-success)] [--lab-model:light-dark(#815098,#dcb4f1)] [--lab-image:light-dark(#895b23,#f0c68e)] [--lab-control:light-dark(#356978,#a4dbe3)]"
+      className="group/lab flex min-h-full w-full min-w-0 flex-1 flex-col bg-ui-paper text-sm text-ui-ink data-[focused=true]:fixed data-[focused=true]:inset-0 data-[focused=true]:z-(--z-modal) data-[focused=true]:h-dvh data-[focused=true]:overflow-auto [--lab-request:var(--color-accent)] [--lab-prediction:var(--color-success)] [--lab-model:light-dark(#815098,#dcb4f1)] [--lab-image:light-dark(#895b23,#f0c68e)] [--lab-control:light-dark(#356978,#a4dbe3)] [--lab-batch:light-dark(#305bb0,#a5bcff)] [--lab-gradient:light-dark(#23694b,#83d9ad)] [--lab-checkpoint:light-dark(#525f73,#b8c8dd)] [--lab-document:light-dark(#865d17,#f0cf82)] [--lab-chunk:light-dark(#594c9e,#c8b8ff)] [--lab-vector:light-dark(#305bb0,#a5bcff)] [--lab-question:light-dark(#146b65,#83d6cb)] [--lab-query-vector:light-dark(#00708b,#7bd9f1)] [--lab-evidence:light-dark(#984318,#ffb486)] [--lab-prompt-text:light-dark(#9b3d6b,#f2a8ce)] [--lab-answer:var(--color-success)]"
       data-focused={focused}
-      aria-label="Docker·Kubernetes 시스템 실습"
+      aria-label={spec.ariaLabel}
       data-testid="system-lab"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -259,11 +265,8 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
         )}
       >
         <div className="min-w-0 flex-[1_1_440px] [&_h2]:m-0 [&_h2]:text-xl [&_h2]:tracking-[-0.02em] [&_p]:mt-[3px] [&_p]:mb-0 [&_p]:break-keep [&_p]:text-ui-muted [&_p]:[overflow-wrap:anywhere] group-data-[focused=true]/lab:[&_p]:hidden">
-          <h2>모델 서빙 실습</h2>
-          <p>
-            이미지는 Kubernetes에, 요청은 내부 Service에 연결하세요. 두 Pod에 모델을 전달하고 각
-            응답을 도착에 연결하세요.
-          </p>
+          <h2>{spec.title}</h2>
+          <p>{spec.description}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
@@ -516,7 +519,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                 <strong>{parent?.name} 도구</strong>
               </div>
               {parent?.type === 'system' &&
-                tools[parent.kind].map((kind) => (
+                toolsFor(graph, parent.kind).map((kind) => (
                   <Button
                     key={kind}
                     data-kind={kind}

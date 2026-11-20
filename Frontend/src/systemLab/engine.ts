@@ -3,14 +3,17 @@ import {
   appLabel,
   serviceRoutes,
   hasRunState,
+  labOf,
   materials,
   rootId,
   type Graph,
+  type LabId,
   type Material,
   type ResourceEntity,
   type ResourceKind,
   type Version,
 } from './model';
+import { embeddingModels, gpu, setting, strategyLabels } from './labs';
 
 type Request = { id: number; viaService?: string };
 type Response = {
@@ -22,10 +25,21 @@ type Response = {
   viaService?: string;
   label: string;
 };
+/** GPU·RAG 실습처럼 요청·응답이 아닌 자료. `detail`은 실행 결과에 표시하는 설명입니다. */
+export type DataMaterial = Exclude<
+  Material,
+  'request' | 'prediction' | 'model' | 'image' | 'control'
+>;
+export interface DataArtifact {
+  type: DataMaterial;
+  detail: string;
+  meta: Record<string, string | number>;
+}
 export type Artifact =
   | { type: 'request'; requests: Request[] }
   | { type: 'prediction'; responses: Response[] }
-  | { type: 'model' | 'image' | 'control'; version: Version; source: string };
+  | { type: 'model' | 'image' | 'control'; version: Version; source: string }
+  | DataArtifact;
 export interface Transfer {
   edge: string;
   from: string;
@@ -135,8 +149,7 @@ function deploymentImage(graph: Graph, pod: ResourceEntity) {
   const images = graph.entities.filter(
     (e): e is ResourceEntity => e.type === 'resource' && e.kind === 'image' && sources.has(e.id),
   );
-  if (!images.length)
-    throw new Error('Kubernetes의 이미지 입력에 컨테이너 이미지를 연결하세요.');
+  if (!images.length) throw new Error('Kubernetes의 이미지 입력에 컨테이너 이미지를 연결하세요.');
   return required(
     images.map((image) => {
       const blocked = blockedBy(graph, image.id);
@@ -164,12 +177,12 @@ const infer: Strategy = ({ node, graph, inputs, emit }) => {
   });
   return batch.length + '건 예측 · 모델 ' + model.version + ' · 이미지 ' + image.version;
 };
-const strategies: Record<ResourceKind, Strategy> = {
-  start: ({ node, emit }) => {
-    emit({ type: 'request', requests: definition.requestIds.map((id) => ({ id })) });
-    emit({ type: 'model', version: node.version, source: node.id });
-    return '검증된 모델 ' + node.version + '과 리뷰 요청 10건을 보냈습니다.';
-  },
+const pilotStart: Strategy = ({ node, emit }) => {
+  emit({ type: 'request', requests: definition.requestIds.map((id) => ({ id })) });
+  emit({ type: 'model', version: node.version, source: node.id });
+  return '검증된 모델 ' + node.version + '과 리뷰 요청 10건을 보냈습니다.';
+};
+const pilotStrategies = {
   model: ({ node, emit }) => {
     emit({ type: 'model', version: node.version, source: node.id });
     return '검증된 모델 ' + node.version + '을 제공했습니다.';
@@ -198,32 +211,239 @@ const strategies: Record<ResourceKind, Strategy> = {
   },
   pod: infer,
   container: infer,
-  end: ({ inputs, finish }) => {
-    const responses = inputs.flatMap((a) => (a.type === 'prediction' ? a.responses : []));
-    finish(responses);
-    const ids = new Set(responses.map((r) => r.id));
-    if (ids.size !== responses.length) throw new Error('중복 응답이 도착했습니다.');
-    if (responses.some((r) => !definition.requestIds.includes(r.id)))
-      throw new Error('알 수 없는 요청의 응답이 있습니다.');
-    if (ids.size !== definition.requestIds.length)
-      throw new Error('응답 ' + ids.size + ' / 10건 · 연결과 Pod 상태를 확인하세요.');
-    if (responses.some((response) => !response.viaService))
-      throw new Error('모든 요청은 Kubernetes Service를 거쳐야 합니다.');
-    const pods = new Set(responses.map((r) => r.pod));
-    if (pods.size < definition.requiredPods || responses.some((r) => !r.deployment))
-      throw new Error('Deployment가 관리하는 서로 다른 Pod가 두 개 이상 요청을 처리해야 합니다.');
-    const first = responses[0];
-    if (
-      responses.some(
-        (r) =>
-          r.model !== first.model || r.image !== first.image || r.deployment !== first.deployment,
-      )
+} satisfies Partial<Record<ResourceKind, Strategy>>;
+const pilotEnd: Strategy = ({ inputs, finish }) => {
+  const responses = inputs.flatMap((a) => (a.type === 'prediction' ? a.responses : []));
+  finish(responses);
+  const ids = new Set(responses.map((r) => r.id));
+  if (ids.size !== responses.length) throw new Error('중복 응답이 도착했습니다.');
+  if (responses.some((r) => !definition.requestIds.includes(r.id)))
+    throw new Error('알 수 없는 요청의 응답이 있습니다.');
+  if (ids.size !== definition.requestIds.length)
+    throw new Error('응답 ' + ids.size + ' / 10건 · 연결과 Pod 상태를 확인하세요.');
+  if (responses.some((response) => !response.viaService))
+    throw new Error('모든 요청은 Kubernetes Service를 거쳐야 합니다.');
+  const pods = new Set(responses.map((r) => r.pod));
+  if (pods.size < definition.requiredPods || responses.some((r) => !r.deployment))
+    throw new Error('Deployment가 관리하는 서로 다른 Pod가 두 개 이상 요청을 처리해야 합니다.');
+  const first = responses[0];
+  if (
+    responses.some(
+      (r) =>
+        r.model !== first.model || r.image !== first.image || r.deployment !== first.deployment,
     )
-      throw new Error('두 Pod에 같은 모델·이미지·Deployment를 연결하세요.');
-    return 'Pod ' + pods.size + '개의 응답 10건이 중복 없이 도착했습니다.';
-  },
+  )
+    throw new Error('두 Pod에 같은 모델·이미지·Deployment를 연결하세요.');
+  return 'Pod ' + pods.size + '개의 응답 10건이 중복 없이 도착했습니다.';
 };
+
+// ─────────────────────────── 트리 실습 공통 도우미 ───────────────────────────
+function data(inputs: Artifact[], type: DataMaterial): DataArtifact[] {
+  return inputs.filter((a): a is DataArtifact => a.type === type);
+}
+function one(inputs: Artifact[], type: DataMaterial): DataArtifact {
+  const [value] = data(inputs, type);
+  if (!value) throw new Error(materials[type] + ' 입력이 없습니다.');
+  return value;
+}
+function ancestor(graph: Graph, id: string, kind: string) {
+  let current = graph.entities.find((e) => e.id === id);
+  while (current && current.kind !== kind) {
+    const parent = current.parent;
+    current = graph.entities.find((e) => e.id === parent);
+  }
+  return current;
+}
+
+// ─────────────────────────── 05 GPU ───────────────────────────
+const gpuStart: Strategy = ({ node, emit }) => {
+  emit({ type: 'batch', detail: `학습 데이터 ${gpu.samples}개`, meta: { samples: gpu.samples } });
+  emit({ type: 'model', version: node.version, source: node.id });
+  return `학습 데이터 ${gpu.samples}개와 학습 상태 ${gpu.modelMemory}GiB 모델을 보냈습니다.`;
+};
+const worker: Strategy = ({ node, graph, inputs, emit }) => {
+  const batch = one(inputs, 'batch');
+  required(inputs, 'model');
+  const trainer = ancestor(graph, node.id, 'trainer');
+  if (!trainer) throw new Error('워커는 분산 학습 안에서 실행해야 합니다.');
+  const strategy = setting(graph, trainer, 'strategy');
+  const link = setting(graph, trainer, 'link');
+  // 학습 배치를 실제로 받는 워커끼리 모델 상태를 나눕니다.
+  const peers = graph.entities.filter(
+    (e) =>
+      e.kind === 'worker' &&
+      ancestor(graph, e.id, 'trainer')?.id === trainer.id &&
+      graph.connections.some((wire) => wire.to.node === e.id && wire.to.port === 'in-batch'),
+  );
+  const count = Math.max(1, peers.length);
+  const index =
+    Math.max(
+      0,
+      peers.findIndex((peer) => peer.id === node.id),
+    ) + 1;
+  const memory =
+    strategy === 'data' ? gpu.modelMemory : Math.round((gpu.modelMemory / count) * 10) / 10;
+  if (memory > gpu.vram)
+    throw new Error(
+      `OOM · ${strategyLabels[strategy]}에서 장치당 ${memory}GiB가 필요합니다 (VRAM ${gpu.vram}GiB).`,
+    );
+  if (strategy === 'tensor' && link === 'pcie')
+    throw new Error(
+      '텐서 병렬은 레이어마다 All-Reduce를 합니다. PCIe 연결로는 통신이 병목이 되니 GPU 간 연결을 NVLink로 바꾸세요.',
+    );
+  const samples = Number(batch.meta.samples);
+  const handled =
+    strategy === 'data' || strategy === 'fsdp' ? Math.round(samples / count) : samples;
+  const part =
+    strategy === 'data'
+      ? '전체 모델의 기울기'
+      : strategy === 'model'
+        ? `레이어 조각 ${index}/${count}`
+        : strategy === 'tensor'
+          ? `행렬 조각 ${index}/${count}의 부분 결과`
+          : `상태 조각 ${index}/${count}의 기울기`;
+  emit({ type: 'gradient', detail: part, meta: { worker: node.id, strategy, memory } });
+  return `${strategyLabels[strategy]} · 메모리 ${memory} / ${gpu.vram}GiB · 배치 ${handled}개 처리`;
+};
+const syncWorkers: Strategy = ({ inputs, emit }) => {
+  const parts = data(inputs, 'gradient');
+  const workers = new Set(parts.map((part) => part.meta.worker));
+  if (workers.size < 2)
+    throw new Error(`워커 결과 ${workers.size} / 2개 · 두 워커의 기울기 출력을 모두 연결하세요.`);
+  const strategy = String(parts[0].meta.strategy);
+  if (parts.some((part) => part.meta.strategy !== strategy))
+    throw new Error('워커마다 분산 전략이 다릅니다. 두 워커를 같은 분산 학습 안에 두세요.');
+  const how: Record<string, string> = {
+    data: 'All-Reduce로 기울기를 평균냈습니다',
+    model: '레이어 조각의 가중치를 모았습니다',
+    tensor: 'All-Reduce로 부분 결과를 더했습니다',
+    fsdp: 'Reduce-Scatter로 상태 조각을 갱신했습니다',
+  };
+  emit({
+    type: 'checkpoint',
+    detail: `step 1 · ${strategyLabels[strategy]}`,
+    meta: { workers: workers.size, strategy },
+  });
+  return `${how[strategy]} · 워커 ${workers.size}개`;
+};
+const gpuEnd: Strategy = ({ inputs }) => {
+  const checkpoint = one(inputs, 'checkpoint');
+  return `체크포인트가 도착했습니다 · ${checkpoint.detail}`;
+};
+
+// ─────────────────────────── 07 RAG ───────────────────────────
+const documents = {
+  relevant: '반품정책.pdf · "상품 수령 후 14일 이내에 반품을 신청할 수 있습니다"',
+  noise: '날씨안내.md · "내일은 전국이 대체로 맑겠습니다"',
+};
+const ragStart: Strategy = ({ emit }) => {
+  emit({ type: 'document', detail: '사내 문서 4건', meta: { count: 4 } });
+  emit({ type: 'question', detail: '"반품 기한이 어떻게 되나요?"', meta: {} });
+  return '사내 문서 4건과 질문 1건을 보냈습니다.';
+};
+const chunker: Strategy = ({ inputs, emit }) => {
+  const document = one(inputs, 'document');
+  const chunks = Number(document.meta.count) * 3;
+  emit({ type: 'chunk', detail: `청크 ${chunks}개`, meta: { chunks } });
+  return `문서 ${document.meta.count}건을 청크 ${chunks}개로 나눴습니다.`;
+};
+const embedder: Strategy = ({ node, graph, inputs, emit }) => {
+  const key = setting(graph, node, 'model');
+  const model = embeddingModels[key];
+  if (!model) throw new Error('임베딩 모델을 고르세요.');
+  const [chunk] = data(inputs, 'chunk');
+  const [question] = data(inputs, 'question');
+  if (!chunk && !question) throw new Error('청크 또는 질문 입력이 없습니다.');
+  const meta = { model: key, dimension: model.dimension };
+  if (chunk)
+    emit({
+      type: 'vector',
+      detail: `${chunk.meta.chunks}개 · ${model.label} ${model.dimension}차원`,
+      meta,
+    });
+  if (question)
+    emit({ type: 'query-vector', detail: `${model.label} ${model.dimension}차원`, meta });
+  return `${model.label}로 ${chunk ? '청크를' : '질문을'} ${model.dimension}차원 벡터로 바꿨습니다.`;
+};
+const collection: Strategy = ({ node, graph, inputs, emit }) => {
+  const stored = one(inputs, 'vector');
+  const query = one(inputs, 'query-vector');
+  if (stored.meta.dimension !== query.meta.dimension)
+    throw new Error(
+      `차원 불일치 · 문서 ${stored.meta.dimension}차원과 질문 ${query.meta.dimension}차원은 거리를 계산할 수 없습니다.`,
+    );
+  const topk = Number(setting(graph, node, 'topk'));
+  const metric = setting(graph, node, 'metric');
+  // 차원이 같아도 모델이 다르면 의미 공간이 달라 무관한 문서가 가깝게 계산됩니다.
+  const relevant = stored.meta.model === query.meta.model;
+  emit({
+    type: 'evidence',
+    detail: relevant ? documents.relevant : documents.noise,
+    meta: { relevant: relevant ? 1 : 0, topk },
+  });
+  return `${metric} 거리로 top-${topk} 검색 · 1위: ${relevant ? '반품정책.pdf' : '날씨안내.md'}`;
+};
+const prompt: Strategy = ({ node, graph, inputs, emit }) => {
+  const evidence = one(inputs, 'evidence');
+  one(inputs, 'question');
+  const abstain = setting(graph, node, 'abstain');
+  emit({
+    type: 'prompt-text',
+    detail: `질문 + 근거 ${evidence.meta.topk}개${abstain === 'on' ? ' · 근거 없으면 보류' : ''}`,
+    meta: { relevant: evidence.meta.relevant, abstain },
+  });
+  return '질문과 검색 근거로 프롬프트를 만들었습니다.';
+};
+const llm: Strategy = ({ inputs, emit }) => {
+  const text = one(inputs, 'prompt-text');
+  const relevant = text.meta.relevant === 1;
+  const abstain = text.meta.abstain === 'on';
+  const answer = relevant
+    ? '상품 수령 후 14일 이내에 반품을 신청할 수 있습니다. (출처: 반품정책.pdf)'
+    : abstain
+      ? '문서에서 찾을 수 없습니다. (답변 보류)'
+      : '내일은 맑으니 반품하기 좋은 날입니다. (근거와 무관한 답)';
+  emit({
+    type: 'answer',
+    detail: answer,
+    meta: { relevant: relevant ? 1 : 0, abstain: text.meta.abstain },
+  });
+  return '답변 · ' + answer;
+};
+const ragEnd: Strategy = ({ inputs }) => {
+  const answer = one(inputs, 'answer');
+  if (answer.meta.relevant !== 1)
+    throw new Error('응답이 질문과 관련된 근거를 따르지 않습니다. 검색된 근거부터 확인하세요.');
+  if (answer.meta.abstain !== 'on')
+    throw new Error('근거가 없을 때 답변을 보류하도록 프롬프트 조립 설정을 켜세요.');
+  return '반품정책.pdf를 근거로 한 응답이 도착했습니다.';
+};
+
+const startBy: Record<LabId, Strategy> = {
+  'week2-workflow': pilotStart,
+  'week1-workflow': gpuStart,
+  'rag-workflow': ragStart,
+};
+const endBy: Record<LabId, Strategy> = {
+  'week2-workflow': pilotEnd,
+  'week1-workflow': gpuEnd,
+  'rag-workflow': ragEnd,
+};
+const strategies: Record<ResourceKind, Strategy> = {
+  ...pilotStrategies,
+  worker,
+  sync: syncWorkers,
+  chunker,
+  embedder,
+  collection,
+  prompt,
+  llm,
+  start: (ctx) => startBy[labOf(ctx.graph)](ctx),
+  end: (ctx) => endBy[labOf(ctx.graph)](ctx),
+};
+
 function describe(a: Artifact, material: Material) {
+  if ('detail' in a) return materials[material] + ' · ' + a.detail;
   if (a.type === 'request') return materials[material] + ' ' + a.requests.length + '건';
   if (a.type === 'prediction') return materials[material] + ' ' + a.responses.length + '건';
   return (a.type === 'model' ? 'model.pkl · ' : materials[material] + ' ') + a.version;

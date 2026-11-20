@@ -13,6 +13,19 @@ export const kindColor: Record<Kind, string> = {
   service: '[--kind-color:light-dark(#9b3d6b,#f2a8ce)]',
   pod: '[--kind-color:light-dark(#526813,#bdd988)]',
   container: '[--kind-color:light-dark(#594c9e,#c8b8ff)]',
+  'gpu-server': '[--kind-color:light-dark(#984318,#ffb486)]',
+  trainer: '[--kind-color:light-dark(#594c9e,#c8b8ff)]',
+  'rag-server': '[--kind-color:light-dark(#984318,#ffb486)]',
+  indexer: '[--kind-color:light-dark(#00708b,#7bd9f1)]',
+  'vector-store': '[--kind-color:light-dark(#305bb0,#a5bcff)]',
+  'rag-api': '[--kind-color:light-dark(#9b3d6b,#f2a8ce)]',
+  worker: '[--kind-color:light-dark(#526813,#bdd988)]',
+  sync: '[--kind-color:light-dark(#146b65,#83d6cb)]',
+  chunker: '[--kind-color:light-dark(#865d17,#f0cf82)]',
+  embedder: '[--kind-color:light-dark(#78468f,#dcb4f1)]',
+  collection: '[--kind-color:light-dark(#305bb0,#a5bcff)]',
+  prompt: '[--kind-color:light-dark(#9b3d6b,#f2a8ce)]',
+  llm: '[--kind-color:light-dark(#23694b,#83d9ad)]',
 };
 
 export const materialColor: Record<Material, string> = {
@@ -21,6 +34,17 @@ export const materialColor: Record<Material, string> = {
   model: '[--port-color:var(--lab-model)]',
   image: '[--port-color:var(--lab-image)]',
   control: '[--port-color:var(--lab-control)]',
+  batch: '[--port-color:var(--lab-batch)]',
+  gradient: '[--port-color:var(--lab-gradient)]',
+  checkpoint: '[--port-color:var(--lab-checkpoint)]',
+  document: '[--port-color:var(--lab-document)]',
+  chunk: '[--port-color:var(--lab-chunk)]',
+  vector: '[--port-color:var(--lab-vector)]',
+  question: '[--port-color:var(--lab-question)]',
+  'query-vector': '[--port-color:var(--lab-query-vector)]',
+  evidence: '[--port-color:var(--lab-evidence)]',
+  'prompt-text': '[--port-color:var(--lab-prompt-text)]',
+  answer: '[--port-color:var(--lab-answer)]',
 };
 
 export const hint = 'my-2 text-[13px] leading-[1.45] text-ui-muted';
