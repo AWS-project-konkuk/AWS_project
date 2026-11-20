@@ -1,15 +1,159 @@
+import { createElement as h, useState } from 'react';
 import { defineMdxLesson } from '../../defineLesson';
+
+type ChoiceActivityCase = {
+  title: string;
+  context: string;
+  note: string;
+  choices: {
+    label: string;
+    result: string;
+    cards: { title: string; value: string; detail: string }[];
+    reason: string;
+  }[];
+};
+
+/** 04 단원의 선택 활동은 각 lesson 파일의 데이터로 이 공통 화면을 만듭니다. */
+export function createChoiceActivity(activity: ChoiceActivityCase) {
+  return function ChoiceActivity() {
+    const [selected, setSelected] = useState(0);
+    const choice = activity.choices[selected];
+
+    return h(
+      'section',
+      {
+        'aria-label': activity.title,
+        style: {
+          margin: '24px 0',
+          padding: 'clamp(16px, 3vw, 24px)',
+          border: '1px solid #b7c9db',
+          borderRadius: 16,
+          background: '#f4f8fc',
+          color: '#193249',
+        },
+      },
+      h('p', { style: { margin: 0, fontSize: 13 } }, '선택 활동 · 상황을 눌러 비교해 보세요'),
+      h('h3', { style: { margin: '8px 0' } }, activity.title),
+      h('p', null, activity.context),
+      h(
+        'div',
+        {
+          role: 'group',
+          'aria-label': '비교할 상황',
+          style: { display: 'flex', flexWrap: 'wrap', gap: 10, margin: '20px 0' },
+        },
+        activity.choices.map((item, index) =>
+          h(
+            'button',
+            {
+              key: item.label,
+              type: 'button',
+              'aria-pressed': index === selected,
+              onClick: () => setSelected(index),
+              style: {
+                flex: '1 1 150px',
+                padding: '12px 16px',
+                border: '2px solid #345a7c',
+                borderRadius: 10,
+                background: index === selected ? '#244e78' : '#fff',
+                color: index === selected ? '#fff' : '#193249',
+                font: 'inherit',
+                fontWeight: 700,
+                cursor: 'pointer',
+              },
+            },
+            `${index === selected ? '✓ ' : ''}${item.label}`,
+          ),
+        ),
+      ),
+      h(
+        'div',
+        { role: 'status', 'aria-live': 'polite', 'aria-atomic': true },
+        h('strong', { style: { display: 'block', fontSize: 19 } }, choice.result),
+        h(
+          'div',
+          {
+            style: {
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
+              gap: 12,
+              margin: '16px 0',
+            },
+          },
+          choice.cards.map((card) =>
+            h(
+              'div',
+              {
+                key: card.title,
+                style: {
+                  padding: 16,
+                  border: '1px solid #b7c9db',
+                  borderRadius: 12,
+                  background: '#fff',
+                },
+              },
+              h('span', { style: { fontSize: 14 } }, card.title),
+              h(
+                'strong',
+                { style: { display: 'block', margin: '8px 0', fontSize: 20 } },
+                card.value,
+              ),
+              h('span', null, card.detail),
+            ),
+          ),
+        ),
+        h('p', { style: { marginBottom: 0 } }, h('strong', null, '이유: '), choice.reason),
+      ),
+      h('p', { style: { margin: '16px 0 0', fontSize: 13 } }, activity.note),
+    );
+  };
+}
+
+export const Activity = createChoiceActivity({
+  title: '10GB 파일을 여러 번 저장하면?',
+  context: '내용이 달라진 데이터셋을 버전마다 Git에 저장한다고 생각해 보세요.',
+  note: '버전마다 10GB를 따로 보관한다고 가정한 비교입니다. 실제 Git 용량은 압축과 파일 내용에 따라 달라집니다.',
+  choices: [
+    {
+      label: '처음 저장',
+      result: '현재 파일과 Git 이력에 데이터가 있습니다.',
+      cards: [
+        { title: '작업 폴더', value: '10GB', detail: '지금 사용하는 파일' },
+        { title: 'Git 이력', value: '약 10GB', detail: '첫 버전을 보관' },
+      ],
+      reason: 'Git은 현재 파일과 별도로 과거 내용을 되찾을 수 있게 저장합니다.',
+    },
+    {
+      label: '새 버전 저장',
+      result: '현재 파일은 하나여도 과거 버전은 쌓입니다.',
+      cards: [
+        { title: '작업 폴더', value: '10GB', detail: '최신 파일 하나' },
+        { title: 'Git 이력', value: '약 30GB', detail: '다른 새 버전' },
+      ],
+      reason: '이전 버전을 다시 꺼내려면 그 내용도 남겨야 합니다.',
+    },
+    {
+      label: '현재 파일 삭제',
+      result: '현재 파일을 지워도 과거 이력은 남습니다.',
+      cards: [
+        { title: '작업 폴더', value: '0GB', detail: '파일을 삭제한 상태' },
+        { title: 'Git 이력', value: '약 30GB', detail: '과거 커밋이 여전히 참조' },
+      ],
+      reason: '현재 목록에서 삭제하는 것과 과거 기록을 지우는 것은 별개의 작업입니다.',
+    },
+  ],
+});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
   id: 'git-large',
   unit: 3,
-  order: 3,
-  title: 'Git에 큰 파일을 계속 넣으면',
-  summary: '이력과 저장 용량의 관계를 관찰합니다.',
+  order: 1,
+  title: 'Git에 대용량 데이터를 넣으면 생기는 문제',
+  summary: '큰 파일의 과거 버전이 쌓이면 저장 공간과 다운로드 부담이 늘어나는 이유를 알아봅니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
-  concepts: ['코드·데이터', 'Git 이력', '원격 저장소'],
+    '10GB 데이터셋을 Git에 커밋한다고 가정하고 작업 공간, .git 객체 저장소, 원격 저장소에 어떤 부담이 생기는지 설명해 보세요.',
+  concepts: ['Git 객체 저장소', '대용량 바이너리', '버전 이력', '복제·전송 비용'],
   assessment: {
     question: '현재 버전에서 큰 파일을 삭제하면?',
     options: [
@@ -21,8 +165,8 @@ export default defineMdxLesson({
   },
   advanced: [
     {
-      title: '심화 · 테이블 커밋과 보존',
-      body: 'Iceberg는 스냅샷과 매니페스트 등으로 파일 집합을 관리하고 Delta Lake는 트랜잭션 로그로 테이블 변경을 기록합니다. 커밋 충돌 처리와 원자적 상태 전환은 카탈로그·엔진·저장소 구성에 의존합니다. 스냅샷 만료와 파일 정리는 재현할 시점의 보존 요구와 함께 설계합니다.',
+      title: '심화 · Git 객체와 저장소 크기',
+      body: 'Git은 파일 내용을 객체로 저장하고 커밋이 그 객체를 참조합니다. 큰 파일을 현재 브랜치에서 삭제해도 과거 커밋이 참조하는 동안 이력에는 남을 수 있습니다. 실제 증가량은 파일 형식, 압축 가능성, 변경 방식에 따라 달라지므로 단순히 파일 크기와 버전 수를 곱한 값은 상한을 이해하기 위한 교육용 근사치로 봅니다.',
     },
   ],
   caution: '현재 파일 목록과 저장소 전체 이력은 다릅니다.',
@@ -33,15 +177,7 @@ export default defineMdxLesson({
       url: 'https://www.notion.so/ea3ebb1cb38a827a91d381487e388ad4',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://doc.dvc.org/user-guide/project-structure/dvcyaml-files',
-    },
-    {
-      title: 'DVC · 데이터 추적과 Git 제외',
-      url: 'https://doc.dvc.org/user-guide/how-to/stop-tracking-data',
-    },
-    {
-      title: '공식 자료 · 더 알아보기',
+      title: 'Git 공식 · Git Objects',
       url: 'https://git-scm.com/book/en/v2/Git-Internals-Git-Objects',
     },
   ],
@@ -90,19 +226,19 @@ export default defineMdxLesson({
     {
       id: 'n0',
       title: '코드·데이터',
-      detail: 'Git에 큰 파일을 계속 넣으면 · 1번째 구성 요소',
+      detail: '지금 수정하고 있는 코드와 데이터입니다.',
       tone: '#b49b70',
     },
     {
       id: 'n1',
       title: 'Git 이력',
-      detail: 'Git에 큰 파일을 계속 넣으면 · 2번째 구성 요소',
+      detail: '과거 파일 내용을 다시 찾을 수 있게 보관합니다.',
       tone: '#b49b70',
     },
     {
       id: 'n2',
       title: '원격 저장소',
-      detail: 'Git에 큰 파일을 계속 넣으면 · 3번째 구성 요소',
+      detail: '팀원이 함께 받는 Git 기록입니다.',
       tone: '#b49b70',
     },
   ],

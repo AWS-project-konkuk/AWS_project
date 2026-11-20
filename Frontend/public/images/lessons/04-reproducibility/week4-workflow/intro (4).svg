@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-label="Git and DVC data versioning workflow">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#62758a" stroke-width="1.6"/></marker></defs>
+<rect width="1200" height="640" fill="#ffffff"/>
+<text x="600" y="65" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700" fill="#172b4d">Reproducible ML Workflow with Git + DVC</text>
+<text x="600" y="101" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" fill="#607186">Version code, track data and models, reproduce experiments</text>
+<rect x="55" y="160" width="330" height="285" rx="16" fill="#f5f9ff" stroke="#aac4e8" stroke-width="2"/>
+<text x="220" y="203" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#244d85">Workspace</text>
+<rect x="91" y="232" width="258" height="53" rx="9" fill="#fff" stroke="#c3d2e4"/><text x="220" y="265" text-anchor="middle" font-family="Arial,sans-serif" font-size="19" fill="#263b55">Code: train.py</text>
+<rect x="91" y="300" width="258" height="53" rx="9" fill="#fff" stroke="#c3d2e4"/><text x="220" y="333" text-anchor="middle" font-family="Arial,sans-serif" font-size="19" fill="#263b55">Data: dataset.csv</text>
+<rect x="91" y="368" width="258" height="53" rx="9" fill="#fff" stroke="#c3d2e4"/><text x="220" y="401" text-anchor="middle" font-family="Arial,sans-serif" font-size="19" fill="#263b55">Model: model.pkl</text>
+<rect x="478" y="160" width="295" height="145" rx="16" fill="#eef7f0" stroke="#a5cdb2" stroke-width="2"/>
+<text x="625" y="203" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#25643d">Git Repository</text>
+<text x="625" y="242" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#345e46">Code + DVC metadata</text>
+<text x="625" y="272" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#587967">Commits / branches / tags</text>
+<rect x="478" y="337" width="295" height="108" rx="16" fill="#fff7ec" stroke="#e6c28c" stroke-width="2"/>
+<text x="625" y="378" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#98631f">DVC Tracking</text>
+<text x="625" y="410" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" fill="#946b35">Data / model hashes</text>
+<rect x="862" y="252" width="285" height="145" rx="16" fill="#f3f0ff" stroke="#c4b6eb" stroke-width="2"/>
+<text x="1005" y="295" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#5c4395">Remote Storage</text>
+<text x="1005" y="332" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#5b5380">Actual datasets</text>
+<text x="1005" y="361" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#5b5380">and model artifacts</text>
+<path d="M385 247 H468" fill="none" stroke="#62758a" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="427" y="230" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#52677c">git</text>
+<path d="M385 390 H468" fill="none" stroke="#62758a" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="427" y="372" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#52677c">dvc</text>
+<path d="M773 390 H817 Q833 390 833 374 V326 Q833 323 852 323" fill="none" stroke="#62758a" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="822" y="418" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#52677c">push / pull</text>
+<path d="M625 337 V315" fill="none" stroke="#62758a" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="110" y="502" width="980" height="80" rx="13" fill="#f6f8fa" stroke="#d9e0e7"/>
+<text x="600" y="533" text-anchor="middle" font-family="Arial,sans-serif" font-size="21" font-weight="700" fill="#263b55">Reproduce any version</text>
+<text x="600" y="561" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" fill="#52677c">git checkout &lt;revision&gt;   +   dvc checkout / dvc pull</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="540" viewBox="0 0 1600 540">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9Z" fill="#526888"/></marker></defs>
+<rect width="1600" height="540" fill="white"/>
+<g font-family="Arial,Helvetica,sans-serif" fill="#102442">
+<rect x="35" y="75" width="300" height="375" rx="24" fill="#f0f1fa" stroke="#aeb5d3" stroke-width="2"/><rect x="35" y="177" width="300" height="273" rx="22" fill="#fff"/>
+<text x="185" y="119" font-size="25" font-weight="700" text-anchor="middle">Working directory</text><text x="185" y="153" font-size="23" text-anchor="middle">(your project)</text>
+<rect x="445" y="75" width="300" height="375" rx="24" fill="#fff4db" stroke="#e0bc74" stroke-width="2"/><rect x="445" y="177" width="300" height="273" rx="22" fill="#fff"/>
+<text x="595" y="119" font-size="26" font-weight="700" text-anchor="middle">Staging area</text><text x="595" y="153" font-size="23" text-anchor="middle">(index)</text>
+<rect x="855" y="75" width="300" height="375" rx="24" fill="#e5efff" stroke="#8db3ec" stroke-width="2"/><rect x="855" y="177" width="300" height="273" rx="22" fill="#f5f9ff"/>
+<text x="1005" y="119" font-size="26" font-weight="700" text-anchor="middle">Git repository</text><text x="1005" y="153" font-size="23" text-anchor="middle">(.git)</text>
+<rect x="1265" y="75" width="300" height="375" rx="24" fill="#f0edff" stroke="#aaa0e9" stroke-width="2"/><rect x="1265" y="177" width="300" height="273" rx="22" fill="#fff"/>
+<text x="1415" y="119" font-size="24" font-weight="700" text-anchor="middle">Remote repository</text><text x="1415" y="153" font-size="23" text-anchor="middle">(GitHub)</text>
+</g>
+<g stroke="#526888" stroke-width="4" marker-end="url(#arrow)"><path d="M345 275 H430"/><path d="M755 275 H840"/><path d="M1165 275 H1250"/></g>
+<g font-family="monospace" font-size="20" font-weight="700" fill="#142644" text-anchor="middle"><text x="390" y="250">git add</text><text x="800" y="250">git commit</text><text x="1210" y="250">git push</text></g>
+<defs><g id="code"><path d="M0 0H29L42 13V48H0Z" fill="#f5f8ff" stroke="#416ab2" stroke-width="2.5" stroke-linejoin="round"/><path d="M29 0V13H42" fill="none" stroke="#416ab2" stroke-width="2.5"/><text x="21" y="34" font-size="16" font-family="monospace" text-anchor="middle" fill="#416ab2">&lt;/&gt;</text></g><g id="data"><path d="M0 0H29L42 13V48H0Z" fill="#f1fff8" stroke="#078a6b" stroke-width="2.5" stroke-linejoin="round"/><path d="M29 0V13H42" fill="none" stroke="#078a6b" stroke-width="2.5"/><path d="M9 23H33V40H9ZM9 31H33M17 23V40M25 23V40" stroke="#078a6b" fill="none" stroke-width="1.5"/></g></defs>
+<g font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#142644">
+<use href="#code" x="80" y="215"/><text x="140" y="248">main.py</text><use href="#data" x="80" y="300"/><text x="140" y="333">data.csv</text><text x="185" y="402" text-anchor="middle">…</text>
+<use href="#code" x="490" y="215"/><text x="550" y="248">main.py</text><use href="#data" x="490" y="300"/><text x="550" y="333">data.csv</text><text x="595" y="402" text-anchor="middle">…</text>
+<use href="#code" x="1310" y="215"/><text x="1370" y="248">main.py</text><use href="#data" x="1310" y="300"/><text x="1370" y="333">data.csv</text><text x="1415" y="402" text-anchor="middle">…</text>
+</g>
+<path d="M902 227V388" stroke="#526888" stroke-width="3"/><g fill="#f5f9ff" stroke="#526888" stroke-width="3"><circle cx="902" cy="235" r="12"/><circle cx="902" cy="308" r="12"/><circle cx="902" cy="381" r="12"/></g>
+<g font-family="Arial,Helvetica,sans-serif" fill="#142644"><rect x="928" y="217" width="90" height="35" rx="12" fill="#d8e5fc"/><text x="973" y="241" font-size="18" font-weight="700" text-anchor="middle">a1b2c3</text><text x="1030" y="241" font-size="17">Add data.csv</text><rect x="928" y="290" width="90" height="35" rx="12" fill="#d8e5fc"/><text x="973" y="314" font-size="18" font-weight="700" text-anchor="middle">d4e5f6</text><text x="1030" y="314" font-size="17">Update code</text><text x="973" y="389" font-size="23" text-anchor="middle">…</text></g>
+</svg>
