@@ -43,6 +43,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['serving', 'monitoring'],
+  activityView: {
+    type: 'numbers',
+    title: '수집 간격이 길면 짧은 지연을 발견할 수 있을까요?',
+    instruction: '30초와 5초 간격을 선택해 같은 지연 신호에서 수집한 점을 비교하세요.',
+  },
   activity: {
     kind: 'metrics',
     fields: [

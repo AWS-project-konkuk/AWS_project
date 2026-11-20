@@ -37,6 +37,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['registry', 'serving'],
+  activityView: {
+    type: 'release',
+    title: '복제 비율을 늘리면 신규 모델이 사용자에게 응답할까요?',
+    instruction: '복제 비율을 바꾸고 실제 응답 수와 비교용으로 복제한 요청 수를 확인하세요.',
+  },
   activity: {
     kind: 'release',
     variant: 'shadow',

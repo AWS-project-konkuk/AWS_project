@@ -34,6 +34,10 @@ export default defineMdxLesson({
   ],
   sourceWeek: 1,
   mapStages: ['data', 'training'],
+  activityView: {
+    type: 'machine',
+    title: '컴퓨터를 켜면 학습도 시작될까요?',
+  },
   activity: {
     kind: 'machine',
     fields: [

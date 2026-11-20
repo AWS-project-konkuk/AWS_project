@@ -1,148 +1,4 @@
-import { createElement as h, useState } from 'react';
 import { defineMdxLesson } from '../../defineLesson';
-
-type ChoiceActivityCase = {
-  title: string;
-  context: string;
-  note: string;
-  choices: {
-    label: string;
-    result: string;
-    cards: { title: string; value: string; detail: string }[];
-    reason: string;
-  }[];
-};
-
-/** 04 단원의 선택 활동은 각 lesson 파일의 데이터로 이 공통 화면을 만듭니다. */
-export function createChoiceActivity(activity: ChoiceActivityCase) {
-  return function ChoiceActivity() {
-    const [selected, setSelected] = useState(0);
-    const choice = activity.choices[selected];
-
-    return h(
-      'section',
-      {
-        'aria-label': activity.title,
-        style: {
-          margin: '24px 0',
-          padding: 'clamp(16px, 3vw, 24px)',
-          border: '1px solid #b7c9db',
-          borderRadius: 16,
-          background: '#f4f8fc',
-          color: '#193249',
-        },
-      },
-      h('p', { style: { margin: 0, fontSize: 13 } }, '선택 활동 · 상황을 눌러 비교해 보세요'),
-      h('h3', { style: { margin: '8px 0' } }, activity.title),
-      h('p', null, activity.context),
-      h(
-        'div',
-        {
-          role: 'group',
-          'aria-label': '비교할 상황',
-          style: { display: 'flex', flexWrap: 'wrap', gap: 10, margin: '20px 0' },
-        },
-        activity.choices.map((item, index) =>
-          h(
-            'button',
-            {
-              key: item.label,
-              type: 'button',
-              'aria-pressed': index === selected,
-              onClick: () => setSelected(index),
-              style: {
-                flex: '1 1 150px',
-                padding: '12px 16px',
-                border: '2px solid #345a7c',
-                borderRadius: 10,
-                background: index === selected ? '#244e78' : '#fff',
-                color: index === selected ? '#fff' : '#193249',
-                font: 'inherit',
-                fontWeight: 700,
-                cursor: 'pointer',
-              },
-            },
-            `${index === selected ? '✓ ' : ''}${item.label}`,
-          ),
-        ),
-      ),
-      h(
-        'div',
-        { role: 'status', 'aria-live': 'polite', 'aria-atomic': true },
-        h('strong', { style: { display: 'block', fontSize: 19 } }, choice.result),
-        h(
-          'div',
-          {
-            style: {
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
-              gap: 12,
-              margin: '16px 0',
-            },
-          },
-          choice.cards.map((card) =>
-            h(
-              'div',
-              {
-                key: card.title,
-                style: {
-                  padding: 16,
-                  border: '1px solid #b7c9db',
-                  borderRadius: 12,
-                  background: '#fff',
-                },
-              },
-              h('span', { style: { fontSize: 14 } }, card.title),
-              h(
-                'strong',
-                { style: { display: 'block', margin: '8px 0', fontSize: 20 } },
-                card.value,
-              ),
-              h('span', null, card.detail),
-            ),
-          ),
-        ),
-        h('p', { style: { marginBottom: 0 } }, h('strong', null, '이유: '), choice.reason),
-      ),
-      h('p', { style: { margin: '16px 0 0', fontSize: 13 } }, activity.note),
-    );
-  };
-}
-
-export const Activity = createChoiceActivity({
-  title: '10GB 파일을 여러 번 저장하면?',
-  context: '내용이 달라진 데이터셋을 버전마다 Git에 저장한다고 생각해 보세요.',
-  note: '버전마다 10GB를 따로 보관한다고 가정한 비교입니다. 실제 Git 용량은 압축과 파일 내용에 따라 달라집니다.',
-  choices: [
-    {
-      label: '처음 저장',
-      result: '현재 파일과 Git 이력에 데이터가 있습니다.',
-      cards: [
-        { title: '작업 폴더', value: '10GB', detail: '지금 사용하는 파일' },
-        { title: 'Git 이력', value: '약 10GB', detail: '첫 버전을 보관' },
-      ],
-      reason: 'Git은 현재 파일과 별도로 과거 내용을 되찾을 수 있게 저장합니다.',
-    },
-    {
-      label: '새 버전 저장',
-      result: '현재 파일은 하나여도 과거 버전은 쌓입니다.',
-      cards: [
-        { title: '작업 폴더', value: '10GB', detail: '최신 파일 하나' },
-        { title: 'Git 이력', value: '약 30GB', detail: '다른 새 버전' },
-      ],
-      reason: '이전 버전을 다시 꺼내려면 그 내용도 남겨야 합니다.',
-    },
-    {
-      label: '현재 파일 삭제',
-      result: '현재 파일을 지워도 과거 이력은 남습니다.',
-      cards: [
-        { title: '작업 폴더', value: '0GB', detail: '파일을 삭제한 상태' },
-        { title: 'Git 이력', value: '약 30GB', detail: '과거 커밋이 여전히 참조' },
-      ],
-      reason: '현재 목록에서 삭제하는 것과 과거 기록을 지우는 것은 별개의 작업입니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
@@ -270,4 +126,39 @@ export default defineMdxLesson({
     ['n0', 'n1'],
     ['n1', 'n2'],
   ],
+  activityView: {
+    type: 'scenario',
+    title: '10GB 파일을 여러 번 저장하면?',
+    instruction: '내용이 달라진 데이터셋을 버전마다 Git에 저장한다고 생각해 보세요.',
+    note: '버전마다 10GB를 따로 보관한다고 가정한 비교입니다. 실제 Git 용량은 압축과 파일 내용에 따라 달라집니다.',
+    cases: [
+      {
+        label: '처음 저장',
+        result: '현재 파일과 Git 이력에 데이터가 있습니다.',
+        cards: [
+          { title: '작업 폴더', value: '10GB', detail: '지금 사용하는 파일' },
+          { title: 'Git 이력', value: '약 10GB', detail: '첫 버전을 보관' },
+        ],
+        reason: 'Git은 현재 파일과 별도로 과거 내용을 되찾을 수 있게 저장합니다.',
+      },
+      {
+        label: '새 버전 두 번 저장',
+        result: '현재 파일은 하나여도 과거 버전은 쌓입니다.',
+        cards: [
+          { title: '작업 폴더', value: '10GB', detail: '최신 파일 하나' },
+          { title: 'Git 이력', value: '약 30GB', detail: '서로 내용이 다른 파일 세 버전' },
+        ],
+        reason: '이전 버전을 다시 꺼내려면 그 내용도 남겨야 합니다.',
+      },
+      {
+        label: '현재 파일 삭제',
+        result: '현재 파일을 지워도 과거 이력은 남습니다.',
+        cards: [
+          { title: '작업 폴더', value: '0GB', detail: '파일을 삭제한 상태' },
+          { title: 'Git 이력', value: '약 30GB', detail: '과거 커밋이 여전히 참조' },
+        ],
+        reason: '현재 목록에서 삭제하는 것과 과거 기록을 지우는 것은 별개의 작업입니다.',
+      },
+    ],
+  },
 });

@@ -34,6 +34,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['registry', 'serving'],
+  activityView: {
+    type: 'release',
+    title: '준비·전환·롤백에서 누가 응답할까요?',
+    instruction: '전환 단계를 골라 실제 사용자에게 응답하는 모델을 확인하세요.',
+  },
   activity: {
     kind: 'release',
     variant: 'bluegreen',
