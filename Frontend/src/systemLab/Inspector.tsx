@@ -15,15 +15,18 @@ import {
   requiredLabEntities,
   resourceRoles,
   rootId,
-  tools,
+  pilotLesson,
+  toolsFor,
   type Direction,
   type Entity,
+  type Kind,
   type Graph,
   type Material,
   type PortSpec,
   type Version,
 } from './model';
 import { KindIcon } from './Canvas';
+import { labSpec, setting } from './labs';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
@@ -183,7 +186,7 @@ function PortList({
     </section>
   );
 }
-const hints = {
+const hints: Partial<Record<Kind, string>> = {
   root: '시스템을 선택하면 아래에서 만들 수 있는 도구를 볼 수 있습니다.',
   ec2: 'Docker와 Kubernetes를 배치할 실행 환경입니다.',
   docker: '서빙 앱을 실행할 이미지와 컨테이너를 준비합니다.',
@@ -210,14 +213,19 @@ export function Inspector({
   busy: boolean;
   dispatch: Dispatch;
 }) {
+  const spec = labSpec(graph);
+  const pilot = spec.id === pilotLesson;
   const locked = protectedKind(node.kind);
-  const required = requiredLabEntities(graph.entities).has(node.id);
+  const required = requiredLabEntities(graph.entities, spec.required).has(node.id);
+  const fields = spec.fields[node.kind] ?? [];
   const runnable = hasRunState(node.kind);
   const blocked = !runnable || node.enabled ? blockedBy(graph, node.id) : undefined;
   const children = descendants(graph, node.id);
   const parents = graph.entities.filter(
     (item) =>
-      item.type === 'system' && tools[item.kind].includes(node.kind) && !children.has(item.id),
+      item.type === 'system' &&
+      toolsFor(graph, item.kind).includes(node.kind) &&
+      !children.has(item.id),
   );
   return (
     <>
@@ -230,8 +238,29 @@ export function Inspector({
           </small>
         </div>
       </header>
-      <p className={hint}>{hints[node.kind]}</p>
-      {node.kind === 'start' && (
+      <p className={hint}>{spec.hints[node.kind] ?? hints[node.kind]}</p>
+      {!pilot && node.kind === 'start' && spec.startInfo && (
+        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
+          <h4>제공 데이터</h4>
+          <ol>
+            {spec.startInfo.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ol>
+        </section>
+      )}
+      {!pilot && node.kind === 'end' && spec.endInfo && (
+        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
+          <h4>완료 조건</h4>
+          <ol>
+            {spec.endInfo.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ol>
+          <p>실행에 성공한 뒤 왼쪽 패널의 이해 확인을 완료하세요.</p>
+        </section>
+      )}
+      {pilot && node.kind === 'start' && (
         <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
           <h4>제공 데이터</h4>
           <ol>
@@ -247,7 +276,7 @@ export function Inspector({
           </ol>
         </section>
       )}
-      {node.kind === 'end' && (
+      {pilot && node.kind === 'end' && (
         <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
           <h4>응답 입력 · 완료 조건</h4>
           <ol>
@@ -396,6 +425,24 @@ export function Inspector({
               </>
             );
           })()}
+        {fields.map((field) => (
+          <label key={field.id}>
+            {field.label}
+            <NativeSelect
+              value={setting(graph, node, field.id)}
+              onChange={(e) =>
+                dispatch({ type: 'config', id: node.id, field: field.id, value: e.target.value })
+              }
+            >
+              {field.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect>
+            <small className="text-ui-muted">{field.help}</small>
+          </label>
+        ))}
         {!locked && (
           <>
             {node.type === 'resource' && node.kind === 'pod' && (

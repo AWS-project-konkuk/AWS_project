@@ -29,9 +29,23 @@ import {
   Route,
   Send,
   Server,
+  Binary,
+  BookOpen,
+  Bot,
+  Database,
+  FileText,
+  GitMerge,
+  MessageSquareText,
+  Microchip,
+  Save,
+  Scissors,
+  Search,
+  Sigma,
+  Workflow,
 } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
 import { blockedBy, type RunResult } from './engine';
+import { labSpec } from './labs';
 import {
   absolute,
   connection,
@@ -44,7 +58,6 @@ import {
   portLabel,
   resourceRoles,
   rootId,
-  starterTasks,
   type Connection,
   type Entity,
   type Graph,
@@ -77,7 +90,20 @@ const icons = {
   service: Route,
   pod: Cpu,
   container: Package,
-};
+  'gpu-server': Server,
+  trainer: Workflow,
+  'rag-server': Server,
+  indexer: BookOpen,
+  'vector-store': Database,
+  'rag-api': Workflow,
+  worker: Microchip,
+  sync: GitMerge,
+  chunker: Scissors,
+  embedder: Binary,
+  collection: Search,
+  prompt: MessageSquareText,
+  llm: Bot,
+} satisfies Record<Kind, unknown>;
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
   const Icon = icons[kind];
   return (
@@ -95,7 +121,18 @@ const materialIcons = {
   model: FileBox,
   image: Box,
   control: Cable,
-};
+  batch: Layers,
+  gradient: Sigma,
+  checkpoint: Save,
+  document: FileText,
+  chunk: Scissors,
+  vector: Binary,
+  question: MessageSquareText,
+  'query-vector': Binary,
+  evidence: Search,
+  'prompt-text': MessageSquareText,
+  answer: CircleCheck,
+} satisfies Record<Material, unknown>;
 export interface MenuItem {
   label: string;
   ids: string[];
@@ -404,6 +441,17 @@ const tones: Record<Material, string> = {
   model: 'var(--lab-model)',
   image: 'var(--lab-image)',
   control: 'var(--lab-control)',
+  batch: 'var(--lab-batch)',
+  gradient: 'var(--lab-gradient)',
+  checkpoint: 'var(--lab-checkpoint)',
+  document: 'var(--lab-document)',
+  chunk: 'var(--lab-chunk)',
+  vector: 'var(--lab-vector)',
+  question: 'var(--lab-question)',
+  'query-vector': 'var(--lab-query-vector)',
+  evidence: 'var(--lab-evidence)',
+  'prompt-text': 'var(--lab-prompt-text)',
+  answer: 'var(--lab-answer)',
 };
 
 interface Props {
@@ -475,7 +523,7 @@ export function Canvas({
       cancelAnimationFrame(frame);
     };
   }, []);
-  const nextTask = starterTasks.find((task) => !manualConnectionIssue(graph, task));
+  const nextTask = labSpec(graph).starter.find((task) => !manualConnectionIssue(graph, task));
   const recommended = nextTask ? [nextTask.from, nextTask.to] : [];
   const shownSteps = run?.steps.slice(0, cursor) ?? [];
   const active = editable ? undefined : run?.steps[cursor];

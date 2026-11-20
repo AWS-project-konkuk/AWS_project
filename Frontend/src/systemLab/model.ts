@@ -1,10 +1,54 @@
 export const pilotLesson = 'week2-workflow';
+/** 트리 구조 실습을 사용하는 강의. `Graph.lab`이 없으면 week2 파일럿으로 간주합니다. */
+export const treeLabs = ['week2-workflow', 'week1-workflow', 'rag-workflow'] as const;
+export type LabId = (typeof treeLabs)[number];
+export const isTreeLab = (id: string): id is LabId => (treeLabs as readonly string[]).includes(id);
 export const rootId = 'root';
-export type SystemKind = 'root' | 'ec2' | 'docker' | 'kubernetes';
+export type SystemKind =
+  | 'root'
+  | 'ec2'
+  | 'docker'
+  | 'kubernetes'
+  | 'gpu-server'
+  | 'trainer'
+  | 'rag-server'
+  | 'indexer'
+  | 'vector-store'
+  | 'rag-api';
 export type ResourceKind =
-  'start' | 'end' | 'model' | 'image' | 'deployment' | 'service' | 'pod' | 'container';
+  | 'start'
+  | 'end'
+  | 'model'
+  | 'image'
+  | 'deployment'
+  | 'service'
+  | 'pod'
+  | 'container'
+  | 'worker'
+  | 'sync'
+  | 'chunker'
+  | 'embedder'
+  | 'collection'
+  | 'prompt'
+  | 'llm';
 export type Kind = SystemKind | ResourceKind;
-export type Material = 'request' | 'prediction' | 'model' | 'image' | 'control';
+export type Material =
+  | 'request'
+  | 'prediction'
+  | 'model'
+  | 'image'
+  | 'control'
+  | 'batch'
+  | 'gradient'
+  | 'checkpoint'
+  | 'document'
+  | 'chunk'
+  | 'vector'
+  | 'question'
+  | 'query-vector'
+  | 'evidence'
+  | 'prompt-text'
+  | 'answer';
 export type Direction = 'in' | 'out';
 export type Version = 'v1' | 'v2';
 export interface PortSpec {
@@ -23,6 +67,8 @@ interface EntityBase {
   parent: string;
   position: Point;
   enabled?: boolean;
+  /** 실습별 설정값 (예: 분산 전략, 임베딩 모델). 키와 선택지는 labs.ts의 fields가 정합니다. */
+  settings?: Record<string, string>;
 }
 export interface KubernetesSettings {
   imageId: string;
@@ -67,6 +113,8 @@ export interface Connection {
 export interface Graph {
   entities: Entity[];
   connections: Connection[];
+  /** 어떤 실습의 그래프인지. 없으면 week2 파일럿입니다. */
+  lab?: LabId;
 }
 export const labels: Record<Kind, string> = {
   root: '전체 서비스',
@@ -81,11 +129,31 @@ export const labels: Record<Kind, string> = {
   service: 'Service',
   pod: 'Pod',
   container: '컨테이너',
+  'gpu-server': 'EC2 · GPU 서버',
+  trainer: '분산 학습',
+  'rag-server': 'EC2',
+  indexer: '색인 작업',
+  'vector-store': 'Vector DB',
+  'rag-api': 'RAG API',
+  worker: 'GPU 워커',
+  sync: '결과 동기화',
+  chunker: '청킹',
+  embedder: '임베딩',
+  collection: '컬렉션',
+  prompt: '프롬프트 조립',
+  llm: 'LLM 생성',
 };
 export const resourceRoles: Partial<Record<ResourceKind, string>> = {
   image: '실행 자료',
   deployment: '배포 설정',
   service: '요청 진입점',
+  worker: '학습 장치',
+  sync: '결과 결합',
+  chunker: '문서 분할',
+  embedder: '벡터 변환',
+  collection: '유사도 검색',
+  prompt: '문맥 보강',
+  llm: '답변 생성',
 };
 export const materials: Record<Material, string> = {
   request: '요청',
@@ -93,13 +161,40 @@ export const materials: Record<Material, string> = {
   model: '모델',
   image: '이미지',
   control: '관리 선언',
+  batch: '학습 배치',
+  gradient: '기울기',
+  checkpoint: '체크포인트',
+  document: '문서',
+  chunk: '청크',
+  vector: '벡터',
+  question: '질문',
+  'query-vector': '질문 벡터',
+  evidence: '근거',
+  'prompt-text': '프롬프트',
+  answer: '응답',
 };
 export const tools: Record<SystemKind, readonly Kind[]> = {
   root: ['ec2'],
   ec2: ['docker', 'kubernetes'],
   docker: ['image', 'container'],
   kubernetes: ['service', 'pod'],
+  'gpu-server': ['trainer'],
+  trainer: ['worker', 'sync'],
+  'rag-server': ['indexer', 'vector-store', 'rag-api'],
+  indexer: ['chunker', 'embedder'],
+  'vector-store': ['collection'],
+  'rag-api': ['embedder', 'prompt', 'llm'],
 };
+/** 루트(전체 서비스)에서 만들 수 있는 시스템은 실습마다 다릅니다. */
+const rootTools: Record<LabId, readonly Kind[]> = {
+  'week2-workflow': ['ec2'],
+  'week1-workflow': ['gpu-server'],
+  'rag-workflow': ['rag-server'],
+};
+export const labOf = (graph: Pick<Graph, 'lab'>): LabId => graph.lab ?? pilotLesson;
+export function toolsFor(graph: Pick<Graph, 'lab'>, kind: SystemKind): readonly Kind[] {
+  return kind === 'root' ? rootTools[labOf(graph)] : tools[kind];
+}
 export const portTypes: Record<Kind, Record<Direction, readonly Material[]>> = {
   root: { in: [], out: [] },
   ec2: { in: [], out: [] },
@@ -113,6 +208,19 @@ export const portTypes: Record<Kind, Record<Direction, readonly Material[]>> = {
   service: { in: ['request'], out: [] },
   pod: { in: ['image', 'model', 'control', 'request'], out: ['prediction'] },
   container: { in: ['image', 'model', 'request'], out: ['prediction'] },
+  'gpu-server': { in: [], out: [] },
+  trainer: { in: [], out: [] },
+  'rag-server': { in: [], out: [] },
+  indexer: { in: [], out: [] },
+  'vector-store': { in: [], out: [] },
+  'rag-api': { in: [], out: [] },
+  worker: { in: ['batch', 'model'], out: ['gradient'] },
+  sync: { in: ['gradient'], out: ['checkpoint'] },
+  chunker: { in: ['document'], out: ['chunk'] },
+  embedder: { in: ['chunk', 'question'], out: ['vector', 'query-vector'] },
+  collection: { in: ['vector', 'query-vector'], out: ['evidence'] },
+  prompt: { in: ['evidence', 'question'], out: ['prompt-text'] },
+  llm: { in: ['prompt-text'], out: ['answer'] },
 };
 export const isSystemKind = (kind: Kind): kind is SystemKind => Object.hasOwn(tools, kind);
 export const protectedKind = (kind: Kind) => kind === 'root' || kind === 'start' || kind === 'end';
@@ -156,7 +264,7 @@ export function makeEntity(kind: Kind, id: string, parent: string, position: Poi
         id: direction + '-' + material,
         direction,
         material,
-        multiple: kind === 'end',
+        multiple: kind === 'end' || kind === 'sync',
       })),
   );
   return {
@@ -185,7 +293,14 @@ export const starterTasks = [
     .map((pod) => wire('start', pod, 'model'))
     .concat(podIds.map((pod) => wire(pod, 'end', 'prediction'))),
 ];
-const requiredNodeIds = new Set(['start', 'image', 'kubernetes', 'service', ...podIds, 'end']);
+export const requiredNodeIds: ReadonlySet<string> = new Set([
+  'start',
+  'image',
+  'kubernetes',
+  'service',
+  ...podIds,
+  'end',
+]);
 
 export const endpointId = (id: string) => (id === 'kubernetes' ? 'service' : id + '-endpoint');
 export const appLabel = (pod: ResourceEntity) => pod.appLabel ?? 'review';
@@ -221,10 +336,13 @@ export function serviceRoutes(graph: Graph): Connection[] {
   });
 }
 
-export function requiredLabEntities(entities: readonly Entity[]): Set<string> {
+export function requiredLabEntities(
+  entities: readonly Entity[],
+  required: ReadonlySet<string> = requiredNodeIds,
+): Set<string> {
   const parents = new Map(entities.map((entity) => [entity.id, entity.parent]));
   const ids = new Set([rootId]);
-  for (const id of requiredNodeIds) {
+  for (const id of required) {
     let current = id;
     while (current && !ids.has(current)) {
       ids.add(current);
@@ -338,6 +456,7 @@ export function signature(graph: Graph) {
         parent: entity.parent,
         name: entity.name,
         enabled: entity.enabled,
+        ...(entity.settings && { settings: entity.settings }),
         ...(entity.type === 'system' && entity.kubernetes && { kubernetes: entity.kubernetes }),
         ...(entity.type === 'system' && entity.ports && { ports: entity.ports }),
         ...(entity.type === 'resource' && {
