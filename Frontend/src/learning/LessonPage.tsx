@@ -101,7 +101,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
               data-system-lab={pilot || undefined}
             >
               {pilot ? (
-                <SystemLab key={lesson.id} />
+                <SystemLab key={lesson.id} lesson={lesson} />
               ) : (
                 <WeeklyLab key={lesson.id} lesson={lesson} />
               )}

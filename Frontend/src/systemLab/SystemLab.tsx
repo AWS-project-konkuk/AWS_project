@@ -31,6 +31,9 @@ import { useSystemLab } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
 import { divider, hint, kindColor, panel, panelBody } from './appearance';
+import type { Lesson } from '../curriculum/types';
+import { useSystemLabHint } from './useSystemLabHint';
+import { HintPanel } from './HintPanel';
 
 const question = resolveScenario(pilotLesson, {});
 const panelSizes = [
@@ -82,7 +85,7 @@ interface Menu {
   y: number;
   items: MenuItem[];
 }
-export function SystemLab() {
+export function SystemLab({ lesson }: { lesson: Lesson }) {
   const {
     saved,
     past,
@@ -127,6 +130,14 @@ export function SystemLab() {
   const active = run?.stamp === stamp ? run : null;
   const busy = !!active && !active.stopped && active.cursor < active.result.steps.length;
   const done = !!active && !busy && !active.stopped;
+  const aiHint = useSystemLabHint(lesson, graph, run);
+  const hintUnavailableReason = busy
+    ? '실행이 끝난 뒤 실패한 경우에 조언을 받을 수 있어요.'
+    : active?.stopped
+      ? '실행이 중단되었습니다. 끝까지 실행한 뒤 요청해 주세요.'
+      : (done && active.result.success) || (!active && saved.proof)
+        ? '현재 구성은 실행에 성공했습니다. AI 조언은 실패한 실행에서 제공해요.'
+        : '현재 구성을 실행한 뒤 실패한 경우에 조언을 받을 수 있어요. 구성을 바꿨다면 다시 실행해 주세요.';
   const parent =
     selected.type === 'system' ? selected : graph.entities.find((e) => e.id === selected.parent);
   useEffect(() => {
@@ -410,6 +421,7 @@ export function SystemLab() {
               </span>
               {resultsVisible && (
                 <div className="grid gap-[9px] px-3 pt-1 pb-4">
+                  <HintPanel hint={aiHint} unavailableReason={hintUnavailableReason} />
                   {active && (
                     <ol className="my-0 grid list-decimal gap-[7px] pl-5 [&>li]:marker:text-ui-muted [&>li[data-status=success]_strong]:text-ui-success [&>li[data-status=failed]_strong]:text-ui-error [&>li[data-status=blocked]_strong]:text-ui-error [&_ul]:pl-4 [&_ul]:text-xs [&_ul]:text-ui-muted">
                       {active.result.steps.slice(0, active.cursor).map((step) => (
