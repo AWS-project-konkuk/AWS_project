@@ -28,7 +28,7 @@ export default defineMdxLesson({
     },
     {
       title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://grpc.io/docs/what-is-grpc/introduction/',
+      url: 'https://istio.io/latest/docs/tasks/traffic-management/mirroring/',
     },
     {
       title: '공식 자료 · 더 알아보기',
