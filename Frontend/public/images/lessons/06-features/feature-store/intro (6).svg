@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="475" viewBox="0 0 940 475">
+<rect width="940" height="475" fill="#faf9f8"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#444" text-anchor="middle" font-size="20">
+<g stroke="#707070" stroke-width="2" fill="none">
+<rect x="208" y="24" width="493" height="435" rx="4" fill="#faf0ee"/>
+<rect x="228" y="81" width="453" height="359" rx="4" fill="#f39b91"/>
+<path d="M228 156 H681 M228 364 H681 M378 156 V364 M529 156 V364"/>
+<rect x="541" y="280" width="128" height="73" rx="4"/>
+<rect x="776" y="156" width="149" height="76" rx="6" fill="#fff"/>
+<rect x="776" y="288" width="149" height="76" rx="6" fill="#fff"/>
+<path d="M133 193 H206 M133 326 H206 M701 193 H774 M701 326 H774"/>
+<path d="M190 187 L205 193 L190 199 Z M190 320 L205 326 L190 332 Z M759 187 L774 193 L759 199 Z M759 320 L774 326 L759 332 Z" fill="#707070" stroke="none"/>
+<path d="M20 194 V155 C20 134 30 136 74 136 H115 C130 136 133 155 133 194 C133 233 130 251 115 251 H39 C26 251 20 232 20 194 Z" fill="#fff"/>
+<ellipse cx="123" cy="194" rx="10" ry="57" fill="#fff"/>
+<path d="M20 326 V287 C20 267 133 267 133 287 V365 C133 385 20 385 20 365 Z" fill="#fff"/>
+<ellipse cx="76.5" cy="287" rx="56.5" ry="17" fill="#fff"/>
+</g>
+<text x="454" y="53" font-size="22" font-weight="bold">Feature Store</text>
+<text x="454" y="124">Operational Monitoring</text>
+<text x="303" y="267">Transform</text>
+<text x="454" y="267">Storage</text>
+<text x="605" y="254">Serving</text>
+<text x="605" y="306" font-size="18">On-demand</text>
+<text x="605" y="330" font-size="18">transform</text>
+<text x="454" y="407">Registry</text>
+<text x="76" y="187">Stream</text><text x="76" y="211">Source</text>
+<text x="76" y="327">Batch</text><text x="76" y="351">Source</text>
+<text x="850" y="185">Model</text><text x="850" y="210">Serving</text>
+<text x="850" y="318">Model</text><text x="850" y="343">Training</text>
+</g>
+</svg>
