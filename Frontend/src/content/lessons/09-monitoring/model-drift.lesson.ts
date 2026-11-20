@@ -16,12 +16,6 @@ export default defineMdxLesson({
     correct: 1,
     explanation: '드리프트 신호와 재학습 결정은 서로 다른 단계입니다.',
   },
-  advanced: [
-    {
-      title: '심화 · Prometheus TSDB',
-      body: '수집된 시계열은 활성 Head와 디스크 블록 등의 구조로 관리됩니다. WAL은 장애 후 복구에 사용되고 압축·블록 병합과 보존 정책이 저장 비용에 영향을 줍니다. 메모리 매핑을 사용하더라도 저장 공간과 메모리 비용이 사라지지 않습니다. 높은 라벨 카디널리티는 시계열 수를 늘리므로 사용자 ID 같은 무제한 값을 피합니다.',
-    },
-  ],
   caution: '드리프트 신호와 재학습 결정은 서로 다른 단계입니다.',
   reflection: '입력 분포 변화만 발견했다면?',
   references: [
