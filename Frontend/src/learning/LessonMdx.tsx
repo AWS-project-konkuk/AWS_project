@@ -10,6 +10,7 @@ import { WeeklyLab } from '../weekly/WeeklyLab';
 import { getLab } from './blockProgress';
 import { InlineNodeExample } from './InlineNodeExample';
 import { useLearning } from './LearningStore';
+import { LessonCodeBlock } from './LessonCodeBlock';
 import styles from './LessonLayout.module.css';
 import { LessonMedia } from './LessonMedia';
 import { Understanding } from './Understanding';
@@ -131,18 +132,10 @@ function MdxImage({ src = '', alt = '', title }: { src?: string; alt?: string; t
 function MdxPre({ children }: { children?: ReactNode }) {
   if (
     isValidElement<{ className?: string; children?: ReactNode }>(children) &&
-    typeof children.props.children === 'string'
+    children.type === 'code'
   ) {
-    const language = children.props.className?.replace(/^language-/, '') ?? 'text';
-    return (
-      <LessonMedia
-        part={{
-          title: language,
-          body: '',
-          code: { language, text: children.props.children.replace(/\n$/, '') },
-        }}
-      />
-    );
+    const language = children.props.className?.match(/(?:^|\s)language-([^\s]+)/)?.[1] ?? 'text';
+    return <LessonCodeBlock language={language}>{children.props.children}</LessonCodeBlock>;
   }
   return <pre>{children}</pre>;
 }

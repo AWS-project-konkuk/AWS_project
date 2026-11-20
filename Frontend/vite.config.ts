@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import mdx from '@mdx-js/rollup';
 import remarkGfm from 'remark-gfm';
 import mdxIndexPlugin from './src/content/mdxIndexPlugin.ts';
+import rehypeCodeHighlight from './src/content/rehypeCodeHighlight.ts';
 
 export default defineConfig(({ mode }) => {
   const env: Record<string, string> = {};
@@ -33,7 +34,14 @@ export default defineConfig(({ mode }) => {
     },
   };
   return {
-    plugins: [mdx({ remarkPlugins: [remarkGfm, mdxIndexPlugin] }), react(), tailwindcss()],
+    plugins: [
+      mdx({
+        remarkPlugins: [remarkGfm, mdxIndexPlugin],
+        rehypePlugins: [rehypeCodeHighlight],
+      }),
+      react(),
+      tailwindcss(),
+    ],
     base: './',
     server: { proxy },
     preview: { proxy },
