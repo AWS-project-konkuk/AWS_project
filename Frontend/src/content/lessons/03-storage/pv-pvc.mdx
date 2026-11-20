@@ -16,7 +16,7 @@ Pod가 교체되어도 데이터를 계속 사용하려면 Pod와 독립적으�
 
 그렇다면 Pod는 실제 저장소의 위치와 종류를 모두 알고 있어야 할까요?
 
-Kubernetes에서는 Pod가 **PersistentVolumeClaim(PVC)**을 요청하고, 클러스터가 조건에 맞는 **PersistentVolume(PV)**을 연결합니다.
+Kubernetes에서는 Pod가 <strong>PersistentVolumeClaim(PVC)</strong>을 요청하고, 클러스터가 조건에 맞는 <strong>PersistentVolume(PV)</strong>을 연결합니다.
 
 **이번 학습에서는 Pod, PVC, PV의 역할과 연결 관계를 알아보고, Pod 교체 뒤에도 데이터를 다시 사용하는 방법을 학습합니다.**
 
@@ -83,7 +83,7 @@ spec:
 
 ### 4. StorageClass와 CSI
 
-**StorageClass**는 어떤 provisioner와 설정으로 볼륨을 만들지 정의합니다. **CSI(Container Storage Interface)**는 Kubernetes와 저장소 드라이버가 소통하는 표준 인터페이스입니다. CSI 드라이버는 Kubernetes 핵심 코드 밖에서 독립적으로 배포·관리하는 Out-of-Tree 방식으로 사용할 수 있습니다.
+**StorageClass**는 어떤 provisioner와 설정으로 볼륨을 만들지 정의합니다. <strong>CSI(Container Storage Interface)</strong>는 Kubernetes와 저장소 드라이버가 소통하는 표준 인터페이스입니다. CSI 드라이버는 Kubernetes 핵심 코드 밖에서 독립적으로 배포·관리하는 Out-of-Tree 방식으로 사용할 수 있습니다.
 
 ```text
 Pod → PVC → 조건에 맞는 PV → 실제 저장소
