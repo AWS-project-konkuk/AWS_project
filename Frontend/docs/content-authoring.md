@@ -32,32 +32,30 @@ print("checkpoint loaded")
 
 ## 배치할 수 있는 실습
 
-| 태그                                          | 동작                                         | 필요한 설정                             |
-| --------------------------------------------- | -------------------------------------------- | --------------------------------------- |
-| `<NodeExample />`                             | 완성 흐름 추적·빠진 연결 수정·자료 전달 확인 | 같은 강의 설정의 `nodeExample`          |
-| `<Activity />`                                | 기존 비교·예측 시뮬레이션을 접어서 표시      | 같은 강의의 `activity`와 관련 모형 설정 |
-| `<Activity open />`                           | 시뮬레이션을 펼쳐 표시                       | 위와 동일                               |
-| `<Question ... />`                            | 독립 선택형 연습과 즉시 해설                 | MDX의 문항 속성                         |
-| `<Reveal title="해설">...</Reveal>`           | 해설을 접었다 펼치기                         | 자식 본문                               |
-| `<Callout title="참고">...</Callout>`         | 참고 설명 강조                               | 자식 본문                               |
-| `<Quiz />`                                    | 기존 강의 이해 확인·완료 처리                | 같은 강의의 `assessment`                |
-| `<WorkflowLab lessonId="feature-workflow" />` | 기존 종합 실습 삽입                          | `workflow`가 있는 강의 ID               |
+| 태그                                          | 동작                                         | 필요한 설정                    |
+| --------------------------------------------- | -------------------------------------------- | ------------------------------ |
+| `<NodeExample />`                             | 완성 흐름 추적·빠진 연결 수정·자료 전달 확인 | 같은 강의 설정의 `nodeExample` |
+| `<Activity />`                                | 선택 활동을 접어서 표시                      | 같은 강의의 `activityView`     |
+| `<Activity open />`                           | 선택 활동을 펼쳐 표시                        | 같은 강의의 `activityView`     |
+| `<Question ... />`                            | 독립 선택형 연습과 즉시 해설                 | MDX의 문항 속성                |
+| `<Reveal title="해설">...</Reveal>`           | 해설을 접었다 펼치기                         | 자식 본문                      |
+| `<Callout title="참고">...</Callout>`         | 참고 설명 강조                               | 자식 본문                      |
+| `<Quiz />`                                    | 기존 강의 이해 확인·완료 처리                | 같은 강의의 `assessment`       |
+| `<WorkflowLab lessonId="feature-workflow" />` | 기존 종합 실습 삽입                          | `workflow`가 있는 강의 ID      |
 
 MDX는 기존 React 실습을 원하는 위치에서 사용하는 수단입니다. 새로운 실습의 계산·실행 동작은 React 컴포넌트로 구현한 뒤 `src/learning/LessonMdx.tsx`의 컴포넌트 목록에 등록해야 합니다. Python·셸 코드 블록은 읽고 복사하는 예제이며 실행되지 않습니다. WorkflowLab은 지정한 기존 종합 실습의 진행 기록을 공유합니다.
 
 ### Activity 종류 추가하기
 
-기존 `<Activity />` 안에서 다른 조작 방식을 제공할 때는 MDX 컴포넌트를 새로 등록하지 않습니다. 공통 프레임은 유지하고 종류별 본문만 교체합니다.
+강의의 `.lesson.ts`에 `activityView`의 `type`과 `title`을 지정합니다. 첫 행동은 `instruction`, 모형의 가정은 `note`에 적을 수 있습니다. 본문에서 권장하는 위치에 `<Activity />`를 배치합니다.
 
-| 파일 | 책임 |
-| --- | --- |
-| `src/activities/Activity.tsx` | 펼침·접힘, 제목, 교육용 모형 안내와 본문 배치 |
-| `src/activities/activityRegistry.ts` | 활동 종류와 본문 컴포넌트·안내 문구 연결 |
-| `src/activities/MachineActivity.tsx` | EC2와 프로그램 실행 상태 조작 |
-| `src/activities/VirtualActivity.tsx` | 앱 수에 따른 VM·컨테이너 구조 비교 |
-| `src/activities/SimulationActivity.tsx` | 기존 설정 기반 시뮬레이션의 재생·결과·기록 |
+| 유형                                          | 설정과 예시                                                                                                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `structure` · `scenario`                      | `cases`에 선택지, 결과, 관찰값, 이유를 넣습니다. `structure`는 선택지마다 `flow` 경로도 표시합니다. 기존 계산 모형으로 결과를 만들려면 `activity`를 지정합니다.     |
+| `numbers` · `search` · `parallel` · `release` | `activity`에 입력과 계산 모형을 지정합니다. 설정을 바꾸면 도해와 결과가 함께 갱신됩니다.                                                                            |
+| 전용 본문                                     | EC2처럼 상태 전이가 독립적인 활동은 `ActivityView`에 유형을 추가하고 `activityRegistry.ts`에 본문을 등록합니다. 공통 프레임이 제목과 교육용 모형 안내를 표시합니다. |
 
-새 활동 본문은 `ActivityViewProps`의 `lesson`과 `spec`을 입력으로 받을 수 있습니다. 상태와 조작 로직은 해당 본문에서 관리하고, 공통 제목이나 펼침 틀을 다시 만들지 않습니다. `ActivityKind`에 종류를 추가하고 `activityRegistry.ts`에 본문과 문구를 등록하면 강의 렌더러를 수정하지 않고 `<Activity />`에서 선택합니다. 별도 등록이 없는 기존 종류는 `SimulationActivity`를 재사용합니다.
+기존 계산 모형의 `activity.kind`와 저장된 입력 ID를 유지합니다. 새 조작이 필요한 경우에도 MDX는 같은 `<Activity />`를 사용합니다. 퀴즈와 종합 실습이 강의 완료를 판정합니다.
 
 ### 본문 연습 문제
 
