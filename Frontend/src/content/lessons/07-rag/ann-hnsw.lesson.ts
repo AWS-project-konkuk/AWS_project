@@ -19,19 +19,28 @@ export default defineMdxLesson({
     ],
     correct: 0,
     explanation:
-      '동일한 질문 집합에서 정확 검색 결과를 기준으로 ANN의 recall·지연·메모리를 비교합니다. PostgreSQL도 pgvector 같은 확장으로 벡터와 HNSW 인덱스를 사용할 수 있으므로 관계형 DB와 벡터 검색은 배타적 선택이 아닙니다. 필터 조건과 데이터 크기도 선택에 영향을 줍니다.',
+      'ANN은 일부 후보만 탐색하므로 정확 검색의 top-k 중 일부를 놓칠 수 있습니다. 같은 질문 집합에서 정확 검색 결과를 정답으로 두고 recall@k·지연·메모리를 함께 측정해, ef_search·M·nprobe 같은 설정을 업무 요구에 맞게 고릅니다.',
   },
   caution:
-    'RAG는 검색한 근거의 품질과 생성 모델의 사용 방식에 의존합니다. 차원이 같아도 다른 임베딩 모델의 좌표는 호환되지 않을 수 있습니다. 근거가 없으면 답변을 보류할 수 있어야 하며 환각 제거를 보장하지 않습니다.',
-  reflection: 'ANN 검색의 설정을 결정할 때 비교할 것은?',
+    'ANN은 속도를 위해 정확도를 일부 양보합니다. HNSW는 빠르고 recall이 높지만 그래프를 메모리에 두므로 메모리 사용이 크고 삽입이 느립니다. 정확 검색 결과를 기준으로 recall을 측정합니다.',
+  reflection:
+    '문서가 10만 건에서 1,000만 건으로 늘면서 검색 지연이 커졌습니다. 정확 검색, HNSW, IVF 중 무엇을 고르겠으며, 어떤 지표로 설정을 검증하겠습니까?',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '논문 · HNSW (Malkov & Yashunin)',
+      url: 'https://arxiv.org/abs/1603.09320',
+    },
+    {
+      title: '공식 자료 · pgvector (PostgreSQL 벡터 확장)',
       url: 'https://github.com/pgvector/pgvector',
+    },
+    {
+      title: '공식 자료 · Faiss 인덱스 가이드 (IVF)',
+      url: 'https://github.com/facebookresearch/faiss/wiki/Faster-search',
     },
   ],
   sourceWeek: 6,

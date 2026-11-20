@@ -14,27 +14,34 @@ export default defineMdxLesson({
     question: '병렬화 가능한 연산이 충분히 많아질 때 GPU가 유리한 이유는?',
     options: ['여러 연산을 동시에 처리하는 처리량', '어떤 작업도 준비 비용 없이 실행해서'],
     correct: 0,
-    explanation: '병렬 처리로 준비 비용을 상쇄할 만큼 작업이 많아야 합니다.',
+    explanation:
+      'GPU는 워프 단위로 같은 명령을 수많은 스레드에 동시에 적용해 처리량을 높입니다. 개별 코어가 CPU보다 빠른 것은 아니며, 데이터 전송과 커널 실행 준비 비용이 있으므로 그 비용을 상쇄할 만큼 작업이 많아야 이득이 납니다.',
   },
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · Tensor Core는 무엇을 한 번에 계산하나',
+      body: 'Tensor Core는 작은 행렬 조각(예: 4×4 또는 그보다 큰 타일)에 대해 D = A × B + C를 한 번의 명령으로 계산하는 전용 장치입니다. 큰 행렬 곱셈은 cuBLAS 같은 라이브러리가 행렬을 타일로 나누어 이 연산을 반복해 계산합니다. 세대마다 지원 정밀도가 늘어 Volta는 FP16, Ampere는 BF16·TF32, Hopper는 FP8, Blackwell은 FP4를 지원합니다.',
+    },
+    {
+      title: '심화 · 워프 분기 발산 (warp divergence)',
+      body: '한 워프의 32개 스레드는 같은 명령을 함께 실행합니다. 코드에 if 분기가 있고 워프 안의 스레드가 서로 다른 경로를 타면, GPU는 한 경로를 실행하는 동안 다른 경로의 스레드를 쉬게 하고 이어서 다른 경로를 실행합니다. 분기가 많은 코드가 GPU에서 느린 이유이며, 딥러닝 연산처럼 모든 원소에 같은 계산을 하는 작업이 GPU에 잘 맞는 이유이기도 합니다.',
     },
   ],
-  caution: '병렬 처리로 준비 비용을 상쇄할 만큼 작업이 많아야 합니다.',
-  reflection: '병렬화 가능한 연산이 충분히 많아질 때 GPU가 유리한 이유는?',
+  caution:
+    'GPU는 같은 연산을 많은 데이터에 동시에 적용할 때 빠릅니다. 작은 작업에서는 데이터 전송과 커널 실행 준비 비용이 이득보다 클 수 있으므로 전체 실행 시간으로 비교합니다.',
+  reflection:
+    'CPU로 10ms 걸리는 작은 전처리를 GPU로 옮겼더니 오히려 느려졌습니다. 어떤 비용이 늘었을지, 무엇을 측정해 확인하겠습니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
+      title: '공식 자료 · CUDA C++ Programming Guide',
+      url: 'https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html',
     },
     {
-      title: '공식 자료 · 더 알아보기',
+      title: '공식 자료 · CUDA C++ Best Practices Guide',
       url: 'https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html',
     },
   ],

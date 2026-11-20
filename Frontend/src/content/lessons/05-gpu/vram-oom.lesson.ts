@@ -14,24 +14,39 @@ export default defineMdxLesson({
     question: '모델과 배치가 VRAM에 들어가지 않을 때 먼저 시도할 방법은?',
     options: ['마이크로 배치를 줄이고 메모리 사용을 다시 확인한다', '배치 크기를 더 키운다'],
     correct: 0,
-    explanation: '배치를 줄이면 활성값 메모리를 줄일 수 있습니다.',
+    explanation:
+      '배치를 줄이면 배치에 비례하는 활성값 메모리가 줄어듭니다. 유효 배치를 유지하려면 기울기 누적을 함께 쓰고, 혼합 정밀도로 활성값을 더 줄일 수 있습니다. 배치를 줄여도 OOM이 계속되면 모델 상태 자체가 큰 것이므로 상태 분할을 검토합니다.',
   },
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · FP16과 BF16의 차이',
+      body: 'FP16은 지수 5비트·가수 10비트, BF16은 지수 8비트·가수 7비트를 씁니다. BF16은 FP32와 지수 비트가 같아 표현 범위가 넓으므로 작은 기울기가 0이 되는 일이 드물어 loss scaling이 보통 필요 없습니다. 대신 가수가 짧아 정밀도는 FP16보다 낮습니다. A100 이후 GPU는 BF16을 지원하고, T4처럼 이전 세대 GPU는 FP16만 Tensor Core로 가속합니다.',
+    },
+    {
+      title: '심화 · 메모리 단편화',
+      body: 'PyTorch의 캐싱 할당기는 해제된 블록을 재사용하지만, 크기가 제각각인 텐서를 자주 만들고 지우면 빈 공간이 조각나 큰 텐서를 할당하지 못할 수 있습니다. 이때는 reserved가 allocated보다 크게 남아 있는데도 OOM이 납니다. torch.cuda.memory_summary()로 상태를 확인하고, PYTORCH_CUDA_ALLOC_CONF 환경 변수로 할당 방식을 조정할 수 있습니다.',
     },
   ],
-  caution: '배치를 줄이면 활성값 메모리를 줄일 수 있습니다.',
-  reflection: '모델과 배치가 VRAM에 들어가지 않을 때 먼저 시도할 방법은?',
+  caution:
+    '혼합 정밀도는 주로 활성값과 연산 시간을 줄이며, FP32로 유지되는 가중치·기울기·옵티마이저 상태는 그대로 남습니다. empty_cache()는 빈 캐시만 반납하므로 참조 중인 텐서 때문에 생긴 OOM을 해결하지 못합니다.',
+  reflection:
+    '배치를 1로 줄였는데도 OOM이 납니다. 무엇이 VRAM을 차지하고 있다고 보겠으며, 다음으로 어떤 방법을 고르겠습니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
+      title: '공식 자료 · PyTorch Automatic Mixed Precision',
+      url: 'https://docs.pytorch.org/docs/stable/amp.html',
+    },
+    {
+      title: '공식 자료 · PyTorch CUDA semantics (메모리 관리)',
+      url: 'https://docs.pytorch.org/docs/stable/notes/cuda.html',
+    },
+    {
+      title: '논문 · Mixed Precision Training',
+      url: 'https://arxiv.org/abs/1710.03740',
     },
   ],
   sourceWeek: 3,

@@ -12,15 +12,24 @@ export default defineMdxLesson({
   scenario: '문서 준비와 질문 검색을 연결하고 검색 근거가 응답에 미치는 영향을 설명하세요.',
   concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
   caution:
-    '벡터 DB는 검색 구성 요소이며 RAG가 환각 제거를 보장하지 않습니다. 이 활동은 고정 문서·고정 응답을 사용합니다.',
-  reflection: '검색한 문서가 있어도 응답의 정확성이 보장되지 않는 이유는?',
+    '벡터 DB는 검색 구성 요소이며 RAG가 환각 제거를 보장하지 않습니다. 임베딩 모델이 달라도 차원이 같으면 오류 없이 틀린 결과가 나옵니다. 이 활동은 고정 문서·고정 응답을 사용합니다.',
+  reflection:
+    '검색한 문서가 있어도 응답의 정확성이 보장되지 않는 이유는? 저장-질문 임베딩 불일치는 Feature Store의 학습-서빙 불일치와 어떤 점이 닮았습니까?',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '공식 자료 · Chroma 쿼리와 메타데이터 필터',
+      url: 'https://docs.trychroma.com/docs/querying-collections/query-and-get',
+    },
+    {
+      title: '논문 · Retrieval-Augmented Generation (Lewis 외)',
+      url: 'https://arxiv.org/abs/2005.11401',
+    },
+    {
+      title: '공식 자료 · pgvector (PostgreSQL 벡터 확장)',
       url: 'https://github.com/pgvector/pgvector',
     },
   ],

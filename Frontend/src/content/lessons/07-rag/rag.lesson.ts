@@ -14,22 +14,29 @@ export default defineMdxLesson({
     question: '검색 결과를 생성 단계에 전달하는 목적은?',
     options: ['어떤 질문에도 정답을 보장하기 위해', '답변이 참고할 관련 근거를 제공하기 위해'],
     correct: 1,
-    explanation: '근거의 관련성과 최신성, 답변의 사실성을 계속 확인해야 합니다.',
+    explanation:
+      'RAG는 LLM이 모르는 최신·내부 정보를 근거로 넣어 답의 사실성을 높이고 출처를 밝힐 수 있게 합니다. 하지만 검색이 틀리거나 근거가 오래되면 답도 틀릴 수 있어, 근거의 관련성·최신성과 답의 근거 충실도를 계속 확인해야 합니다.',
   },
-  caution: '근거의 관련성과 최신성, 답변의 사실성을 계속 확인해야 합니다.',
-  reflection: '검색 결과를 생성 단계에 전달하는 목적은?',
+  caution:
+    '근거의 관련성과 최신성, 답변의 사실성을 계속 확인해야 합니다. RAG는 환각을 줄이지만 제거를 보장하지 않으며, 근거가 없으면 답을 보류하도록 설계합니다.',
+  reflection:
+    'RAG 챗봇이 틀린 답을 했습니다. 검색 실패인지 생성 실패인지 어떤 순서로 확인하겠으며, 각각 어느 단계를 고치겠습니까?',
   references: [
     {
       title: '원문 · MLOps 6주차 · 실제 도구 실습',
       url: 'https://www.notion.so/d3eebb1cb38a828ba5ac81827fb445b8',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
-      url: 'https://github.com/pgvector/pgvector',
+      title: '논문 · Retrieval-Augmented Generation (Lewis 외)',
+      url: 'https://arxiv.org/abs/2005.11401',
     },
     {
-      title: '공식 자료 · 더 알아보기',
+      title: '공식 자료 · AWS: RAG란 무엇인가요?',
       url: 'https://aws.amazon.com/what-is/retrieval-augmented-generation/',
+    },
+    {
+      title: '공식 자료 · pgvector (PostgreSQL 벡터 확장)',
+      url: 'https://github.com/pgvector/pgvector',
     },
   ],
   sourceWeek: 6,
