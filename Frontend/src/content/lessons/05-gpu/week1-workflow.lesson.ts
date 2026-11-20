@@ -14,25 +14,30 @@ export default defineMdxLesson({
   concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · 장치당 학습 상태 어림하기',
+      body: 'Adam과 혼합 정밀도로 학습할 때 파라미터 하나당 대략 16바이트가 필요하다고 어림합니다. FP16 가중치 2바이트, FP16 기울기 2바이트, FP32 마스터 가중치 4바이트, Adam의 m·v 각 4바이트입니다. 70억 파라미터 모델이면 약 112GB로, 활성값을 빼고도 80GB GPU 한 장에 들어가지 않습니다. ZeRO-3·FSDP나 모델 병렬로 GPU N장에 나누면 장치당 약 112/N GB가 됩니다.',
     },
   ],
   caution:
-    '일반 데이터 병렬은 모델을 복제합니다. 모델·텐서 병렬은 모델 내부를 나누지만 전송·동기화 비용도 고려해야 합니다.',
-  reflection: 'GPU를 두 장으로 늘렸는데 데이터 병렬에서 OOM이 계속 난 이유는?',
+    '일반 데이터 병렬은 모델을 복제합니다. 모델·텐서 병렬과 ZeRO·FSDP는 장치당 상태를 나누지만 전송·동기화 비용과 대기 시간을 함께 고려해야 합니다.',
+  reflection:
+    'GPU를 두 장으로 늘렸는데 데이터 병렬에서 OOM이 계속 난 이유는? 레이어 분할과 텐서 분할 중 무엇을 고르겠으며, 그 대가로 무엇이 늘어납니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '공식 자료 · PyTorch 분산 학습 개요',
       url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
     },
     {
-      title: '공식 자료 · 더 알아보기',
-      url: 'https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html',
+      title: '공식 자료 · PyTorch FSDP 튜토리얼',
+      url: 'https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html',
+    },
+    {
+      title: '논문 · ZeRO (모델 상태 분할)',
+      url: 'https://arxiv.org/abs/1910.02054',
     },
   ],
   sourceWeek: 3,

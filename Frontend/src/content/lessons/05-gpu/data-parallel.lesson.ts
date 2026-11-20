@@ -14,24 +14,39 @@ export default defineMdxLesson({
     question: '일반 데이터 병렬에서 각 GPU가 가지는 모델은?',
     options: ['전체 모델의 서로 다른 레이어 하나씩', '동일한 전체 모델의 복제본'],
     correct: 1,
-    explanation: '데이터를 나누며 모델은 복제합니다. 메모리 부족을 자동 해결하지 않습니다.',
+    explanation:
+      '데이터 병렬은 데이터를 나누고 모델은 복제합니다. 각 GPU가 계산한 기울기를 All-Reduce로 평균내 모든 복제본을 같은 값으로 갱신합니다. 각 GPU가 모델 상태 전체를 가지므로 모델이 한 GPU에 들어가지 않는 문제는 해결하지 못합니다.',
   },
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · Ring All-Reduce',
+      body: 'GPU N장이 기울기를 평균낼 때, 한 곳에 모았다 나눠 주면 그 한 곳이 병목이 됩니다. Ring All-Reduce는 GPU를 원형으로 연결하고 기울기를 N조각으로 나누어 이웃에게만 조각을 넘기며 더해 갑니다. 이 방식에서 GPU 한 장이 보내는 데이터량은 GPU 수가 늘어도 기울기 크기의 약 2배로 거의 일정합니다. NCCL은 연결 구조에 맞춰 링·트리 알고리즘을 골라 씁니다.',
+    },
+    {
+      title: '심화 · ZeRO와 FSDP',
+      body: '일반 데이터 병렬은 모든 GPU가 같은 가중치·기울기·옵티마이저 상태를 중복 보관합니다. ZeRO는 이 중복을 단계적으로 없앱니다. 1단계는 옵티마이저 상태, 2단계는 기울기까지, 3단계는 가중치까지 GPU마다 나누어 갖습니다. PyTorch의 FSDP는 3단계에 해당하며, 계산할 레이어의 가중치만 그때그때 모아 쓰고 다시 버립니다. 메모리는 GPU 수에 비례해 줄지만 통신이 늘어납니다.',
     },
   ],
-  caution: '데이터를 나누며 모델은 복제합니다. 메모리 부족을 자동 해결하지 않습니다.',
-  reflection: '일반 데이터 병렬에서 각 GPU가 가지는 모델은?',
+  caution:
+    '데이터 병렬은 데이터를 나누며 모델은 복제합니다. 평균내는 것은 가중치가 아니라 기울기이며, 메모리 부족을 자동으로 해결하지 않습니다.',
+  reflection:
+    'GPU를 2장에서 8장으로 늘렸는데 학습 속도는 2.5배만 빨라졌습니다. 어떤 비용을 의심하고 무엇을 측정하겠습니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '공식 자료 · PyTorch DDP 튜토리얼',
+      url: 'https://docs.pytorch.org/tutorials/intermediate/ddp_tutorial.html',
+    },
+    {
+      title: '공식 자료 · PyTorch 분산 학습 개요',
       url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
+    },
+    {
+      title: '논문 · ZeRO (모델 상태 분할)',
+      url: 'https://arxiv.org/abs/1910.02054',
     },
   ],
   sourceWeek: 3,

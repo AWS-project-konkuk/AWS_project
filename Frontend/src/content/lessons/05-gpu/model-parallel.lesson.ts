@@ -14,23 +14,38 @@ export default defineMdxLesson({
     question: '레이어를 장치별로 나눌 때 필요한 것은?',
     options: ['GPU 사이의 중간 활성값 전달', '각 GPU에 같은 전체 모델을 반드시 복제'],
     correct: 0,
-    explanation: '레이어 사이의 의존성을 따라 중간 결과를 전달합니다.',
+    explanation:
+      '앞 레이어의 출력(활성값)이 있어야 뒤 레이어를 계산할 수 있으므로, 경계에서 활성값을 다음 GPU로 보내고 역전파 때는 그 기울기를 되돌려 받습니다. 이 순차 의존성 때문에 단순 분할에서는 GPU가 번갈아 기다리게 됩니다.',
   },
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · 1F1B 스케줄',
+      body: 'GPipe는 모든 마이크로배치의 순전파를 끝낸 뒤 역전파를 시작하므로, 마이크로배치 수만큼의 활성값을 한꺼번에 보관해야 합니다. 1F1B(one forward, one backward) 스케줄은 파이프라인이 찬 뒤부터 순전파 하나와 역전파 하나를 번갈아 실행해, 동시에 보관하는 활성값을 파이프라인 단계 수 정도로 줄입니다. 버블 크기는 비슷하지만 메모리 사용이 크게 줄어 실제 대규모 학습에서 널리 쓰입니다.',
+    },
+    {
+      title: '심화 · 버블 비율 계산',
+      body: '파이프라인 단계 수를 p, 마이크로배치 수를 m이라 하면, GPipe 방식의 버블 비율은 대략 (p − 1) / (m + p − 1)입니다. 단계가 4개일 때 마이크로배치가 4개면 약 43%가 대기지만, 32개면 약 9%로 줄어듭니다. 그래서 마이크로배치 수를 단계 수보다 충분히 크게 잡습니다.',
     },
   ],
-  caution: '레이어 사이의 의존성을 따라 중간 결과를 전달합니다.',
-  reflection: '레이어를 장치별로 나눌 때 필요한 것은?',
+  caution:
+    '레이어 사이의 의존성을 따라 중간 결과를 전달합니다. 메모리는 나눌 수 있지만 단순 분할에서는 한 번에 한 GPU만 일하므로 파이프라인으로 대기를 줄여야 합니다.',
+  reflection:
+    '레이어를 GPU 4장에 나누었더니 각 GPU 사용률이 25% 근처에서 번갈아 오릅니다. 무엇이 원인이며 어떻게 개선하겠습니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '논문 · GPipe (파이프라인 병렬)',
+      url: 'https://arxiv.org/abs/1811.06965',
+    },
+    {
+      title: '공식 자료 · PyTorch Pipeline Parallelism',
+      url: 'https://docs.pytorch.org/docs/stable/distributed.pipelining.html',
+    },
+    {
+      title: '공식 자료 · PyTorch 분산 학습 개요',
       url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
     },
   ],

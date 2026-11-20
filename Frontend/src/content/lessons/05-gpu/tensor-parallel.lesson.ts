@@ -14,23 +14,38 @@ export default defineMdxLesson({
     question: '텐서 병렬에서 주로 분할하는 대상은?',
     options: ['학습과 관계없는 사용자 요청만', '레이어 내부의 텐서 연산'],
     correct: 1,
-    explanation: '큰 행렬 연산을 나누고 부분 결과를 통신합니다.',
+    explanation:
+      '텐서 병렬은 한 레이어 안의 큰 가중치 행렬을 열 또는 행 방향으로 나누어 GPU마다 일부를 계산하게 합니다. 부분 결과는 이어 붙이거나 All-Reduce로 더해 합치며, 이 통신이 레이어마다 반복됩니다.',
   },
   advanced: [
     {
-      title: '심화 · CUDA 메모리 계층',
-      body: 'Register는 스레드 전용의 빠른 저장 공간이며 Shared Memory는 블록 안에서 협력하는 스레드가 공유합니다. Global Memory는 장치 전체에서 접근할 수 있는 큰 메모리입니다. Local Memory는 이름과 달리 장치 메모리에 놓일 수 있습니다. Grid·Block·Thread라는 실행 조직과 물리 코어를 일대일로 대응시키지 않습니다.',
+      title: '심화 · Attention 블록의 텐서 병렬',
+      body: 'Multi-Head Attention은 헤드끼리 독립적으로 계산되므로 헤드를 GPU별로 나누기 쉽습니다. Q·K·V 가중치를 열 방향으로 나누어 각 GPU가 일부 헤드만 계산하고, 출력 가중치를 행 방향으로 나누어 블록 끝에서 All-Reduce 한 번으로 합칩니다. MLP와 같은 열 분할 → 행 분할 구조이며, 헤드 수가 GPU 수로 나누어떨어져야 합니다.',
+    },
+    {
+      title: '심화 · 3D 병렬',
+      body: '수천 개 GPU로 LLM을 학습할 때는 세 전략을 겹칩니다. 통신이 가장 잦은 텐서 병렬은 NVLink로 묶인 노드 안(보통 8장)에, 경계에서만 통신하는 파이프라인 병렬은 노드 사이에, 기울기만 주고받는 데이터 병렬은 가장 바깥에 둡니다. 예를 들어 텐서 8 × 파이프라인 8 × 데이터 16이면 GPU 1,024장을 씁니다.',
     },
   ],
-  caution: '큰 행렬 연산을 나누고 부분 결과를 통신합니다.',
-  reflection: '텐서 병렬에서 주로 분할하는 대상은?',
+  caution:
+    '텐서 병렬은 큰 행렬 연산을 나누고 부분 결과를 레이어마다 통신합니다. 빠른 GPU 간 연결이 없으면 GPU를 늘려도 느려질 수 있습니다.',
+  reflection:
+    'GPU 8장 서버 두 대(노드 간 연결이 느림)로 큰 모델을 학습합니다. 텐서 병렬과 파이프라인 병렬을 각각 어디에 두겠으며 그 이유는 무엇입니까?',
   references: [
     {
       title: '원문 · MLOps 3주차 · 실제 도구 실습',
       url: 'https://www.notion.so/5f3ebb1cb38a83f4a40181082cca16c0',
     },
     {
-      title: '공식 자료 · 원리와 적용 조건',
+      title: '논문 · Megatron-LM (텐서 병렬)',
+      url: 'https://arxiv.org/abs/1909.08053',
+    },
+    {
+      title: '공식 자료 · PyTorch Tensor Parallel',
+      url: 'https://docs.pytorch.org/tutorials/intermediate/TP_tutorial.html',
+    },
+    {
+      title: '공식 자료 · PyTorch 분산 학습 개요',
       url: 'https://docs.pytorch.org/tutorials/beginner/dist_overview.html',
     },
   ],

@@ -12,43 +12,77 @@ Python 연산은 어떻게 GPU까지 도달할까요? PyTorch의 연산 요청�
 
 ## 개념 이해
 
-CUDA는 NVIDIA GPU에서 병렬 연산을 실행하기 위한 플랫폼입니다. 프레임워크가 모든 하드웨어 제어를 직접 하지 않고 연산 라이브러리·런타임·드라이버를 통해 GPU를 사용합니다. 다른 제조사의 가속기에는 다른 소프트웨어 생태계가 있습니다.
+**CUDA**(Compute Unified Device Architecture)는 NVIDIA가 만든 병렬 컴퓨팅 플랫폼이자 프로그래밍 모델입니다. 원래 그래픽용이던 GPU를 일반 계산에도 쓸 수 있게 해 주며, 큰 작업을 GPU에서 동시에 실행할 수 있는 작은 작업(스레드)으로 나누어 처리합니다.
+
+딥러닝 엔지니어가 CUDA 코드를 직접 쓰는 일은 드뭅니다. 대신 PyTorch 같은 프레임워크가 CUDA 위에서 동작하므로, CUDA의 계층을 알면 "GPU가 인식되지 않는다", "버전이 맞지 않는다" 같은 문제를 어디서 찾아야 할지 알 수 있습니다. 다른 제조사의 가속기에는 AMD ROCm처럼 별도의 소프트웨어 생태계가 있습니다.
 
 <Figure
   src="/images/lessons/05-gpu/cuda-layers/mechanism.svg"
-  alt="프레임워크 · CUDA 계층 · GPU 장치의 동작 관계. 본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
-  caption="본문에서 각 구성 요소가 무엇을 저장하거나 처리하는지 확인하세요."
+  alt="torch.matmul 호출이 ML 프레임워크, cuBLAS 같은 CUDA 라이브러리, CUDA Runtime, CUDA Driver를 거쳐 GPU 하드웨어에 도달하는 다섯 계층 그림"
+  caption="위에서 아래로 호출이 내려갑니다. 오른쪽은 각 계층에서 보이는 대표 함수나 확인 방법입니다."
 />
+
+| 계층                  | 역할                                                             | 대표 예                                                      |
+| --------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
+| ML 프레임워크         | 모델 정의, 자동 미분, 계산 그래프                                | PyTorch, TensorFlow, JAX                                     |
+| CUDA 라이브러리       | 자주 쓰는 연산을 GPU 구조에 맞게 최적화해 제공                   | cuBLAS(행렬), cuDNN(합성곱·정규화), NCCL(GPU 간 통신), cuFFT |
+| CUDA Runtime (cudart) | GPU 메모리 할당·해제, 커널 실행 설정, 장치 정보 조회, 오류 확인  | `cudaMalloc`, `cudaMemcpy`, 커널 실행                        |
+| CUDA Driver           | OS 위에서 GPU를 직접 제어, 컨텍스트 관리, 커널을 하드웨어에 제출 | NVIDIA 드라이버, `nvidia-smi`                                |
+| GPU 하드웨어          | 실제 계산                                                        | SM, CUDA 코어, Tensor Core, VRAM                             |
 
 ## 관찰한 결과 해석하기
 
-cuBLAS는 선형대수, cuDNN은 딥러닝 연산, NCCL은 여러 GPU의 통신을 지원합니다. 패키지 하나의 버전만 맞춘다고 실행 환경 전체의 호환이 보장되지는 않습니다. 이 페이지에서는 설치 명령보다 각 계층의 역할을 익힙니다.
+계층을 하나씩 선택하며 연산 요청이 어떻게 전달되는지 따라가 보세요.
 
 <Activity />
 
+호환성 문제는 대부분 Runtime과 Driver 사이에서 생깁니다. 다음 두 가지를 구분하면 원인을 빨리 찾을 수 있습니다.
+
+```bash
+nvidia-smi
+# Driver Version: 580.82.07   CUDA Version: 13.0
+#  ↑ 설치된 드라이버       ↑ 이 드라이버가 지원하는 "최대" CUDA 버전
+
+python -c "import torch; print(torch.version.cuda, torch.cuda.is_available())"
+# 12.6 True   ← PyTorch가 빌드될 때 사용한 CUDA Runtime 버전
+```
+
+`nvidia-smi`의 "CUDA Version"은 설치된 CUDA Toolkit 버전이 아니라 드라이버가 지원할 수 있는 최대 버전입니다. pip로 설치한 PyTorch에는 CUDA Runtime·cuBLAS·cuDNN이 함께 들어 있으므로, 호스트에는 그 버전 이상을 지원하는 **드라이버만** 있으면 됩니다. 컨테이너도 마찬가지로, 이미지 안에 Runtime이 있고 호스트의 드라이버를 NVIDIA Container Toolkit이 연결해 줍니다.
+
 ## 계층으로 읽기 · 호출과 실행
 
-PyTorch 등 프레임워크 → CUDA 라이브러리·Runtime → Driver → GPU 순으로 역할을 나눕니다. 소프트웨어 호출 경로는 CUDA의 Grid·Block·Thread라는 커널 실행 조직이나 Global·Shared·Register라는 메모리 계층과 같은 분류가 아닙니다.
+소프트웨어 호출 경로와는 별개로, CUDA에는 **실행 조직**과 **메모리 계층**이라는 분류가 있습니다. 이 둘은 위의 계층과 같은 분류가 아니므로 섞지 않습니다.
+
+<Figure
+  src="/images/lessons/05-gpu/cuda-layers/execution-hierarchy.svg"
+  alt="소프트웨어의 Grid, Block, Thread가 하드웨어의 SM과 Warp에 배정되는 관계와, Register, Shared Memory와 L1, L2 캐시, Global Memory인 VRAM으로 이어지는 메모리 계층 그림"
+  caption="Block은 SM 하나에 배정되고, 스레드는 32개씩 Warp로 묶여 실행됩니다."
+/>
+
+- **실행 조직**: 커널 한 번의 실행은 **Grid**이고, Grid는 여러 **Block**으로, Block은 여러 **Thread**로 이루어집니다. Block은 SM 하나에 배정되고, 그 안의 스레드는 32개씩 워프로 묶여 실행됩니다. Grid·Block·Thread는 프로그래밍용 단위이며 물리 코어와 일대일로 대응하지 않습니다.
+- **메모리 계층**: Register(스레드 전용, 가장 빠름) → Shared Memory·L1(같은 Block이 공유) → L2(SM 전체 공유) → Global Memory(= VRAM, 가장 크고 느림) 순입니다. cuBLAS·cuDNN 같은 라이브러리가 빠른 이유는 데이터를 Shared Memory에 올려 재사용하며 Global Memory 접근을 줄이기 때문입니다.
 
 ## 적용 조건과 한계
 
-혼합 정밀도가 전체 메모리를 항상 절반으로 줄이지는 않습니다. 일반 데이터 병렬은 전체 모델 상태를 GPU마다 복제합니다. 모델 상태를 나누는 전략과 통신 비용을 함께 비교해야 합니다.
+- **버전 짝 맞추기**: 프레임워크가 요구하는 CUDA Runtime 버전을 드라이버가 지원해야 합니다. 드라이버는 하위 호환되므로 보통 "드라이버는 최신, Runtime은 프레임워크가 지정한 버전"으로 맞춥니다.
+- **GPU 아키텍처 지원**: 새 GPU(예: Blackwell)는 그 아키텍처를 지원하도록 빌드된 프레임워크·라이브러리가 필요합니다. 드라이버만 맞아도 연산이 실패할 수 있습니다.
+- **CUDA가 정확도를 보장하지는 않음**: CUDA는 실행 환경일 뿐입니다. 같은 코드라도 라이브러리 버전이나 알고리즘 선택에 따라 결과의 마지막 자릿수가 다를 수 있어, 재현이 중요하면 결정적(deterministic) 설정을 따로 켭니다.
 
 ## 전체 과정과 연결하기
 
-프레임워크의 연산은 연산 라이브러리·런타임·드라이버 같은 계층을 통해 NVIDIA GPU에서 수행됩니다. 각 계층이 호환되어야 프로그램이 장치를 사용하고 필요한 연산을 실행할 수 있습니다.
+PyTorch 코드는 cuBLAS·cuDNN 같은 라이브러리, CUDA Runtime, 드라이버를 거쳐 GPU에서 실행됩니다. 컨테이너와 쿠버네티스로 학습 환경을 옮길 때도 이 계층 구조는 그대로입니다. 이미지에는 프레임워크와 Runtime을 담고, 노드에는 드라이버와 장치 플러그인을 둡니다.
 
 <Callout title="판단할 때 확인하기">
 
-장치를 인식하지 못하는 문제와 연산 실행 실패를 구분합니다.
+장치를 인식하지 못하는 문제(드라이버·컨테이너 연결)와 연산 실행 실패(Runtime·라이브러리·아키텍처 지원)를 구분합니다. `nvidia-smi`와 `torch.cuda.is_available()`을 차례로 확인하세요.
 
 </Callout>
 
 <LessonSummary>
 
-프레임워크의 연산은 연산 라이브러리·런타임·드라이버 같은 계층을 통해 NVIDIA GPU에서 수행됩니다. 각 계층이 호환되어야 프로그램이 장치를 사용하고 필요한 연산을 실행할 수 있습니다.
+CUDA는 NVIDIA GPU에서 일반 계산을 병렬로 실행하는 플랫폼입니다. PyTorch의 연산은 cuBLAS·cuDNN·NCCL 같은 라이브러리, 메모리와 커널 실행을 맡는 CUDA Runtime, 하드웨어를 제어하는 CUDA Driver를 거쳐 GPU에서 실행됩니다. 각 계층의 버전이 호환되어야 프로그램이 장치를 사용하고 연산을 실행할 수 있습니다.
 
-- **다시 판단해 보기** — 장치를 인식하지 못하는 문제와 연산 실행 실패를 구분합니다. 프레임워크 빌드·라이브러리·드라이버 조건을 함께 확인해 실행 환경을 재현하세요.
+- **다시 판단해 보기** — `nvidia-smi`의 CUDA Version은 드라이버가 지원하는 최대 버전입니다. 프레임워크 빌드·라이브러리·드라이버 조건을 함께 확인해 실행 환경을 재현하세요.
 
 </LessonSummary>
 
