@@ -777,6 +777,13 @@
   background: var(--color-paper-2);
 }
 .codeBlock {
+  --code-comment: oklch(71% 0.035 250);
+  --code-keyword: oklch(81% 0.125 307);
+  --code-string: oklch(83% 0.12 155);
+  --code-literal: oklch(86% 0.11 78);
+  --code-name: oklch(82% 0.115 242);
+  --code-punctuation: oklch(78% 0.025 255);
+  color-scheme: dark;
   margin-block: var(--space-lg);
   border: 0;
   border-radius: var(--radius-card);
@@ -810,9 +817,36 @@
 .codeToolbar button:hover {
   background: var(--color-graphite-2);
 }
+.codeToolbar > span {
+  font-weight: 600;
+}
+.codeToolbar button:focus-visible,
+.codeBlock pre:focus-visible {
+  outline: 2px solid var(--color-graphite-ink);
+  outline-offset: -2px;
+}
 .codeBlock pre {
   margin: 0;
   tab-size: 2;
+}
+.codeBlock :global(.token.comment) {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.codeBlock :global(.token:is(.keyword, .atrule)) {
+  color: var(--code-keyword);
+}
+.codeBlock :global(.token:is(.string, .char, .scalar, .attr-value)) {
+  color: var(--code-string);
+}
+.codeBlock :global(.token:is(.number, .boolean, .constant, .symbol)) {
+  color: var(--code-literal);
+}
+.codeBlock :global(.token:is(.key, .function, .builtin, .class-name, .variable, .parameter, .property)) {
+  color: var(--code-name);
+}
+.codeBlock :global(.token:is(.operator, .punctuation)) {
+  color: var(--code-punctuation);
 }
 .article .codeBlock > p {
   min-height: 1lh;

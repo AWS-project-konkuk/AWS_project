@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Template, { readingIndex, contentFeatures } from '../src/content/templates/new-lesson.mdx';
 import { lessonDocuments, lessonBodies } from '../src/content/lessons';
+import { lessonMdxComponents } from '../src/learning/LessonMdx';
 
 describe('MDX 강의', () => {
   it('모든 강의에 렌더링 본문과 검색 색인이 연결된다', () => {
@@ -20,6 +21,7 @@ describe('MDX 강의', () => {
     const html = renderToStaticMarkup(
       createElement(Template, {
         components: {
+          pre: lessonMdxComponents.pre,
           Question: () => createElement('div', null, '독립 연습'),
           Quiz: () => createElement('div', null, '강의 평가'),
           References: () => null,
@@ -46,6 +48,9 @@ describe('MDX 강의', () => {
       previous = position;
     }
     expect(readingIndex[2].code?.text).toContain('print(message)');
+    expect(html).toContain('class="language-python"');
+    expect(html).toContain('class="token string"');
+    expect(html).toContain('코드 복사');
     expect(readingIndex[3].table?.columns).toEqual(['필요한 구성', '작성 방법']);
     expect(contentFeatures.activities).toBe(true);
   });

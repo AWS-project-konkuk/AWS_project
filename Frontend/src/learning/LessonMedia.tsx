@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Copy, ImageOff } from 'lucide-react';
+import { ImageOff } from 'lucide-react';
 import type { Reading } from '../curriculum/types';
+import { LessonCodeBlock } from './LessonCodeBlock';
 import styles from './LessonLayout.module.css';
 
 export function LessonMedia({ part }: { part: Reading }) {
   const [failedSrc, setFailedSrc] = useState('');
-  const [copyStatus, setCopyStatus] = useState('');
   return (
     <>
       {part.image && (
@@ -44,29 +44,7 @@ export function LessonMedia({ part }: { part: Reading }) {
         </figure>
       )}
       {part.code && (
-        <div className={styles.codeBlock}>
-          <div className={styles.codeToolbar}>
-            <span>{part.code.language}</span>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(part.code!.text);
-                  setCopyStatus('코드를 복사했습니다.');
-                } catch {
-                  setCopyStatus('복사하지 못했습니다. 코드를 선택해 복사하세요.');
-                }
-              }}
-            >
-              <Copy size={14} aria-hidden="true" />
-              코드 복사
-            </button>
-          </div>
-          <pre aria-label={`${part.code.language} 예제`} tabIndex={0}>
-            <code>{part.code.text}</code>
-          </pre>
-          {copyStatus && <p role="status">{copyStatus}</p>}
-        </div>
+        <LessonCodeBlock language={part.code.language}>{part.code.text}</LessonCodeBlock>
       )}
     </>
   );
