@@ -83,7 +83,7 @@ export function defineLab(
     canMove: (parent, item) => !!config.tools[parent.kind]?.includes(item.kind),
     canLoad: (parent, item) => !!config.tools[parent.kind]?.includes(item.kind),
     persistence: plainPersistence,
-    aiHint: false,
+    aiHint: true,
     settingSpecs: {},
     onSetting: (graph) => graph,
     normalize: (graph) => graph,

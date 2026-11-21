@@ -2,14 +2,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { applyCommand } from '../../src/systemLab/commands';
 import { definition, starterTasks } from '../../src/systemLab/model';
 
-async function openLab(page: Page) {
+async function openLab(page: Page, lessonId = 'week2-workflow') {
   await page.addInitScript(() => {
     localStorage.setItem(
       'blockml:preferences:v1',
       JSON.stringify({ theme: 'light', tour: 'skipped' }),
     );
   });
-  await page.goto('/#/learn/week2-workflow');
+  await page.goto('/#/learn/' + lessonId);
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   return page.getByTestId('system-lab');
 }
@@ -126,7 +126,7 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
   expect(calls).toBe(2);
 });
 
-test('성공 실행은 AI 호출을 하지 않고 다른 단원에는 조언 패널이 없다', async ({ page }) => {
+test('성공 실행은 AI 호출을 하지 않는다', async ({ page }) => {
   let graph = definition.initial();
   for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
   await page.addInitScript((graph) => {
@@ -146,9 +146,32 @@ test('성공 실행은 AI 호출을 하지 않고 다른 단원에는 조언 패
   await expect(panel).toContainText('현재 구성은 실행에 성공했습니다');
   await expect(panel.getByRole('button')).toBeDisabled();
   expect(calls).toBe(0);
-  await page.goto('/#/learn/week3-workflow');
-  await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
-  await expect(page.getByRole('region', { name: '실습 AI 조언', exact: true })).toHaveCount(0);
+});
+
+test('다른 단원의 실습도 실패 후 자신의 강의 ID로 조언을 요청한다', async ({ page }) => {
+  let lessonId = '';
+  await page.route('**/api/chat/ai/hint', async (route) => {
+    const body = route.request().postDataJSON();
+    lessonId = body.lessonId;
+    expect(body.ruleCheck.success).toBe(false);
+    expect(body.nodes.length).toBeGreaterThan(0);
+    expect(body.settings.metrics).toBeDefined();
+    await route.fulfill({
+      json: {
+        status: 'ok',
+        conecpt: '공급 병목은 어디서 생길까요.',
+        hint: '배치 준비 설정을 확인했나요?',
+      },
+    });
+  });
+  const lab = await openLab(page, 'week3-workflow');
+  await lab.getByRole('button', { name: '실행 결과 펼치기' }).click();
+  await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
+  const panel = lab.getByRole('region', { name: '실습 AI 조언', exact: true });
+  await expect(panel.getByRole('button', { name: 'AI 조언 받기', exact: true })).toBeEnabled();
+  await panel.getByRole('button', { name: 'AI 조언 받기', exact: true }).click();
+  await expect(panel.getByLabel('AI 조언 결과')).toContainText('배치 준비 설정을 확인했나요?');
+  expect(lessonId).toBe('week3-workflow');
 });
 
 test('실행 도중과 중단 상태에서는 조언을 요청할 수 없다', async ({ page }) => {
