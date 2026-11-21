@@ -41,6 +41,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 6,
   mapStages: ['retrieval'],
+  activityView: {
+    type: 'search',
+    title: '질문을 바꾸면 어떤 문서가 가까워질까요?',
+    instruction: '질문을 바꿔 예시 좌표에서 가까운 문서를 확인하세요.',
+  },
   activity: {
     kind: 'embedding',
     fields: [

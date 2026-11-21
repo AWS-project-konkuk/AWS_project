@@ -1,41 +1,4 @@
 import { defineMdxLesson } from '../../defineLesson';
-import { createChoiceActivity } from './git-large.lesson';
-
-export const Activity = createChoiceActivity({
-  title: '공유할 때와 가져올 때, 어디로 이동할까요?',
-  context: 'Git에는 데이터 이름표가 있고 실제 데이터는 내 컴퓨터와 팀 저장소에서 관리합니다.',
-  note: '이 버튼은 동작을 설명합니다. 실제 Git 또는 DVC 명령을 실행하지 않습니다.',
-  choices: [
-    {
-      label: '이름표 공유 · git push',
-      result: '코드와 데이터 이름표를 Git 원격에 보냅니다.',
-      cards: [
-        { title: '출발', value: '내 Git 기록', detail: '코드와 .dvc 파일' },
-        { title: '도착', value: '팀 Git 저장소', detail: '팀원이 버전을 확인' },
-      ],
-      reason: '이 동작만으로 큰 데이터 파일이 팀 저장소에 올라가지는 않습니다.',
-    },
-    {
-      label: '데이터 공유 · dvc push',
-      result: '내 캐시의 실제 데이터를 팀 저장소에 보냅니다.',
-      cards: [
-        { title: '출발', value: '내 캐시', detail: '내 컴퓨터의 보관본' },
-        { title: '도착', value: '데이터 원격', detail: 'S3 같은 팀 보관소' },
-      ],
-      reason: '팀원도 같은 파일을 받을 수 있도록 실제 내용을 공유합니다.',
-    },
-    {
-      label: '데이터 받기 · dvc pull',
-      result: '필요한 데이터를 받아 작업 폴더에 준비합니다.',
-      cards: [
-        { title: '찾을 기준', value: '.dvc 이름표', detail: '원하는 데이터 내용을 식별' },
-        { title: '가져오는 곳', value: '원격 → 캐시', detail: '캐시에 없는 내용만 받기' },
-        { title: '사용할 곳', value: '작업 폴더', detail: '학습 코드가 읽을 파일' },
-      ],
-      reason: '이미 캐시에 있는 내용은 재사용하고, 없는 내용은 데이터 원격에서 가져옵니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
@@ -193,4 +156,47 @@ export default defineMdxLesson({
     ['n1', 'n2'],
     ['n1', 'n3'],
   ],
+  activityView: {
+    type: 'structure',
+    title: '공유할 때와 가져올 때, 어디로 이동할까요?',
+    instruction: 'Git에는 데이터 이름표가 있고 실제 데이터는 내 컴퓨터와 팀 저장소에서 관리합니다.',
+    note: '이 버튼은 동작을 설명합니다. 실제 Git 또는 DVC 명령을 실행하지 않습니다.',
+    cases: [
+      {
+        label: '이름표 공유 · git push',
+        flow: ['내 Git 기록의 코드와 .dvc 파일', '팀 Git 저장소에 공유'],
+        result: '코드와 데이터 이름표를 Git 원격에 보냅니다.',
+        cards: [
+          { title: '출발', value: '내 Git 기록', detail: '코드와 .dvc 파일' },
+          { title: '도착', value: '팀 Git 저장소', detail: '팀원이 버전을 확인' },
+        ],
+        reason: '이 동작만으로 큰 데이터 파일이 팀 저장소에 올라가지는 않습니다.',
+      },
+      {
+        label: '데이터 공유 · dvc push',
+        flow: ['내 캐시의 데이터 파일', '팀 데이터 원격에 보관'],
+        result: '내 캐시의 실제 데이터를 팀 저장소에 보냅니다.',
+        cards: [
+          { title: '출발', value: '내 캐시', detail: '내 컴퓨터의 보관본' },
+          { title: '도착', value: '데이터 원격', detail: 'S3 같은 팀 보관소' },
+        ],
+        reason: '팀원도 같은 파일을 받을 수 있도록 실제 내용을 공유합니다.',
+      },
+      {
+        label: '데이터 받기 · dvc pull',
+        flow: [
+          '.dvc 파일로 필요한 내용 확인',
+          '없는 파일만 원격에서 캐시로 받기',
+          '캐시의 파일을 작업 폴더에 준비',
+        ],
+        result: '필요한 데이터를 받아 작업 폴더에 준비합니다.',
+        cards: [
+          { title: '찾을 기준', value: '.dvc 이름표', detail: '원하는 데이터 내용을 식별' },
+          { title: '가져오는 곳', value: '원격 → 캐시', detail: '캐시에 없는 내용만 받기' },
+          { title: '사용할 곳', value: '작업 폴더', detail: '학습 코드가 읽을 파일' },
+        ],
+        reason: '이미 캐시에 있는 내용은 재사용하고, 없는 내용은 데이터 원격에서 가져옵니다.',
+      },
+    ],
+  },
 });

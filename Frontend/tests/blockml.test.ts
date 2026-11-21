@@ -43,7 +43,7 @@ function observed(state: LabState): LabState {
 describe('BlockML 과정과 활동 계약', () => {
   it('0~9단원의 설명과 선택 활동을 제공한다', () => {
     expect(weeks).toHaveLength(9);
-    expect(lessons).toHaveLength(54);
+    expect(lessons).toHaveLength(56);
     for (const l of lessons.filter((l) => l.activity)) {
       expect(l.minutes).toBeGreaterThanOrEqual(5);
       expect(l.minutes).toBeLessThanOrEqual(18);
@@ -81,8 +81,11 @@ describe('교육용 계산의 핵심 조건', () => {
   });
   it('마이크로 배치·혼합 정밀도·기울기 누적의 역할을 구분한다', () => {
     expect(result('vram-oom').warning).toContain('배치');
+    expect(result('vram-oom').steps.at(-1)).toBe('할당 실패 · OOM');
     expect(result('vram-oom', { batch: 8, precision: 'amp' }).warning).toBeUndefined();
     expect(result('vram-oom', { batch: 8, accumulation: 4 }).metrics[3].value).toBe('32');
+    expect(result('vram-oom', { batch: 25 }).warning).toBeUndefined();
+    expect(result('vram-oom', { accumulation: 2 }).metrics[2].amount).toBe(9.4);
   });
   it('데이터 병렬은 모델을 복제하고 레이어·텐서 병렬은 분할한다', () => {
     expect(result('data-parallel').metrics[0].amount).toBe(24);
@@ -130,6 +133,9 @@ describe('교육용 계산의 핵심 조건', () => {
     expect(metricSamples(1).some((p) => p.y > 200)).toBe(true);
     expect(result('model-drift', { change: 'data' }).metrics[1].value).toContain('90%');
     expect(result('model-drift', { change: 'concept' }).metrics[0].value).toBe('0%');
+    expect(result('model-drift', { change: 'concept', shift: 0 }).headline).toBe(
+      '기준 구간과 관측값이 같습니다.',
+    );
   });
 });
 describe('종합 실행·피드백·저장', () => {

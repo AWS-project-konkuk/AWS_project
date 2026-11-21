@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import Template, { readingIndex, contentFeatures } from '../src/content/templates/new-lesson.mdx';
 import { lessonDocuments, lessonBodies } from '../src/content/lessons';
 import { lessonMdxComponents } from '../src/learning/LessonMdx';
+import { labFor } from '../src/systemLab/labs';
 
 describe('MDX 강의', () => {
   it('모든 강의에 렌더링 본문과 검색 색인이 연결된다', () => {
@@ -14,7 +15,8 @@ describe('MDX 강의', () => {
       if (document.lesson.nodeExample)
         expect(document.lesson.contentFeatures?.nodeExamples).toBe(true);
       if (document.lesson.activity) expect(document.lesson.contentFeatures?.activities).toBe(true);
-      if (document.lesson.assessment) expect(document.lesson.contentFeatures?.quiz).toBe(true);
+      if (document.lesson.assessment)
+        expect(document.lesson.contentFeatures?.quiz).toBe(!labFor(document.lesson.id));
     }
   });
   it('문단·이미지·문단·코드·문제·해설·표의 작성 순서를 유지한다', () => {

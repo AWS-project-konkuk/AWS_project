@@ -1,5 +1,4 @@
-import type { ComponentType } from 'react';
-import type { LabField, Lesson } from '../curriculum/types';
+import type { Answer, LabField, Lesson } from '../curriculum/types';
 export type ActivityKind =
   | 'compute'
   | 'layers'
@@ -39,18 +38,36 @@ export interface ActivitySpec {
   task: string;
 }
 
-/** 모든 활동 본문이 사용하는 공통 입력입니다. */
-export interface ActivityViewProps {
+export interface ActivityCase {
+  label: string;
+  result: string;
+  cards: { title: string; value: string; detail: string }[];
+  reason: string;
+  flow?: string[];
+}
+
+interface ActivityCopy {
+  title: string;
+  instruction?: string;
+  note?: string;
+}
+
+export type ActivityView = ActivityCopy &
+  (
+    | { type: 'machine' | 'virtual' | 'storage' | 'io' | 'feature-store' }
+    | { type: 'numbers' | 'search' | 'parallel' | 'release' }
+    | { type: 'structure' | 'scenario'; cases?: ActivityCase[] }
+  );
+
+export interface ActivitySimulationProps {
   lesson: Lesson;
   spec: ActivitySpec;
 }
 
-/** 종류별 본문과 공통 프레임에 표시할 문구입니다. */
-export interface ActivityDefinition {
-  component: ComponentType<ActivityViewProps>;
-  summary: string;
-  title?: string;
-  label?: string;
+export interface ActivitySceneProps {
+  spec: ActivitySpec;
+  answers: Record<string, Answer>;
+  result: ActivityResult;
 }
 export interface ActivityResult {
   headline: string;

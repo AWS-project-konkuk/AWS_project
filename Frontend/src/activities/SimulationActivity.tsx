@@ -1,230 +1,183 @@
-import { ResultFeedback } from '../learning/ResultFeedback';
-import { useEffect, useRef, useState } from 'react';
-import { useInView, useReducedMotion } from 'motion/react';
-import type { ActivityViewProps } from './types';
-import { evaluateGoals } from '../curriculum/engine';
+import { useId, useState, type ComponentType } from 'react';
+import type { Answer, LabField } from '../curriculum/types';
 import { getLab } from '../learning/blockProgress';
-import { useLearning } from '../learning/LearningStore';
-import { Fields } from './Fields';
-import { Visual } from './Visual';
-import {
-  activitySignature,
-  dockerCommand,
-  observationHistory,
-  simulate,
-  validInputs,
-} from './simulation';
+import { useLearningStore } from '../learning/LearningStore';
+import { activityPresets } from './activityPresets';
+import { activitySignature, observationHistory, simulate, validInputs } from './simulation';
+import type { ActivitySceneProps, ActivitySimulationProps } from './types';
 import styles from './Activity.module.css';
-export function SimulationActivity({ lesson, spec }: ActivityViewProps) {
-  const { state, edit } = useLearning();
-  const lab = getLab(state.data, lesson.id);
-  const root = useRef<HTMLDivElement>(null);
-  const inView = useInView(root, { amount: 0.15 });
-  const reduced = Boolean(useReducedMotion());
-  const [running, setRunning] = useState(false),
-    [phase, setPhase] = useState(0),
-    [feedback, setFeedback] = useState(false);
-  const [hidden, setHidden] = useState(() => document.hidden);
-  const signature = activitySignature(lab.answers),
-    observed = lab.answers._observed === signature,
-    result = simulate(spec, lab.answers);
-  const maxPhase = spec.kind === 'compute' ? 12 : Math.max(result.steps.length - 1, 1);
-  useEffect(() => {
-    const update = () => setHidden(document.hidden);
-    document.addEventListener('visibilitychange', update);
-    return () => document.removeEventListener('visibilitychange', update);
-  }, []);
-  useEffect(() => {
-    setRunning(false);
-    setPhase(0);
-  }, [signature]);
-  useEffect(() => {
-    if (!running || !inView || hidden || reduced) return;
-    const timer = setInterval(
-      () =>
-        setPhase((v) => {
-          if (v >= maxPhase) {
-            setRunning(false);
-            return v;
+
+function NumberField({
+  field,
+  value,
+  onChange,
+}: {
+  field: LabField;
+  value: Answer;
+  onChange: (value: number) => void;
+}) {
+  const id = useId();
+  const [draft, setDraft] = useState<string>();
+  const invalid = draft !== undefined;
+  return (
+    <div className={styles.inputField}>
+      <label htmlFor={id}>{field.label}</label>
+      <input
+        id={id}
+        type="number"
+        min={field.min}
+        max={field.max}
+        step={field.step}
+        value={draft ?? String(value)}
+        aria-invalid={invalid || undefined}
+        aria-describedby={`${id}-help${invalid ? ` ${id}-error` : ''}`}
+        onBlur={() => setDraft(undefined)}
+        onChange={(event) => {
+          const input = event.currentTarget;
+          if (
+            input.value !== '' &&
+            validInputs({ fields: [field] }, { [field.id]: input.valueAsNumber })
+          ) {
+            setDraft(undefined);
+            onChange(input.valueAsNumber);
+          } else {
+            setDraft(input.value);
           }
-          return v + 1;
-        }),
-      550,
+        }}
+      />
+      <small id={`${id}-help`}>{field.help}</small>
+      {invalid && (
+        <small className={styles.error} id={`${id}-error`} role="status">
+          {field.min}~{field.max} 범위에서 {field.step ?? 1} 단위로 입력하세요.
+        </small>
+      )}
+    </div>
+  );
+}
+
+function ActivityControls({
+  spec,
+  answers,
+  update,
+}: Pick<ActivitySceneProps, 'spec' | 'answers'> & {
+  update: (answers: Record<string, Answer>) => void;
+}) {
+  const groupId = useId();
+  return (
+    <div className={styles.controls} aria-label="활동 설정">
+      {spec.fields.map((field) => {
+        const id = `${groupId}-${field.id}`;
+        return field.options ? (
+          <fieldset key={field.id} className={styles.optionField} aria-describedby={`${id}-help`}>
+            <legend>{field.label}</legend>
+            <div className={styles.choices}>
+              {field.options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={answers[field.id] === option.value}
+                  onClick={() => update({ [field.id]: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <small id={`${id}-help`}>{field.help}</small>
+          </fieldset>
+        ) : (
+          <NumberField
+            key={field.id}
+            field={field}
+            value={answers[field.id]}
+            onChange={(value) => update({ [field.id]: value })}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export function SimulationActivity({
+  lesson,
+  spec,
+  scene: Scene,
+}: ActivitySimulationProps & { scene: ComponentType<ActivitySceneProps> }) {
+  const data = useLearningStore((state) => state.data);
+  const edit = useLearningStore((state) => state.edit);
+  const saved = getLab(data, lesson.id).answers;
+  const answers = { ...saved };
+  for (const field of spec.fields) {
+    if (!validInputs({ fields: [field] }, answers)) answers[field.id] = field.initial;
+  }
+
+  const update = (changes: Record<string, Answer>) => {
+    const settings = Object.fromEntries(
+      spec.fields.map(({ id }) => [id, changes[id] ?? answers[id]]),
     );
-    return () => clearInterval(timer);
-  }, [running, inView, hidden, reduced, maxPhase]);
-  const record = () => {
-    if (!validInputs(spec, lab.answers)) return;
+    if (!validInputs(spec, settings)) return;
     edit(
       lesson.id,
-      (current) => ({
-        ...current,
-        attempts: current.attempts + 1,
-        answers: {
-          ...current.answers,
-          _observed: signature,
-          _history: JSON.stringify(
-            [...new Set([...observationHistory(current.answers), signature])].slice(-12),
-          ),
-        },
-      }),
+      (current) => {
+        const next = { ...current.answers, ...settings };
+        const signature = activitySignature(next);
+        if (current.answers._observed === signature) return current;
+        return {
+          ...current,
+          attempts: current.attempts + 1,
+          answers: {
+            ...next,
+            _observed: signature,
+            _history: JSON.stringify(
+              [...new Set([...observationHistory(current.answers), signature])].slice(-12),
+            ),
+          },
+        };
+      },
       false,
     );
   };
-  const run = () => {
-    record();
-    setPhase(0);
-    setRunning(!reduced);
-  };
-  const ready = evaluateGoals(lesson, lab).every((g) => g.passed);
+
+  const result = simulate(spec, answers);
+  const presets = activityPresets[spec.kind];
+  const controls = <ActivityControls spec={spec} answers={answers} update={update} />;
+  const visualization = <Scene spec={spec} answers={answers} result={result} />;
+  const observedMetrics =
+    spec.kind === 'release' && spec.variant === 'recreate'
+      ? result.metrics.slice(1, 3)
+      : result.metrics;
   return (
-    <div ref={root}>
-      <Fields
-        fields={spec.fields}
-        answers={lab.answers}
-        onChange={(id, value) =>
-          edit(lesson.id, (c) => ({ ...c, answers: { ...c.answers, [id]: value } }))
-        }
-      />
-      {spec.kind === 'commands' && (
-        <div className={styles.commands} aria-label="Docker 명령 선택">
-          {['build', 'images', 'run', 'ps', 'logs', 'stop', 'rm'].map((cmd) => (
-            <button
-              key={cmd}
-              onClick={() => {
-                edit(lesson.id, (c) => ({ ...c, answers: dockerCommand(c.answers, cmd) }));
-                setPhase(3);
-              }}
-            >
-              docker {cmd}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className={styles.visual} data-testid="activity-visual">
+    <div>
+      {presets ? (
         <>
-          {validInputs(spec, lab.answers) ? (
-            <Visual
-              spec={spec}
-              answers={lab.answers}
-              result={result}
-              phase={phase}
-              reduced={reduced}
-            />
-          ) : (
-            <p>허용된 범위의 설정값을 입력하세요.</p>
-          )}
-        </>
-      </div>
-      <div className={styles.playback} aria-label="활동 재생">
-        <button onClick={run} disabled={!validInputs(spec, lab.answers)} data-testid="activity-run">
-          {reduced ? '결과 계산' : '처음부터 재생'}
-        </button>
-        <button
-          onClick={() => {
-            record();
-            setRunning((v) => !v);
-          }}
-          disabled={reduced || !validInputs(spec, lab.answers)}
-        >
-          {running ? '일시정지' : '계속 재생'}
-        </button>
-        <button
-          onClick={() => {
-            record();
-            setRunning(false);
-            setPhase((v) => Math.min(v + 1, maxPhase));
-          }}
-          disabled={!validInputs(spec, lab.answers)}
-        >
-          다음 단계
-        </button>
-        <button
-          onClick={() => {
-            setRunning(false);
-            setPhase(0);
-          }}
-        >
-          다시 보기
-        </button>
-      </div>
-      <p className={styles.phase}>
-        {result.steps[Math.min(phase, result.steps.length - 1)]} · {Math.min(phase, maxPhase) + 1}/
-        {maxPhase + 1}
-      </p>
-      {reduced && <small>동작 줄이기 설정 · 다음 단계와 결과 설명으로 관찰할 수 있습니다.</small>}
-      <div className={styles.result} role="status" data-testid="activity-result">
-        {observed ? (
-          <>
-            <strong>{result.headline}</strong>
-            <dl>
-              {result.metrics.map((m) => (
-                <div key={m.label}>
-                  <dt>{m.label}</dt>
-                  <dd>{m.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p>{result.detail}</p>
-            {result.warning && <p className={styles.warning}>{result.warning}</p>}
-          </>
-        ) : (
-          <p>
-            설정을 선택하고 {reduced ? '결과 계산' : '재생'}을 눌러 확인하세요.{' '}
-            {spec.fields.length > 0 && '서로 다른 두 설정을 비교하면 관찰 목표가 충족됩니다.'}
-          </p>
-        )}
-      </div>
-      {!lesson.assessment && (
-        <>
-          <fieldset className={styles.quiz} data-tour="quiz">
-            <legend>확인 문제 · {spec.question}</legend>
-            {spec.options.map((o) => (
-              <label key={o.value}>
-                <input
-                  type="radio"
-                  name={`quiz-${lesson.id}`}
-                  checked={lab.answers._quiz === o.value}
-                  onChange={() => {
-                    edit(lesson.id, (c) => ({ ...c, answers: { ...c.answers, _quiz: o.value } }));
-                    setFeedback(true);
-                  }}
-                />
-                {o.label}
-              </label>
+          <div className={styles.quickActions} role="group" aria-label={presets.label}>
+            {presets.choices.map(({ label, settings }) => (
+              <button type="button" key={label} onClick={() => update(settings)}>
+                {label}
+              </button>
             ))}
-            {feedback && (
-              <ResultFeedback
-                key={String(lab.answers._quiz)}
-                tone={lab.answers._quiz === spec.correct ? 'success' : 'error'}
-                title={lab.answers._quiz === spec.correct ? '정답입니다' : '오답입니다'}
-              >
-                {lab.answers._quiz === spec.correct ? '맞습니다. ' : '다시 생각해 보세요. '}
-                {spec.explanation}
-              </ResultFeedback>
-            )}
-          </fieldset>
-          <button
-            className={styles.complete}
-            onClick={() => {
-              setFeedback(true);
-              if (ready) edit(lesson.id, (c) => ({ ...c, completed: true }), false);
-            }}
-            data-testid="activity-complete"
-          >
-            {lab.completed ? '학습 완료됨' : '학습 완료 확인'}
-          </button>
-          {feedback && !ready && (
-            <p className={styles.warning}>
-              {evaluateGoals(lesson, lab)
-                .filter((g) => !g.passed)
-                .map((g) => g.label)
-                .join(' · ')}{' '}
-              항목을 확인하세요.
-            </p>
-          )}
+          </div>
+          <div className={styles.sampleComparison}>
+            {visualization}
+            {controls}
+          </div>
+        </>
+      ) : (
+        <>
+          {controls}
+          {visualization}
         </>
       )}
+      <div className={styles.result} data-testid="activity-result">
+        <div role="status" aria-atomic="true">
+          <strong>{result.headline}</strong>
+          <span className="visually-hidden">
+            {' '}
+            {observedMetrics.map(({ label, value }) => `${label} ${value}`).join(', ')}
+          </span>
+        </div>
+        <p>{result.detail}</p>
+        {result.warning && <p className={styles.error}>{result.warning}</p>}
+      </div>
     </div>
   );
 }

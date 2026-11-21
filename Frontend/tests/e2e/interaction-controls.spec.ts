@@ -37,7 +37,7 @@ test('정답 제출 전에는 해설을 숨기고 선택 변경 시 판정을 �
 });
 test('좁은 설정 패널에서 화살표로 단계를 탐색한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week5-workflow');
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await page.getByRole('button', { name: '설정·결과 열기', exact: true }).click();
   const nav = page.getByRole('navigation', { name: '실행 단계', exact: true });

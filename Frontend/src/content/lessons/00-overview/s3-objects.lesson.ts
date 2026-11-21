@@ -87,6 +87,11 @@ export default defineMdxLesson({
     kind: '자료 전달',
     afterSection: 1,
   },
+  activityView: {
+    type: 'structure',
+    title: 'S3에서 업로드와 조회는 어떤 방향으로 흐를까요?',
+    instruction: 'PUT으로 모델 파일을 올린 뒤 GET으로 학습 데이터를 읽어 보세요.',
+  },
   activity: {
     kind: 'objects',
     fields: [

@@ -1,27 +1,28 @@
 import {
   absolute,
   manualConnectionIssue,
-  definition,
+  withoutOccupant,
   descendants,
-  hasRunState,
-  labels,
   makeEntity,
   editablePortTypes,
   protectedKind,
   requiredLabEntities,
   rootId,
-  tools,
   type Connection,
   type Direction,
   type Entity,
   type Graph,
   type Kind,
   type KubernetesSettings,
+  type LabConfig,
   type Material,
   type Point,
   type PortSpec,
+  type SettingValue,
   type Version,
-} from './model';
+  settingIssue,
+} from './lab';
+import { week2Lab } from './labs/week2';
 
 export type Command =
   | { type: 'add'; parent: string; kind: Kind; id: string }
@@ -31,8 +32,8 @@ export type Command =
   | { type: 'resize'; id: string; width: number; height: number }
   | { type: 'cluster'; id: string; patch: Partial<KubernetesSettings> }
   | { type: 'pod-label'; id: string; value: string }
+  | { type: 'setting'; id: string; key: string; value: SettingValue }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
-  | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
   | { type: 'connect'; edge: Connection }
   | { type: 'disconnect'; ids: string[] }
   | { type: 'port-add'; id: string; port: string; direction: Direction; material: Material }
@@ -46,16 +47,20 @@ export type Command =
   | { type: 'port-remove'; id: string; port: string }
   | { type: 'restore' };
 
-export function applyCommand(graph: Graph, cmd: Command): Graph {
+export function applyCommand(graph: Graph, cmd: Command, lab: LabConfig = week2Lab): Graph {
+  return lab.normalize(applyRaw(graph, cmd, lab));
+}
+function applyRaw(graph: Graph, cmd: Command, lab: LabConfig): Graph {
   const change = (id: string, fn: (e: Entity) => Entity) => ({
     ...graph,
     entities: graph.entities.map((e) => (e.id === id ? fn(e) : e)),
   });
-  if (cmd.type === 'restore') return definition.initial();
+  if (cmd.type === 'restore') return lab.initial();
   if (cmd.type === 'connect') {
-    const error = manualConnectionIssue(graph, cmd.edge);
+    const error = manualConnectionIssue(lab, graph, cmd.edge);
     if (error) throw new Error(error);
-    return { ...graph, connections: [...graph.connections, cmd.edge] };
+    const target = withoutOccupant(graph, cmd.edge);
+    return { ...graph, connections: [...target.connections, cmd.edge] };
   }
   if (cmd.type === 'disconnect')
     return { ...graph, connections: graph.connections.filter((e) => !cmd.ids.includes(e.id)) };
@@ -63,24 +68,23 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     const parent = graph.entities.find((e) => e.id === cmd.parent);
     if (
       parent?.type !== 'system' ||
-      !tools[parent.kind].includes(cmd.kind) ||
+      !lab.tools[parent.kind]?.includes(cmd.kind) ||
       graph.entities.some((e) => e.id === cmd.id)
     )
       throw new Error('이 시스템에 추가할 수 없는 항목입니다.');
     const children = graph.entities.filter((e) => e.parent === parent.id);
     const index = children.length;
-    const item = makeEntity(cmd.kind, cmd.id, parent.id, {
-      x: parent.id === rootId ? 230 + index * 80 : 24,
-      y: parent.id === rootId ? 690 : 52 + index * 164,
+    const item = makeEntity(lab, cmd.kind, cmd.id, parent.id, {
+      ...(parent.id === rootId ? { x: 230 + index * 80, y: 690 } : lab.toolPosition(index)),
     });
     let suffix = 1;
-    while (children.some((e) => e.name === labels[item.kind] + ' ' + suffix)) suffix++;
-    item.name = labels[item.kind] + ' ' + suffix;
+    while (children.some((e) => e.name === lab.labels[item.kind] + ' ' + suffix)) suffix++;
+    item.name = lab.labels[item.kind] + ' ' + suffix;
     return fitAncestors({ ...graph, entities: [...graph.entities, item] }, item.id);
   }
   const item = graph.entities.find((e) => e.id === cmd.id);
   if (!item) return graph;
-  if (cmd.type === 'remove' && requiredLabEntities(graph.entities).has(item.id)) {
+  if (cmd.type === 'remove' && requiredLabEntities(lab, graph.entities).has(item.id)) {
     throw new Error('실습에 필요한 항목은 삭제할 수 없습니다.');
   }
   if (cmd.type === 'move' && (item.kind === 'start' || item.kind === 'end')) {
@@ -89,10 +93,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
     }
     return change(item.id, (e) => ({ ...e, position: cmd.position }));
   }
-  if (
-    protectedKind(item.kind) &&
-    !(cmd.type === 'toggle' && item.kind === 'root' && cmd.children)
-  ) {
+  if (protectedKind(lab, item.kind)) {
     throw new Error('고정 항목은 변경할 수 없습니다.');
   }
   switch (cmd.type) {
@@ -107,8 +108,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
       const parent = graph.entities.find((e) => e.id === (cmd.parent ?? item.parent));
       if (
         parent?.type !== 'system' ||
-        (!tools[parent.kind].includes(item.kind) &&
-          !(item.kind === 'service' && parent.id === item.parent)) ||
+        !lab.canMove(parent, item) ||
         descendants(graph, item.id).has(parent.id)
       )
         throw new Error('이 영역으로 옮길 수 없습니다.');
@@ -180,6 +180,17 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
         );
       return change(item.id, () => ({ ...item, kubernetes: settings }));
     }
+    case 'setting': {
+      const spec = lab.settingSpecs[item.kind]?.find((candidate) => candidate.key === cmd.key);
+      if (!spec) throw new Error('이 항목에는 없는 설정입니다.');
+      const issue = settingIssue(spec, cmd.value);
+      if (issue) throw new Error(issue);
+      const next = change(item.id, () => ({
+        ...item,
+        settings: { ...item.settings, [cmd.key]: cmd.value },
+      }));
+      return lab.onSetting(next, item.id, cmd.key, cmd.value);
+    }
     case 'pod-label': {
       if (item.type !== 'resource' || item.kind !== 'pod') return graph;
       if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(cmd.value))
@@ -204,19 +215,6 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
         }),
       }));
     }
-    case 'toggle': {
-      if (item.kind !== 'root' && !hasRunState(item.kind)) {
-        throw new Error('이 항목은 실행 상태를 따로 설정하지 않습니다.');
-      }
-      const ids =
-        cmd.children && item.type === 'system' ? descendants(graph, item.id) : new Set([item.id]);
-      return {
-        ...graph,
-        entities: graph.entities.map((e) =>
-          ids.has(e.id) && hasRunState(e.kind) ? { ...e, enabled: cmd.enabled } : e,
-        ),
-      };
-    }
     case 'port-add':
     case 'port-change':
     case 'port-remove': {
@@ -232,11 +230,7 @@ export function applyCommand(graph: Graph, cmd: Command): Graph {
             ? cmd.changes.material
             : undefined;
       const direction = cmd.type === 'port-add' ? cmd.direction : current?.direction;
-      if (
-        material &&
-        direction &&
-        !editablePortTypes(item.kind, direction).includes(material)
-      )
+      if (material && direction && !editablePortTypes(lab, item.kind, direction).includes(material))
         throw new Error('이 노드가 처리할 수 없는 타입입니다.');
       const attached = graph.connections.filter((edge) =>
         [edge.from, edge.to].some((p) => p.node === item.id && p.port === cmd.port),

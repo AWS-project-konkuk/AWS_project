@@ -6,6 +6,7 @@ import { applyCommand } from '../src/systemLab/commands';
 import { runLab } from '../src/systemLab/engine';
 import { buildHintRequest, canRequestHint, type HintRun } from '../src/systemLab/hint';
 import { definition, signature, starterTasks, type Graph } from '../src/systemLab/model';
+import { labConfigs } from '../src/systemLab/labs';
 
 const lesson = {
   id: 'week2-workflow',
@@ -29,15 +30,15 @@ it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제�
   const request = payload();
   const reply = {
     status: 'ok',
-    concept: '상위 시스템이 정지해 있습니다.',
-    hint: 'EC2가 실행 중인가요?',
+    concept: 'Pod에 모델을 연결해야 합니다.',
+    hint: '시작의 모델 포트를 확인했나요?',
   };
   post.mockResolvedValue({
     data: {
       status: reply.status,
       conecpt: reply.concept,
       hint: reply.hint,
-      errorBasis: '시스템 정지',
+      errorBasis: '모델 입력 누락',
       display: reply.concept + ' ' + reply.hint,
     },
   });
@@ -56,17 +57,20 @@ it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제�
   ]);
   expect(request.nodes.find((node) => node.id === 'pod-a')).toMatchObject({
     parent: 'kubernetes',
-    enabled: false,
   });
   expect(
     request.edges.filter((edge) => edge.kind === 'service-route').map((edge) => edge.to.node),
   ).toEqual(['pod-a', 'pod-b']);
-  expect(request.nodes.every((node) => !('position' in node) && !('width' in node))).toBe(true);
-  expect(request.ruleCheck.first_failure).toContain('차단');
+  expect(
+    request.nodes.every(
+      (node) => !('position' in node) && !('width' in node) && !('enabled' in node),
+    ),
+  ).toBe(true);
+  expect(request.ruleCheck.first_failure).toContain('응답 0 / 10건');
   expect(request.ruleCheck.issues).toContain(request.ruleCheck.first_failure);
 });
 
-it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 만들지 않는다', () => {
+it('실행 전·실행 중·중단·없는 강의·구성 변경 후 요청을 만들지 않는다', () => {
   const graph = definition.initial();
   const run = completedRun(graph);
   expect(run.cursor).toBeGreaterThan(0);
@@ -74,21 +78,16 @@ it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 �
     expect(canRequestHint(lesson.id, graph, current)).toBe(false);
     expect(() => buildHintRequest(lesson, graph, current)).toThrow('끝까지 실행');
   }
-  expect(() => buildHintRequest({ ...lesson, id: 'week3-workflow' }, graph, run)).toThrow();
-  const edited = applyCommand(graph, { type: 'toggle', id: 'ec2', enabled: true });
+  expect(() => buildHintRequest({ ...lesson, id: 'unknown-lesson' }, graph, run)).toThrow();
+  const edited = applyCommand(graph, { type: 'connect', edge: starterTasks[0] });
   expect(canRequestHint(lesson.id, edited, run)).toBe(false);
   const moved = structuredClone(graph);
   moved.entities[1].position.x += 10;
   expect(canRequestHint(lesson.id, moved, run)).toBe(true);
 });
 
-it('성공 실행은 거절하고 API 호출도 성공·다른 단원 요청을 방어한다', async () => {
-  let graph = applyCommand(definition.initial(), {
-    type: 'toggle',
-    id: 'root',
-    enabled: true,
-    children: true,
-  });
+it('성공 실행은 거절하고 API 호출도 성공·빈 강의 ID 요청을 방어한다', async () => {
+  let graph = definition.initial();
   for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
   const run = completedRun(graph);
   expect(run.result.success).toBe(true);
@@ -96,7 +95,7 @@ it('성공 실행은 거절하고 API 호출도 성공·다른 단원 요청을 
   const request = payload();
   for (const invalid of [
     { ...request, ruleCheck: { ...request.ruleCheck, success: true } },
-    { ...request, lessonId: 'week3-workflow' },
+    { ...request, lessonId: ' ' },
     { ...request, ruleCheck: { ...request.ruleCheck, first_failure: ' ' } },
   ]) {
     await expect(requestHint(invalid as unknown as HintRequest)).rejects.toThrow();
@@ -166,4 +165,24 @@ it('요청 취소 오류를 그대로 전달한다', async () => {
   post.mockRejectedValue(cancelled);
   await expect(requestHint(payload())).rejects.toBe(cancelled);
   expect(post).toHaveBeenCalledTimes(1);
+});
+
+it('시스템 실습이 있는 모든 강의에서 실패한 실행의 조언 요청을 만든다', () => {
+  for (const [id, lab] of Object.entries(labConfigs)) {
+    const graph = lab.initial();
+    const result = runLab(graph, 'run-' + id, lab);
+    const run: HintRun = {
+      result,
+      stamp: signature(graph),
+      cursor: result.steps.length,
+      stopped: false,
+    };
+    expect(result.success, id).toBe(false);
+    expect(canRequestHint(id, graph, run), id).toBe(true);
+    const request = buildHintRequest({ ...lesson, id }, graph, run);
+    expect(request.lessonId).toBe(id);
+    expect(request.ruleCheck.first_failure.trim(), id).not.toBe('');
+    expect(request.nodes.length, id).toBe(graph.entities.length);
+    expect(request.settings.metrics, id).toBeInstanceOf(Array);
+  }
 });

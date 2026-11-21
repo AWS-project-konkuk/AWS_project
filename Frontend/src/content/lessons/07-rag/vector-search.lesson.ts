@@ -41,6 +41,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 6,
   mapStages: ['retrieval'],
+  activityView: {
+    type: 'search',
+    title: '문구가 없어도 의미가 가까운 문서를 찾을까요?',
+    instruction: '같은 질문으로 정확 문구 검색과 유사도 검색을 비교하세요.',
+  },
   activity: {
     kind: 'search',
     fields: [

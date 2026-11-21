@@ -37,7 +37,7 @@ test('이미지 오류에서도 대체 설명을 제공한다', async ({ page })
 });
 
 test('노드별 아이콘·자료 이동·일시정지·실패 전파를 표시한다', async ({ page }) => {
-  await page.goto('/#/learn/feature-workflow');
+  await page.goto('/#/learn/week5-workflow');
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await page.getByRole('button', { name: '실습 전체 화면', exact: true }).click();
   await page.getByRole('button', { name: '1. 예시 흐름 추적' }).click();
@@ -64,7 +64,7 @@ test('노드별 아이콘·자료 이동·일시정지·실패 전파를 표시�
   await expect(page.locator('animateMotion')).toHaveCount(0);
   await expect(page.getByTestId('data-transfer').first()).toBeVisible();
   await page.screenshot({ path: 'test-results/flow-transfer.png' });
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 10; i++) {
     const next = page.getByRole('button', { name: '다음 단계', exact: true });
     if (await next.isDisabled()) break;
     await next.click();
@@ -77,7 +77,7 @@ test('노드별 아이콘·자료 이동·일시정지·실패 전파를 표시�
 
 test('동작 줄이기에서는 움직임 대신 정적인 전달 표식과 설명을 제공한다', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/#/learn/feature-workflow');
+  await page.goto('/#/learn/week5-workflow');
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await page.getByRole('button', { name: '1. 예시 흐름 추적' }).click();
   await page.getByRole('button', { name: '단계 실행', exact: true }).click();

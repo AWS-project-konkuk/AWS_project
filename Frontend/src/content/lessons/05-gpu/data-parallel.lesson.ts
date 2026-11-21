@@ -104,6 +104,11 @@ export default defineMdxLesson({
     kind: '자료 전달',
     afterSection: 1,
   },
+  activityView: {
+    type: 'parallel',
+    title: 'GPU를 늘리면 전체 모델도 나뉠까요?',
+    instruction: 'GPU 수를 늘려 복제된 모델의 장치당 메모리와 기울기 동기화 비용을 비교하세요.',
+  },
   activity: {
     kind: 'parallel',
     variant: 'data',

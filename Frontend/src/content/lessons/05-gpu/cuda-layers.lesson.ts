@@ -51,6 +51,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 3,
   mapStages: ['training'],
+  activityView: {
+    type: 'structure',
+    title: '프레임워크의 연산 요청은 어떻게 GPU까지 갈까요?',
+    instruction: '계층을 고르면 전체 경로에서 그 위치가 강조됩니다.',
+  },
   activity: {
     kind: 'layers',
     fields: [
