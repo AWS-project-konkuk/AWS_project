@@ -39,6 +39,8 @@ export const plainPersistence: LabPersistence = {
 
 type Defaults =
   | 'fixedKinds'
+  | 'createEnabled'
+  | 'toolPosition'
   | 'managedPorts'
   | 'multipleInput'
   | 'routeSources'
@@ -56,6 +58,7 @@ type Defaults =
   | 'aiHint'
   | 'settingSpecs'
   | 'onSetting'
+  | 'normalize'
   | 'requiredObservations'
   | 'observationLabels'
   | 'resourceRoles';
@@ -66,6 +69,9 @@ export function defineLab(
 ): LabConfig {
   const lab: LabConfig = {
     fixedKinds: ['root', 'start', 'end'],
+    createEnabled: true,
+    // 서비스는 가로로 나란히 놓이므로 새 노드는 아래로 쌓아 서로 겹치지 않게 한다.
+    toolPosition: (index) => ({ x: 24, y: 52 + index * 150 }),
     managedPorts: {},
     multipleInput: [],
     routeSources: [],
@@ -83,6 +89,7 @@ export function defineLab(
     aiHint: false,
     settingSpecs: {},
     onSetting: (graph) => graph,
+    normalize: (graph) => graph,
     requiredObservations: [],
     observationLabels: {},
     resourceRoles: {},
@@ -97,7 +104,14 @@ export const port = (
   id: string,
   material: string,
   multiple = false,
-): PortSpec => ({ id: direction + '-' + id, direction, material, multiple });
+  label?: string,
+): PortSpec => ({
+  id: direction + '-' + id,
+  direction,
+  material,
+  multiple,
+  ...(label && { label }),
+});
 
 export const wired = (from: string, out: string, to: string, input: string): Connection => ({
   id: from + ':out-' + out + '>' + to + ':in-' + input,

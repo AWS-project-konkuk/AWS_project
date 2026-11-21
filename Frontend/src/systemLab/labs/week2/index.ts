@@ -102,6 +102,8 @@ export const week2Lab: LabConfig = {
   },
   fixedKinds: ['root', 'start', 'end'],
   runStateKinds: ['ec2', 'docker', 'kubernetes', 'pod', 'container'],
+  createEnabled: false,
+  toolPosition: (index) => ({ x: 24, y: 52 + index * 164 }),
   managedPorts: { pod: ['image', 'control'] },
   multipleInput: ['end'],
   routeSources: ['service'],
@@ -136,6 +138,7 @@ export const week2Lab: LabConfig = {
   aiHint: true,
   settingSpecs: {},
   onSetting: (graph) => graph,
+  normalize: (graph) => graph,
   requiredObservations: [],
   observationLabels: {},
 };

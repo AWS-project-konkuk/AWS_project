@@ -18,6 +18,8 @@ export interface PortSpec {
   direction: Direction;
   material: Material;
   multiple: boolean;
+  /** 같은 타입의 포트를 구분할 이름. 없으면 타입 이름을 쓴다. */
+  label?: string;
 }
 export interface Point {
   x: number;
@@ -109,6 +111,10 @@ export interface LabConfig {
   fixedKinds: readonly Kind[];
   /** 실행·정지 상태를 갖는 종류. */
   runStateKinds: readonly Kind[];
+  /** 서비스 안에서 도구로 만든 index번째 노드의 위치. */
+  toolPosition: (index: number) => Point;
+  /** 도구로 만든 노드를 켠 상태로 시작할지. 1단원은 직접 켜는 과제라 false이다. */
+  createEnabled: boolean;
   /** 서비스 설정이 관리해 학습자가 포트를 바꾸지 않는 자료 타입. */
   managedPorts: Partial<Record<Kind, readonly Material[]>>;
   /** 입력 포트가 여러 연결을 받는 종류. */
@@ -143,6 +149,8 @@ export interface LabConfig {
   settingSpecs: Record<Kind, readonly SettingSpec[]>;
   /** 설정이 바뀔 때 포트 같은 파생 구성을 맞춘다. */
   onSetting: (graph: Graph, id: string, key: string, value: SettingValue) => Graph;
+  /** 모든 편집 뒤에 파생 구성(예: 분할 방식에 따른 포트 타입)을 맞춘다. 같은 입력에 같은 결과여야 한다. */
+  normalize: (graph: Graph) => Graph;
   /** 실습 완료에 필요한 실행 관찰. 실행이 남긴 태그로 기록한다. */
   requiredObservations: readonly string[];
   observationLabels: Record<string, string>;
@@ -187,6 +195,7 @@ export const editablePortTypes = (lab: LabConfig, kind: Kind, direction: Directi
     (material) => !lab.managedPorts[kind]?.includes(material),
   );
 export const portLabel = (lab: LabConfig, ports: PortSpec[], port: PortSpec) => {
+  if (port.label) return port.label;
   const peers = ports.filter((p) => p.material === port.material && p.direction === port.direction);
   return lab.materials[port.material] + (peers.length > 1 ? ' ' + (peers.indexOf(port) + 1) : '');
 };
@@ -203,7 +212,7 @@ export function makeEntity(
     name: lab.labels[kind],
     parent,
     position,
-    ...(hasRunState(lab, kind) && { enabled: false }),
+    ...(hasRunState(lab, kind) && { enabled: lab.createEnabled }),
     ...(settings && { settings }),
   };
   if (isSystemKind(lab, kind))

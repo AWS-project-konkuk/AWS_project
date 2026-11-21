@@ -49,6 +49,9 @@ export type Command =
   | { type: 'restore' };
 
 export function applyCommand(graph: Graph, cmd: Command, lab: LabConfig = week2Lab): Graph {
+  return lab.normalize(applyRaw(graph, cmd, lab));
+}
+function applyRaw(graph: Graph, cmd: Command, lab: LabConfig): Graph {
   const change = (id: string, fn: (e: Entity) => Entity) => ({
     ...graph,
     entities: graph.entities.map((e) => (e.id === id ? fn(e) : e)),
@@ -72,8 +75,7 @@ export function applyCommand(graph: Graph, cmd: Command, lab: LabConfig = week2L
     const children = graph.entities.filter((e) => e.parent === parent.id);
     const index = children.length;
     const item = makeEntity(lab, cmd.kind, cmd.id, parent.id, {
-      x: parent.id === rootId ? 230 + index * 80 : 24,
-      y: parent.id === rootId ? 690 : 52 + index * 164,
+      ...(parent.id === rootId ? { x: 230 + index * 80, y: 690 } : lab.toolPosition(index)),
     });
     let suffix = 1;
     while (children.some((e) => e.name === lab.labels[item.kind] + ' ' + suffix)) suffix++;
