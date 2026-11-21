@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: 'CUDA는 프레임워크와 GPU를 잇는다',
   summary: 'PyTorch의 연산 요청이 GPU에 도달하는 계층을 따라갑니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
+    '비교 활동에서 PyTorch, 연산 라이브러리, CUDA Runtime과 드라이버를 차례로 선택해 각 계층의 역할을 확인합니다. PyTorch가 사용하는 CUDA 버전과 드라이버가 지원하는 버전을 어떻게 읽는지도 살펴보세요.',
   concepts: ['PyTorch', 'CUDA 계층', 'NVIDIA GPU'],
   assessment: {
     question: 'CUDA 드라이버와 라이브러리의 역할에 맞는 설명은?',

@@ -46,7 +46,7 @@ export default defineMdxLesson({
   title: 'Data Lakehouse와 타임 트래블',
   summary: '파일을 표처럼 관리하고, 어제의 표를 다시 읽거나 새 열을 추가하는 방법을 알아봅니다.',
   scenario:
-    'S3의 CSV를 계속 덮어써서 지난 실험 시점의 행과 스키마를 찾을 수 없습니다. 여러 작업이 동시에 파일을 갱신하면 어느 상태가 유효한지도 불분명합니다.',
+    'Warehouse·Lake·Lakehouse의 역할을 비교한 뒤, Iceberg의 스냅샷과 Delta Lake의 로그를 따라 특정 시점의 표를 읽습니다. 주문 표에 새 열을 추가하거나 같은 표를 동시에 수정할 때 어떤 기록이 필요한지 확인해 보세요.',
   concepts: [
     'Data Warehouse·Lake·Lakehouse',
     '오픈 테이블 포맷',

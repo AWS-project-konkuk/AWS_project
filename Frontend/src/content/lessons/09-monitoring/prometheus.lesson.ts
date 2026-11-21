@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: 'Prometheus로 지표를 수집하기',
   summary: '수집 간격과 임계값을 바꿔 운영 신호를 살펴봅니다.',
   scenario:
-    '설명에서 문제와 원리를 이해하고, 전체 흐름에서 이 개념의 역할을 설명해 보세요. 비교 활동은 필요한 경우에만 펼쳐 확인합니다.',
+    '앱이 노출한 지표를 Prometheus가 주기적으로 읽고 질의하는 과정을 확인합니다. 활동에서 수집 간격과 지연 경고 기준을 바꿔 어떤 변화가 관측되고 언제 경고가 뜨는지 비교해 보세요.',
   concepts: ['모델 서비스 지표', 'Prometheus', '알림'],
   assessment: {
     question: 'Prometheus가 모델 품질을 판단하려면?',

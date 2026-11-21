@@ -10,7 +10,7 @@ export default defineMdxLesson({
   summary:
     '내 컴퓨터에서만 되는 프로그램을 다른 서버에서도 실행하고, 여러 실행본을 유지하는 흐름을 배웁니다.',
   scenario:
-    '환경 포장 → 실행본 관리 → 요청 전달의 흐름을 살펴보고, 이번 단원에서 해결할 문제를 파악합니다.',
+    '리뷰 분류 앱을 예로 들어 Docker 이미지에 무엇을 담는지 살펴보세요. 이어서 Kubernetes가 실행본을 유지하는 방법과 Service가 요청을 전달하는 경로를 훑어봅니다.',
   concepts: ['실행 환경', 'Docker', 'Kubernetes', '단원 학습 순서'],
   assessment: {
     question:

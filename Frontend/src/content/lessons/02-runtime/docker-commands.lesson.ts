@@ -10,7 +10,7 @@ export default defineMdxLesson({
   summary:
     'Dockerfile로 이미지를 만들고 컨테이너를 실행하는 과정을 통해 Docker의 역할을 이해합니다.',
   scenario:
-    'Dockerfile·이미지·컨테이너·레지스트리를 구분하고, build와 run이 바꾸는 대상을 설명합니다.',
+    '리뷰 분류 앱의 Dockerfile을 줄 단위로 읽으며 build가 만드는 이미지와 run이 시작하는 컨테이너를 구분합니다. stop과 start가 어느 실행본에 적용되는지도 확인합니다.',
   concepts: ['Docker Engine', 'Dockerfile', '이미지', '레지스트리', 'build·run'],
   assessment: {
     question: 'docker build로 이미지를 만든 직후의 상태를 올바르게 설명한 것은?',

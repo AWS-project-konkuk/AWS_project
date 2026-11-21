@@ -448,7 +448,7 @@ export default defineMdxLesson({
   summary:
     '피처를 한 번 정의해 학습과 서비스에서 함께 쓰고, 팀 사이에서 재사용하는 방법을 알아봅니다.',
   scenario:
-    '추천 팀과 이탈 예측 팀이 같은 고객 활동 피처를 서로 다른 코드로 다시 만들고 있어 값이 달라지고 개발 시간도 낭비됩니다.',
+    '본문 활동에서 등록부, 변환, 저장소를 차례로 살펴보세요. 학습과 실시간 추론을 선택해 같은 클릭 집계 정의가 과거 값과 최신 값의 조회 경로에 각각 어떻게 쓰이는지 추적합니다.',
   concepts: ['피처 재사용', 'Transform', 'Storage·Serving', 'Monitoring', 'Registry'],
   assessment: {
     question: '학습·서빙 불일치를 줄이려면?',

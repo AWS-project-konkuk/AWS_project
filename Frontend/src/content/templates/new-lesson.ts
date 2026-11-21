@@ -9,6 +9,7 @@ export default defineMdxLesson({
   order: 99,
   title: '내가 작성한 첫 강의',
   summary: '이 강의에서 무엇을 이해할 수 있는지 한 문장으로 씁니다.',
+  scenario: '문자열을 변수에 담는 예제를 읽고, 코드를 실행하기 전에 어떤 값이 출력될지 예측해 보세요.',
   assessment: {
     question: '위 코드의 실행 결과는 무엇인가요?',
     options: ['나의 첫 강의', 'message'],

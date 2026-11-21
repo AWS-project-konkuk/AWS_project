@@ -45,7 +45,7 @@ export default defineMdxLesson({
   title: 'Git LFS: 포인터와 실제 파일 분리',
   summary: '작은 이름표와 실제 모델 파일을 나누어 보관하는 방법을 알아봅니다.',
   scenario:
-    '대용량 모델 파일을 Git과 비슷한 사용 흐름으로 버전 관리하되 저장소 이력은 작게 유지하려고 합니다. 포인터와 실제 파일이 각각 어디에 저장되는지 구분해 보세요.',
+    '모델을 Git LFS로 추적하는 예제를 살펴보고, 커밋에 남는 포인터에서 실제 모델을 내려받는 순서를 확인합니다. Git에서 받은 파일이 포인터 상태일 때 무엇을 확인할지도 짚습니다.',
   concepts: ['LFS 포인터', 'LFS 객체 저장소', 'checkout', 'DVC와의 역할 비교'],
   assessment: {
     question: 'Git LFS를 쓰면 실제 대용량 파일은?',

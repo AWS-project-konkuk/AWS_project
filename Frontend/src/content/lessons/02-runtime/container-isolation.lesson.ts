@@ -9,7 +9,8 @@ export default defineMdxLesson({
   minutes: 12,
   summary:
     '커널은 공유하지만 보이는 범위와 자원 사용 조건은 나눕니다. Namespaces와 Cgroups의 역할을 구분합니다.',
-  scenario: '프로세스·네트워크 범위의 분리와 CPU·메모리 제한을 서로 다른 문제에 연결합니다.',
+  scenario:
+    '두 컨테이너가 같은 Linux 커널을 쓰는 그림을 보며, 프로세스나 네트워크가 보이는 범위는 Namespaces에, CPU·메모리 사용 한도는 Cgroups에 연결해 보세요.',
   concepts: ['공유 커널', 'Namespaces', 'Cgroups', '접근 권한'],
   assessment: {
     question: '프로세스가 보이는 범위와 메모리 사용 제한을 각각 연결하면?',

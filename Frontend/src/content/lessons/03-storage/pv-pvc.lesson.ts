@@ -8,7 +8,7 @@ export default defineMdxLesson({
   title: 'PV와 PVC로 Pod 밖의 데이터 연결',
   summary: '저장 요청과 실제 볼륨을 구분하고 Pod 교체를 관찰합니다.',
   scenario:
-    '학습 Pod의 /checkpoints에 저장한 모델이 Pod 교체 후 사라졌습니다. PVC로 필요한 저장 조건을 요청하고 새 Pod가 같은 볼륨을 다시 마운트하도록 구성하세요.',
+    '노드 예제에서 Pod가 참조하는 PVC와 요청 조건에 맞는 PV를 연결합니다. Pod를 교체했을 때 같은 볼륨을 다시 마운트하려면 무엇을 유지해야 하는지 확인해 보세요.',
   concepts: ['Pod', 'PVC 요청', 'PV 볼륨'],
   assessment: {
     question: 'Pod 교체 후에도 기록 파일을 유지하려면?',
