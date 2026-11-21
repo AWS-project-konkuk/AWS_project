@@ -445,9 +445,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
               </span>
               {resultsVisible && (
                 <div className="grid gap-[9px] px-3 pt-1 pb-4">
-                  {lab?.aiHint && (
-                    <HintPanel hint={aiHint} unavailableReason={hintUnavailableReason} />
-                  )}
+                  <HintPanel hint={aiHint} unavailableReason={hintUnavailableReason} />
                   {active && (
                     <ol className="my-0 grid list-decimal gap-[7px] pl-5 [&>li]:marker:text-ui-muted [&>li[data-status=success]_strong]:text-ui-success [&>li[data-status=failed]_strong]:text-ui-error [&>li[data-status=blocked]_strong]:text-ui-error [&_ul]:pl-4 [&_ul]:text-xs [&_ul]:text-ui-muted">
                       {active.result.steps.slice(0, active.cursor).map((step) => (
