@@ -134,4 +134,8 @@ export const week2Lab: LabConfig = {
   strategies,
   persistence: week2Persistence,
   aiHint: true,
+  settingSpecs: {},
+  onSetting: (graph) => graph,
+  requiredObservations: [],
+  observationLabels: {},
 };

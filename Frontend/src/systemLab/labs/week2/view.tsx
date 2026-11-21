@@ -27,6 +27,7 @@ export const week2View: LabView = {
   description:
     '이미지는 Kubernetes에, 요청은 내부 Service에 연결하세요. 두 Pod에 모델을 전달하고 각 응답을 도착에 연결하세요.',
   ariaLabel: 'Docker·Kubernetes 시스템 실습',
+  entry: '시스템과 노드를 실행 상태로 바꾸고 입출력을 연결해 두 Pod의 응답을 확인하세요.',
   icons: {
     root: Layers,
     ec2: Server,

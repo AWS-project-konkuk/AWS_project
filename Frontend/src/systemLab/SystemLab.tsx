@@ -17,14 +17,14 @@ import { Canvas, KindIcon, type MenuItem } from './Canvas';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
 import { Inspector } from './Inspector';
-import { findPort, rootId, signature, type LabConfig } from './lab';
-import { LabProvider, type LabView } from './labContext';
+import { findPort, isComplete, rootId, signature, type LabConfig } from './lab';
+import { LabProvider, kindClass, type LabView } from './labContext';
 import { labFor } from './labs';
 import { labViews } from './labs/views';
 import { labStore } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
-import { divider, hint, kindColor, panel, panelBody } from './appearance';
+import { divider, hint, panel, panelBody } from './appearance';
 import type { Lesson } from '../curriculum/types';
 import { useSystemLabHint } from './useSystemLabHint';
 import { HintPanel } from './HintPanel';
@@ -102,6 +102,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
     redo,
     prove,
     quiz,
+    observe,
     recover,
   } = useStore();
   const { graph } = saved;
@@ -155,13 +156,14 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
         if (cursor === active.result.steps.length) {
           showResults(true);
           setFrontPanel('results');
+          observe(active.result.observations);
           if (active.result.success) prove(active.stamp);
         }
       },
       reduced ? 25 : 270,
     );
     return () => clearTimeout(timer);
-  }, [active, busy, prove]);
+  }, [active, busy, prove, observe]);
   useEffect(() => {
     if (!menu) return;
     menuBox.current?.querySelector('button')?.focus();
@@ -231,7 +233,8 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
     .slice(0, active.cursor)
     .flatMap((step) => step.transfers)
     .find((transfer) => transfer.edge === selectedEdge);
-  const completed = !!saved.proof && saved.quiz;
+  const completed = isComplete(lab, saved);
+  const missing = lab.requiredObservations.filter((tag) => !saved.observed.includes(tag));
   return (
     <section
       className="group/lab flex min-h-full w-full min-w-0 flex-1 flex-col bg-ui-paper text-sm text-ui-ink data-[focused=true]:fixed data-[focused=true]:inset-0 data-[focused=true]:z-(--z-modal) data-[focused=true]:h-dvh data-[focused=true]:overflow-auto [--lab-request:var(--color-accent)] [--lab-prediction:var(--color-success)] [--lab-model:light-dark(#815098,#dcb4f1)] [--lab-image:light-dark(#895b23,#f0c68e)] [--lab-control:light-dark(#356978,#a4dbe3)]"
@@ -442,6 +445,40 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                       ))}
                     </ol>
                   )}
+                  {done && active.result.metrics.length > 0 && (
+                    <dl
+                      className="m-0 grid gap-1 [&_dd]:m-0 [&_dd]:font-semibold [&_dt]:text-xs [&_dt]:text-ui-muted"
+                      aria-label="결과 지표"
+                    >
+                      {active.result.metrics.map((metric) => (
+                        <div key={metric.label}>
+                          <dt>{metric.label}</dt>
+                          <dd>{metric.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                  {lab.requiredObservations.length > 0 && (
+                    <section aria-label="관찰할 조건" className="grid gap-1">
+                      <strong>관찰할 조건</strong>
+                      <ul className="m-0 list-none p-0 text-[13px] [&_li]:flex [&_li]:gap-1.5">
+                        {lab.requiredObservations.map((tag) => {
+                          const seen = saved.observed.includes(tag);
+                          return (
+                            <li key={tag} data-observed={seen}>
+                              <span aria-hidden>{seen ? '✓' : '○'}</span>
+                              <span>
+                                {lab.observationLabels[tag] ?? tag}
+                                <span className="sr-only">
+                                  {seen ? ' · 관찰함' : ' · 아직 관찰하지 않음'}
+                                </span>
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
                   {done && active.result.responses.length > 0 && (
                     <details>
                       <summary>요청별 응답 {active.result.responses.length}건</summary>
@@ -496,7 +533,13 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                       </Button>
                       {(checked || completed) && (
                         <p role="status">
-                          {completed ? '실습 완료. ' : '다시 생각해 보세요. '}
+                          {completed
+                            ? '실습 완료. '
+                            : saved.quiz && missing.length
+                              ? '이해 확인은 맞았습니다. 남은 관찰: ' +
+                                missing.map((tag) => lab.observationLabels[tag] ?? tag).join(', ') +
+                                '. '
+                              : '다시 생각해 보세요. '}
                           {question.explanation}
                         </p>
                       )}
@@ -523,7 +566,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                     key={kind}
                     data-kind={kind}
                     className={cn(
-                      kindColor[kind],
+                      kindClass(view, kind),
                       'border-[color:color-mix(in_srgb,var(--kind-color)_32%,var(--color-rule))] bg-[color-mix(in_srgb,var(--kind-color)_10%,var(--color-paper))] enabled:hover:bg-[color-mix(in_srgb,var(--kind-color)_18%,var(--color-paper))]',
                     )}
                     type="button"

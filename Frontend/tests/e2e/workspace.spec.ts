@@ -17,7 +17,7 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize(viewport);
-    await page.goto('/#/learn/rag-workflow');
+    await page.goto('/#/learn/week7-workflow');
     await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
     await expect(page.getByRole('button', { name: '강의 목차 열기' })).toBeVisible();
     const canvas = page.getByTestId('weekly-canvas');

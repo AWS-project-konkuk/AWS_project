@@ -18,7 +18,9 @@ import {
   type Material,
   type Point,
   type PortSpec,
+  type SettingValue,
   type Version,
+  settingIssue,
 } from './lab';
 import { week2Lab } from './labs/week2';
 
@@ -30,6 +32,7 @@ export type Command =
   | { type: 'resize'; id: string; width: number; height: number }
   | { type: 'cluster'; id: string; patch: Partial<KubernetesSettings> }
   | { type: 'pod-label'; id: string; value: string }
+  | { type: 'setting'; id: string; key: string; value: SettingValue }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
   | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
   | { type: 'connect'; edge: Connection }
@@ -177,6 +180,17 @@ export function applyCommand(graph: Graph, cmd: Command, lab: LabConfig = week2L
           '복제본은 1~10개, 포트는 1~65535, 라벨은 소문자·숫자·하이픈으로 입력하세요.',
         );
       return change(item.id, () => ({ ...item, kubernetes: settings }));
+    }
+    case 'setting': {
+      const spec = lab.settingSpecs[item.kind]?.find((candidate) => candidate.key === cmd.key);
+      if (!spec) throw new Error('이 항목에는 없는 설정입니다.');
+      const issue = settingIssue(spec, cmd.value);
+      if (issue) throw new Error(issue);
+      const next = change(item.id, () => ({
+        ...item,
+        settings: { ...item.settings, [cmd.key]: cmd.value },
+      }));
+      return lab.onSetting(next, item.id, cmd.key, cmd.value);
     }
     case 'pod-label': {
       if (item.type !== 'resource' || item.kind !== 'pod') return graph;

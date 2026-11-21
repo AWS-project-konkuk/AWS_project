@@ -23,12 +23,26 @@ export interface Point {
   x: number;
   y: number;
 }
+export type SettingValue = string | number;
+/** 노드·서비스 설정 항목의 정의. 값은 entity.settings에 저장한다. */
+export interface SettingSpec {
+  key: string;
+  label: string;
+  help?: string;
+  type: 'number' | 'choice';
+  initial: SettingValue;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: readonly { value: string; label: string }[];
+}
 interface EntityBase {
   id: string;
   name: string;
   parent: string;
   position: Point;
   enabled?: boolean;
+  settings?: Record<string, SettingValue>;
 }
 export interface KubernetesSettings {
   imageId: string;
@@ -125,7 +139,45 @@ export interface LabConfig {
   persistence: LabPersistence;
   /** AI 조언 요청을 지원하는지. */
   aiHint: boolean;
+  /** 종류별 설정 항목. */
+  settingSpecs: Record<Kind, readonly SettingSpec[]>;
+  /** 설정이 바뀔 때 포트 같은 파생 구성을 맞춘다. */
+  onSetting: (graph: Graph, id: string, key: string, value: SettingValue) => Graph;
+  /** 실습 완료에 필요한 실행 관찰. 실행이 남긴 태그로 기록한다. */
+  requiredObservations: readonly string[];
+  observationLabels: Record<string, string>;
 }
+
+export const defaultSettings = (
+  lab: LabConfig,
+  kind: Kind,
+): Record<string, SettingValue> | undefined => {
+  const specs = lab.settingSpecs[kind];
+  return specs?.length
+    ? Object.fromEntries(specs.map((spec) => [spec.key, spec.initial]))
+    : undefined;
+};
+export function settingIssue(spec: SettingSpec, value: unknown): string | undefined {
+  if (spec.type === 'number') {
+    if (
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      value < (spec.min ?? -Infinity) ||
+      value > (spec.max ?? Infinity)
+    )
+      return spec.label + '은 ' + spec.min + '~' + spec.max + ' 범위로 입력하세요.';
+    return;
+  }
+  if (typeof value !== 'string' || !spec.options?.some((option) => option.value === value))
+    return spec.label + ' 선택지 중에서 고르세요.';
+}
+export const isComplete = (
+  lab: LabConfig,
+  saved: { proof: string | null; quiz: boolean; observed?: string[] },
+) =>
+  !!saved.proof &&
+  saved.quiz &&
+  lab.requiredObservations.every((tag) => saved.observed?.includes(tag));
 
 export const isSystemKind = (lab: LabConfig, kind: Kind) => Object.hasOwn(lab.tools, kind);
 export const protectedKind = (lab: LabConfig, kind: Kind) => lab.fixedKinds.includes(kind);
@@ -145,12 +197,14 @@ export function makeEntity(
   parent: string,
   position: Point,
 ): Entity {
+  const settings = defaultSettings(lab, kind);
   const base = {
     id,
     name: lab.labels[kind],
     parent,
     position,
     ...(hasRunState(lab, kind) && { enabled: false }),
+    ...(settings && { settings }),
   };
   if (isSystemKind(lab, kind))
     return {
@@ -246,6 +300,7 @@ export function signature(graph: Graph) {
         parent: entity.parent,
         name: entity.name,
         enabled: entity.enabled,
+        ...(entity.settings && { settings: entity.settings }),
         ...(entity.type === 'system' && entity.kubernetes && { kubernetes: entity.kubernetes }),
         ...(entity.type === 'system' && entity.ports && { ports: entity.ports }),
         ...(entity.type === 'resource' && {

@@ -4,6 +4,7 @@ import { chapterLabel } from '../curriculum/catalog';
 import type { Lesson } from '../curriculum/types';
 import { lessonBodies } from '../content/lessons';
 import { labFor } from '../systemLab/labs';
+import { labViews } from '../systemLab/labs/views';
 import { WorkflowMap } from './WorkflowMap';
 import { LessonMdxProvider, lessonMdxComponents } from './LessonMdx';
 import styles from './LessonLayout.module.css';
@@ -60,7 +61,7 @@ export function LessonArticle({
           <h2>읽은 내용을 실습으로 확인하기</h2>
           <p>
             {labFor(lesson.id)
-              ? '시스템과 노드를 실행 상태로 바꾸고 입출력을 연결해 두 Pod의 응답을 확인하세요.'
+              ? (labViews[lesson.id]?.entry ?? '노드의 입출력을 연결하고 실행해 결과를 확인하세요.')
               : '예시 실행, 잘못된 구성 수정, 새 구성 만들기 순서로 연습하세요. 실습 화면의 완료 조건에서 남은 목표를 확인할 수 있습니다.'}
           </p>
           <button onClick={onStartPractice}>이제 실습 시작하기</button>

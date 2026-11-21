@@ -18,10 +18,22 @@ export type Response = {
   viaService?: string;
   label: string;
 };
+/** 실습별로 자유롭게 정의하는 자료. material이 포트 타입이고 data가 값이다. */
+export interface DataArtifact {
+  type: 'data';
+  material: string;
+  summary: string;
+  data: Record<string, unknown>;
+}
 export type Artifact =
   | { type: 'request'; requests: Request[] }
   | { type: 'prediction'; responses: Response[] }
-  | { type: 'model' | 'image' | 'control'; version: Version; source: string };
+  | { type: 'model' | 'image' | 'control'; version: Version; source: string }
+  | DataArtifact;
+export interface Metric {
+  label: string;
+  value: string;
+}
 export interface Transfer {
   edge: string;
   from: string;
@@ -42,13 +54,22 @@ export interface RunResult {
   cycle: string[];
   responses: Response[];
   message: string;
+  /** 도착 노드가 보고하는 결과 지표. */
+  metrics: Metric[];
+  /** 이 실행이 남긴 관찰 태그. 실패한 실행도 포함한다. */
+  observations: string[];
 }
 export interface StepContext {
   lab: LabConfig;
   node: ResourceEntity;
   graph: Graph;
   inputs: Artifact[];
-  emit: (artifact: Artifact) => void;
+  /** 입력 포트별로 도착한 자료. */
+  byPort: Record<string, Artifact[]>;
+  /** portId를 주면 그 출력 포트로만 보낸다. */
+  emit: (artifact: Artifact, portId?: string) => void;
+  observe: (tag: string) => void;
+  report: (metrics: Metric[]) => void;
   distribute: (requests: Request[]) => number;
   finish: (responses: Response[]) => void;
 }
@@ -84,6 +105,7 @@ function cycleEdges(graph: Graph) {
 function describe(lab: LabConfig, a: Artifact, material: Material) {
   if (a.type === 'request') return lab.materials[material] + ' ' + a.requests.length + '건';
   if (a.type === 'prediction') return lab.materials[material] + ' ' + a.responses.length + '건';
+  if (a.type === 'data') return a.summary;
   return (a.type === 'model' ? 'model.pkl · ' : lab.materials[material] + ' ') + a.version;
 }
 
@@ -97,6 +119,8 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
       steps: [],
       cycle,
       responses: [],
+      metrics: [],
+      observations: [],
       message: '순환 연결이 있습니다. 강조된 선을 확인하세요.',
     };
   const end = graph.entities.find((e) => e.kind === 'end');
@@ -123,6 +147,8 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
   const done = new Set<string>();
   const values = new Map<string, Artifact>();
   let responses: Response[] = [];
+  let metrics: Metric[] = [];
+  const observations = new Set<string>();
   while (pending.length) {
     const index = pending.findIndex((e) =>
       graph.connections.every((wire) => wire.to.node !== e.id || done.has(wire.from.node)),
@@ -145,6 +171,11 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
       const value = values.get(e.id);
       return value ? [value] : [];
     });
+    const byPort: Record<string, Artifact[]> = {};
+    for (const e of incoming) {
+      const value = values.get(e.id);
+      if (value) (byPort[e.to.port] ??= []).push(value);
+    }
     const outgoing = graph.connections.filter((e) => e.from.node === node.id);
     const transfers: Transfer[] = [];
     const send = (edge: (typeof outgoing)[number], value: Artifact) => {
@@ -153,7 +184,7 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
         edge: edge.id,
         from: edge.from.node,
         to: edge.to.node,
-        description: describe(lab, value, value.type),
+        description: describe(lab, value, value.type === 'data' ? value.material : value.type),
         artifact: value,
       });
     };
@@ -163,12 +194,17 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
         node,
         graph,
         inputs,
-        emit: (artifact) => {
+        byPort,
+        observe: (tag) => observations.add(tag),
+        report: (next) => {
+          metrics = next;
+        },
+        emit: (artifact, portId) => {
+          const material = artifact.type === 'data' ? artifact.material : artifact.type;
           const ports = node.ports.filter(
-            (p) => p.direction === 'out' && p.material === artifact.type,
+            (p) => p.direction === 'out' && p.material === material && (!portId || p.id === portId),
           );
-          if (!ports.length)
-            throw new Error(lab.materials[artifact.type] + ' 출력 포트가 없습니다.');
+          if (!ports.length) throw new Error(lab.materials[material] + ' 출력 포트가 없습니다.');
           for (const e of outgoing) if (ports.some((p) => p.id === e.from.port)) send(e, artifact);
         },
         distribute: (batch) => {
@@ -203,6 +239,8 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
     steps,
     cycle,
     responses,
+    metrics,
+    observations: [...observations],
     success: last?.status === 'success',
     message: last?.message ?? '도착 노드에서 결과를 확인하지 못했습니다.',
   };

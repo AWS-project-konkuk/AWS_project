@@ -109,12 +109,12 @@ test('이전 기록·Playground를 보존하고 새 평가로 승격하지 않�
   );
 });
 test('노드 실습은 본문부터 열리고 단계별 편집을 제공한다', async ({ page }) => {
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week7-workflow');
   await expect(page.getByTestId('weekly-canvas')).toBeHidden();
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await page.getByRole('button', { name: '1. 예시 흐름 추적' }).click();
   await expect(
-    page.getByTestId('weekly-canvas').getByText('질문 임베딩', { exact: true }).first(),
+    page.getByTestId('weekly-canvas').getByText('운영 모델', { exact: true }).first(),
   ).toBeVisible();
   await page.getByRole('button', { name: '연결 검사', exact: true }).click();
   await expect(

@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, type ReactNode } from 'react';
+import { kindColor } from './appearance';
 import type { Command } from './commands';
 import type { Direction, Entity, Graph, LabConfig, Material } from './lab';
 
@@ -20,10 +21,14 @@ export interface LabView {
   title: string;
   description: string;
   ariaLabel: string;
+  /** 본문 끝의 실습 시작 안내 문구. */
+  entry: string;
   icons: Record<string, LucideIcon>;
   materialIcons: Record<Material, LucideIcon>;
   /** 캔버스의 선과 포트에 쓰는 자료 타입별 색. */
   tones: Record<Material, string>;
+  /** 종류별 색. 없으면 기본 색을 쓴다. */
+  kindColors?: Record<string, string>;
   hints: Record<string, string>;
   /** 노드 종류별 안내 패널(시작·도착 등). */
   panels: Record<string, (graph: Graph, lab: LabConfig) => ReactNode>;
@@ -38,6 +43,8 @@ interface LabContextValue {
 }
 const LabContext = createContext<LabContextValue | null>(null);
 export const LabProvider = LabContext.Provider;
+export const kindClass = (view: LabView, kind: string) =>
+  view.kindColors?.[kind] ?? kindColor[kind] ?? kindColor.root;
 export function useLab(): LabContextValue {
   const value = useContext(LabContext);
   if (!value) throw new Error('시스템 실습 설정이 없습니다.');

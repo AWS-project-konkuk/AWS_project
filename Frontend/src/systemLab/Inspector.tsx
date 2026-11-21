@@ -283,6 +283,51 @@ export function Inspector({
             </Button>
           </div>
         )}
+        {lab.settingSpecs[node.kind]?.map((spec) => {
+          const current = node.settings?.[spec.key] ?? spec.initial;
+          return (
+            <label key={spec.key}>
+              {spec.label}
+              {spec.type === 'number' ? (
+                <Input
+                  aria-label={spec.label}
+                  type="number"
+                  min={spec.min}
+                  max={spec.max}
+                  step={spec.step}
+                  key={String(current)}
+                  defaultValue={current}
+                  onBlur={(e) => {
+                    if (
+                      !dispatch({
+                        type: 'setting',
+                        id: node.id,
+                        key: spec.key,
+                        value: Number(e.target.value),
+                      })
+                    )
+                      e.target.value = String(current);
+                  }}
+                />
+              ) : (
+                <NativeSelect
+                  aria-label={spec.label}
+                  value={String(current)}
+                  onChange={(e) =>
+                    dispatch({ type: 'setting', id: node.id, key: spec.key, value: e.target.value })
+                  }
+                >
+                  {spec.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {spec.help && <small className="text-ui-muted">{spec.help}</small>}
+            </label>
+          );
+        })}
         {node.type === 'system' && view.systemSettings?.(settings)}
         {!locked && (
           <>

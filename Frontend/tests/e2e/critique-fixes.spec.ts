@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('읽기에서 실습으로 진입하고 숨겨진 문항까지 완료 안내로 이동한다', async ({ page }) => {
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week7-workflow');
   await expect(
     page.getByTestId('lesson-workspace').locator('..').locator(':scope > footer'),
   ).toContainText('설명을 읽었다면 실습을 시작하세요.');
@@ -28,29 +28,29 @@ test('읽기에서 실습으로 진입하고 숨겨진 문항까지 완료 안�
   await page.screenshot({ path: 'test-results/critique-completion.png' });
 });
 
-test('RAG 결과 패널의 순번과 화살표는 실제 실행 순서를 따른다', async ({ page }) => {
-  await page.goto('/#/learn/rag-workflow');
+test('결과 패널의 순번과 화살표는 실제 실행 순서를 따른다', async ({ page }) => {
+  await page.goto('/#/learn/week7-workflow');
   await page.getByRole('button', { name: '실습 시작하기', exact: true }).click();
   await page.getByRole('button', { name: '1. 예시 흐름 추적' }).click();
   await page.getByRole('button', { name: '단계 실행', exact: true }).click();
   const next = page.getByRole('button', { name: '다음 단계', exact: true });
   for (let i = 0; i < 10 && !(await next.isDisabled()); i++) await next.click();
-  await expect(page.getByLabel('현재 데이터 흐름')).toContainText('6/6');
-  await expect(page.getByLabel('현재 데이터 흐름')).toContainText('응답 예시');
+  await expect(page.getByLabel('현재 데이터 흐름')).toContainText('7/7');
+  await expect(page.getByLabel('현재 데이터 흐름')).toContainText('안전한 재배포');
   await page.getByRole('button', { name: '설정·결과 열기', exact: true }).click();
   const nav = page.getByRole('navigation', { name: '실행 단계', exact: true });
-  await expect(nav).toContainText(/실행 6\s*\/\s*6 응답 예시/);
+  await expect(nav).toContainText(/실행 7\s*\/\s*7 안전한 재배포/);
   await expect(nav.getByRole('button', { name: '다음 단계 살펴보기' })).toBeDisabled();
   await nav.getByRole('button', { name: '이전 단계 살펴보기' }).click();
-  await expect(nav).toContainText(/실행 5\s*\/\s*6/);
-  await expect(nav).not.toContainText('질문 임베딩');
+  await expect(nav).toContainText(/실행 6\s*\/\s*7/);
+  await expect(nav).not.toContainText('안전한 재배포');
   await nav.getByRole('button', { name: '다음 단계 살펴보기' }).click();
-  await expect(nav).toContainText('응답 예시');
+  await expect(nav).toContainText('안전한 재배포');
   await page.screenshot({ path: 'test-results/critique-execution-order.png' });
 });
 
 test('과제 전환 전의 사용자 설정과 연결을 되돌린다', async ({ page }) => {
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week7-workflow');
   await page.getByRole('button', { name: '실습 시작하기', exact: true }).click();
   await page.getByRole('button', { name: '1. 예시 흐름 추적' }).click();
   const edges = page.getByTestId('weekly-canvas').locator('.react-flow__edge');
@@ -58,19 +58,19 @@ test('과제 전환 전의 사용자 설정과 연결을 되돌린다', async ({
   expect(count).toBeGreaterThan(0);
   await page.getByRole('button', { name: '설정·결과 열기', exact: true }).click();
   await page.getByRole('button', { name: '노드 설정', exact: true }).click();
-  await page.getByLabel('질문 임베딩 공간', { exact: true }).selectOption('other');
+  await page.getByLabel('정답 피드백', { exact: true }).selectOption('missing');
   await page.getByRole('button', { name: '3. 새로운 상황 구성' }).click();
   await expect(edges).toHaveCount(0);
   await page.getByRole('button', { name: '직전 구성 되돌리기', exact: true }).click();
   await expect(edges).toHaveCount(count);
-  await expect(page.getByLabel('질문 임베딩 공간', { exact: true })).toHaveValue('other');
+  await expect(page.getByLabel('정답 피드백', { exact: true })).toHaveValue('missing');
   await expect(page.getByRole('button', { name: '직전 구성 되돌리기', exact: true })).toHaveCount(
     0,
   );
 });
 
 test('실습 모드는 전체 연결, 초기 일부 연결, 연결 없음으로 구분한다', async ({ page }) => {
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week7-workflow');
   await page.getByRole('button', { name: '실습 시작하기', exact: true }).click();
   const edges = page.getByTestId('weekly-canvas').locator('.react-flow__edge');
   const initialCount = await edges.count();

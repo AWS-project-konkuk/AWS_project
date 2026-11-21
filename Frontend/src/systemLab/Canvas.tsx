@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import {
   Background,
   Controls,
@@ -30,18 +37,11 @@ import {
   type Kind,
   type Point,
 } from './lab';
-import { useLab } from './labContext';
+import { kindClass, useLab } from './labContext';
 import { Button } from '../components/ui/button';
 import { NativeSelect } from '../components/ui/native-select';
 import { cn } from '../components/ui/styles';
-import {
-  divider,
-  entityFrame,
-  entityStatus,
-  kindColor,
-  materialColor,
-  portHandle,
-} from './appearance';
+import { divider, entityFrame, entityStatus, portHandle } from './appearance';
 
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
   const { view } = useLab();
@@ -50,7 +50,7 @@ export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
     <Icon
       size={size}
       aria-hidden
-      className={cn('shrink-0 text-(--kind-color)', kindColor[kind])}
+      className={cn('shrink-0 text-(--kind-color)', kindClass(view, kind))}
       data-kind-icon={kind}
     />
   );
@@ -100,7 +100,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
       <section
         className={cn(
           entityFrame,
-          kindColor[entity.kind],
+          kindClass(view, entity.kind),
           'group/entity size-full rounded-[10px] bg-[color-mix(in_srgb,var(--kind-color)_6%,var(--color-paper-2))]',
         )}
         data-kind={entity.kind}
@@ -170,8 +170,8 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                   key={port.id}
                   className={cn(
                     'group/port relative flex h-7 items-center gap-1 pl-4 text-[11px] text-(--port-color)',
-                    materialColor[port.material],
                   )}
+                  style={{ '--port-color': view.tones[port.material] } as CSSProperties}
                   data-connected={data.connected.has(port.id)}
                 >
                   <Handle
@@ -198,7 +198,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
     <article
       className={cn(
         entityFrame,
-        kindColor[entity.kind],
+        kindClass(view, entity.kind),
         'group/entity rounded-lg bg-ui-paper shadow-(--shadow-card) data-[status=처리_중]:outline-2 data-[status=처리_중]:outline-ui-accent',
       )}
       data-kind={entity.kind}
@@ -243,9 +243,9 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                   <div
                     key={port.id}
                     className={cn(
-                      materialColor[port.material],
                       'group/port relative flex h-7 items-center gap-[3px] whitespace-nowrap pr-0.5 pl-2.5 text-[11px] data-[direction=out]:justify-end data-[direction=out]:pr-2.5 data-[direction=out]:pl-0.5 [&>span]:truncate [&>svg]:shrink-0 [&>svg]:text-(--port-color)',
                     )}
+                    style={{ '--port-color': view.tones[port.material] } as CSSProperties}
                     data-direction={direction}
                     data-material={port.material}
                     data-connected={data.connected.has(port.id)}

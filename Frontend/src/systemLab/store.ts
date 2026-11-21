@@ -3,11 +3,14 @@ import { applyCommand, type Command } from './commands';
 import {
   connection,
   connectionIssue,
+  defaultSettings,
   hasRunState,
+  isComplete,
   isSystemKind,
   protectedKind,
   requiredLabEntities,
   rootId,
+  settingIssue,
   signature,
   type Connection,
   type Entity,
@@ -26,12 +29,15 @@ interface Saved {
   graph: Graph;
   quiz: boolean;
   proof: string | null;
+  /** 실행에서 관찰한 조건. 위치 변경이나 확대로 지워지지 않는다. */
+  observed: string[];
 }
 const fresh = (lab: LabConfig): Saved => ({
   version: 1,
   graph: lab.initial(),
   quiz: false,
   proof: null,
+  observed: [],
 });
 const fail = () => {
   throw new Error('실습 저장 데이터를 읽을 수 없습니다.');
@@ -48,7 +54,9 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
     !(saved.proof === null || typeof saved.proof === 'string') ||
     !record(saved.graph) ||
     !Array.isArray(saved.graph.entities) ||
-    !Array.isArray(saved.graph.connections)
+    !Array.isArray(saved.graph.connections) ||
+    (saved.observed !== undefined &&
+      !(Array.isArray(saved.observed) && saved.observed.every((tag) => typeof tag === 'string')))
   )
     return fail();
   const persistence = lab.persistence;
@@ -103,6 +111,14 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
       }
     }
     if (!persistence.validateEntity(item, kind)) return fail();
+    if (item.settings !== undefined) {
+      const specs = lab.settingSpecs[kind] ?? [];
+      if (!record(item.settings)) return fail();
+      for (const [key, value] of Object.entries(item.settings)) {
+        const spec = specs.find((candidate) => candidate.key === key);
+        if (!spec || settingIssue(spec, value)) return fail();
+      }
+    }
     const entity = item as unknown as Entity;
     if (protectedKind(lab, kind)) {
       const fixed = base.entities.find((e) => e.kind === kind);
@@ -150,7 +166,13 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
     }
   }
   const graph: Graph = {
-    entities: entities.map(persistence.normalizeEntity),
+    entities: entities.map((entity) => {
+      const normalized = persistence.normalizeEntity(entity);
+      const defaults = defaultSettings(lab, normalized.kind);
+      return defaults
+        ? { ...normalized, settings: { ...defaults, ...normalized.settings } }
+        : normalized;
+    }),
     connections: [],
   };
   for (const item of saved.graph.connections as unknown[]) {
@@ -189,6 +211,7 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
     version: 1,
     graph,
     quiz: saved.quiz,
+    observed: (saved.observed as string[] | undefined) ?? [],
     proof:
       compatible &&
       saved.proof === previousSignature &&
@@ -208,6 +231,7 @@ interface Store {
   redo: () => void;
   prove: (proof: string) => void;
   quiz: (correct: boolean) => void;
+  observe: (tags: string[]) => void;
   recover: () => void;
 }
 const update = (saved: Saved, graph: Graph): Saved => ({
@@ -274,6 +298,11 @@ export function createLabStore(lab: LabConfig) {
     quiz(correct) {
       set(({ saved }) => ({ saved: { ...saved, quiz: correct } }));
     },
+    observe(tags) {
+      const { saved } = get();
+      const observed = [...new Set([...saved.observed, ...tags])];
+      if (observed.length !== saved.observed.length) set({ saved: { ...saved, observed } });
+    },
     recover() {
       set({ blocked: false, saved: fresh(lab), past: [], future: [], warning: '' });
     },
@@ -304,10 +333,9 @@ export function labStore(lab: LabConfig): LabStore {
 /** 1단원 실습의 스토어. 다른 실습은 `labStore(lab)`을 사용한다. */
 export const useSystemLab = labStore(week2Lab);
 const labList = Object.values(labConfigs);
-const completed = (saved: Saved) => !!saved.proof && saved.quiz;
 export function useLessonCompletion(data: LearningData) {
   // 전환한 강의 수는 모듈이 정해 두므로 훅 호출 순서가 바뀌지 않는다.
-  const done = labList.map((lab) => labStore(lab)((state) => completed(state.saved)));
+  const done = labList.map((lab) => labStore(lab)((state) => isComplete(lab, state.saved)));
   return (id: string) => {
     const index = labList.findIndex((lab) => lab.id === id);
     return index >= 0 ? done[index] : !!data.lessons[id]?.completed;
