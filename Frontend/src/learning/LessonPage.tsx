@@ -7,7 +7,7 @@ import type { Lesson } from '../curriculum/types';
 import { CourseSidebar } from './CourseSidebar';
 import { LessonArticle } from './LessonArticle';
 import { SystemLab } from '../systemLab/SystemLab';
-import { pilotLesson } from '../systemLab/model';
+import { labFor } from '../systemLab/labs';
 import { useLessonCompletion } from '../systemLab/store';
 import { WeeklyLab } from '../weekly/WeeklyLab';
 import { useLearning } from './LearningStore';
@@ -27,7 +27,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
   const index = lessons.indexOf(lesson);
   const next = lessons[index + 1];
   const completed = useLessonCompletion(state.data)(lesson.id);
-  const pilot = lesson.id === pilotLesson;
+  const pilot = labFor(lesson.id) !== undefined;
   const pendingGoal =
     lesson.workflow && !pilot
       ? workflowGoals(lesson, getLab(state.data, lesson.id)).find((goal) => !goal.passed)

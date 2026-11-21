@@ -2,6 +2,7 @@ import type { HintRequest } from '../api/hint';
 import type { Lesson } from '../curriculum/types';
 import type { RunResult } from './engine';
 import { definition, pilotLesson, serviceRoutes, signature, type Graph } from './model';
+import { labFor } from './labs';
 
 /** Matches SystemLab's animation state, not just the eagerly computed engine result. */
 export interface HintRun {
@@ -13,7 +14,7 @@ export interface HintRun {
 
 export function canRequestHint(lessonId: string, graph: Graph, run: HintRun | null): boolean {
   return (
-    lessonId === pilotLesson &&
+    labFor(lessonId)?.aiHint === true &&
     run !== null &&
     run.stamp === signature(graph) &&
     !run.stopped &&

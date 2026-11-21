@@ -12,46 +12,25 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import {
-  Box,
-  Cable,
-  ChevronDown,
-  ChevronRight,
-  CircleCheck,
-  CirclePlay,
-  Cpu,
-  FileBox,
-  FileCog,
-  Layers,
-  Maximize,
-  Network,
-  Package,
-  Route,
-  Send,
-  Server,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Maximize } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
 import { blockedBy, type RunResult } from './engine';
 import {
   absolute,
   connection,
   manualConnectionIssue,
-  serviceRoutes,
   descendants,
   findPort,
   hasRunState,
-  materials,
   portLabel,
-  resourceRoles,
   rootId,
-  starterTasks,
   type Connection,
   type Entity,
   type Graph,
   type Kind,
-  type Material,
   type Point,
-} from './model';
+} from './lab';
+import { useLab } from './labContext';
 import { Button } from '../components/ui/button';
 import { NativeSelect } from '../components/ui/native-select';
 import { cn } from '../components/ui/styles';
@@ -64,22 +43,9 @@ import {
   portHandle,
 } from './appearance';
 
-const icons = {
-  root: Layers,
-  ec2: Server,
-  docker: Package,
-  kubernetes: Network,
-  start: CirclePlay,
-  end: CircleCheck,
-  model: FileBox,
-  image: Box,
-  deployment: FileCog,
-  service: Route,
-  pod: Cpu,
-  container: Package,
-};
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
-  const Icon = icons[kind];
+  const { view } = useLab();
+  const Icon = view.icons[kind] ?? view.icons.root;
   return (
     <Icon
       size={size}
@@ -89,13 +55,6 @@ export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
     />
   );
 }
-const materialIcons = {
-  request: Send,
-  prediction: CircleCheck,
-  model: FileBox,
-  image: Box,
-  control: Cable,
-};
 export interface MenuItem {
   label: string;
   ids: string[];
@@ -117,6 +76,7 @@ interface CanvasData extends Record<string, unknown> {
 type CanvasNode = Node<CanvasData, 'entity'>;
 
 function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
+  const { lab, view } = useLab();
   const { entity } = data;
   const update = useUpdateNodeInternals();
   const ports = entity.ports;
@@ -130,7 +90,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
       ? '출력 전용'
       : entity.kind === 'end'
         ? '입력 전용'
-        : hasRunState(entity.kind)
+        : hasRunState(lab, entity.kind)
           ? entity.enabled
             ? '실행 준비'
             : '정지'
@@ -203,8 +163,8 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
         {ports && (
           <div className="absolute top-16 left-0">
             {ports.map((port) => {
-              const label = portLabel(ports, port) + ' 입력';
-              const Icon = materialIcons[port.material];
+              const label = portLabel(lab, ports, port) + ' 입력';
+              const Icon = view.materialIcons[port.material];
               return (
                 <div
                   key={port.id}
@@ -256,13 +216,13 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
         <strong className="min-w-0 flex-1 truncate text-sm" title={entity.name}>
           {entity.name}
         </strong>
-        {(status || resourceRoles[entity.kind]) && (
+        {(status || lab.resourceRoles[entity.kind]) && (
           <small className={cn('whitespace-nowrap text-[11px] text-ui-muted', entityStatus)}>
-            {status ?? resourceRoles[entity.kind]}
+            {status ?? lab.resourceRoles[entity.kind]}
           </small>
         )}
       </header>
-      {entity.kind === 'service' && (
+      {lab.routeSources.includes(entity.kind) && (
         <Handle
           id="service-route"
           type="source"
@@ -277,8 +237,8 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             {entity.ports
               .filter((p) => p.direction === direction)
               .map((port) => {
-                const Icon = materialIcons[port.material];
-                const label = portLabel(entity.ports, port);
+                const Icon = view.materialIcons[port.material];
+                const label = portLabel(lab, entity.ports, port);
                 return (
                   <div
                     key={port.id}
@@ -297,12 +257,8 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                       position={direction === 'in' ? Position.Left : Position.Right}
                       isConnectable={
                         data.editable &&
-                        !(entity.kind === 'service' && direction === 'out') &&
-                        !(
-                          entity.kind === 'pod' &&
-                          port.material === 'request' &&
-                          direction === 'in'
-                        )
+                        !(lab.routeSources.includes(entity.kind) && direction === 'out') &&
+                        !lab.autoInput(entity, port)
                       }
                       className={cn(
                         portHandle,
@@ -398,13 +354,6 @@ function ResizeGrip({
   );
 }
 const nodeTypes = { entity: EntityView };
-const tones: Record<Material, string> = {
-  request: 'var(--lab-request)',
-  prediction: 'var(--lab-prediction)',
-  model: 'var(--lab-model)',
-  image: 'var(--lab-image)',
-  control: 'var(--lab-control)',
-};
 
 interface Props {
   graph: Graph;
@@ -432,6 +381,7 @@ export function Canvas({
   selectedEdge,
   selectEdge,
 }: Props) {
+  const { lab, view } = useLab();
   const flow = useReactFlow<CanvasNode>();
   const element = useRef<HTMLDivElement>(null);
   const [folded, setFolded] = useState<string[]>([]);
@@ -475,13 +425,13 @@ export function Canvas({
       cancelAnimationFrame(frame);
     };
   }, []);
-  const nextTask = starterTasks.find((task) => !manualConnectionIssue(graph, task));
+  const nextTask = lab.starterTasks.find((task) => !manualConnectionIssue(lab, graph, task));
   const recommended = nextTask ? [nextTask.from, nextTask.to] : [];
   const shownSteps = run?.steps.slice(0, cursor) ?? [];
   const active = editable ? undefined : run?.steps[cursor];
   const byNode = new Map(shownSteps.map((step) => [step.node, step]));
   const transfers = new Set(shownSteps.flatMap((step) => step.transfers.map((t) => t.edge)));
-  const generated = serviceRoutes(graph);
+  const generated = lab.routes(graph);
   const derived = new Set(generated.map((edge) => edge.id));
   const connections = [...graph.connections, ...generated];
   const connected = new Map<string, Set<string>>();
@@ -503,7 +453,7 @@ export function Canvas({
           ? { success: '성공', failed: '실패', blocked: '차단' }[step.status]
           : active?.node === entity.id
             ? '처리 중'
-            : entity.enabled && blockedBy(graph, entity.id)
+            : entity.enabled && blockedBy(graph, entity.id, lab)
               ? '차단'
               : undefined;
         const groupSize =
@@ -611,7 +561,7 @@ export function Canvas({
       continue;
     }
     const material = findPort(graph, e.from)?.material ?? 'request';
-    const color = cycle ? 'var(--color-error)' : tones[material];
+    const color = cycle ? 'var(--color-error)' : view.tones[material];
     edgeLookup.set(e.id, e);
     edges.push({
       id: e.id,
@@ -637,7 +587,7 @@ export function Canvas({
         ' → ' +
         entityMap.get(target)?.name +
         ' ' +
-        materials[material],
+        lab.materials[material],
     });
   }
   for (const [id, summary] of summaries)
@@ -674,7 +624,7 @@ export function Canvas({
             fit();
           }}
         >
-          <Layers size={15} /> 전체 서비스
+          <view.icons.root size={15} /> 전체 서비스
         </Button>
         <NativeSelect
           aria-label="캔버스에서 항목 찾기"
@@ -744,6 +694,7 @@ export function Canvas({
           !!e.sourceHandle &&
           !!e.targetHandle &&
           !manualConnectionIssue(
+            lab,
             graph,
             connection(e.source, e.sourceHandle, e.target, e.targetHandle),
           )

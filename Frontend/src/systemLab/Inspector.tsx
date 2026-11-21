@@ -4,25 +4,19 @@ import { reparent, type Command } from './commands';
 import { blockedBy } from './engine';
 import {
   descendants,
-  appLabel,
-  definition,
-  hasRunState,
-  labels,
-  materials,
-  portLabel,
   editablePortTypes,
+  hasRunState,
+  portLabel,
   protectedKind,
   requiredLabEntities,
-  resourceRoles,
   rootId,
-  tools,
   type Direction,
   type Entity,
   type Graph,
   type Material,
   type PortSpec,
-  type Version,
-} from './model';
+} from './lab';
+import { useLab } from './labContext';
 import { KindIcon } from './Canvas';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -45,9 +39,10 @@ function PortRow({
   port: PortSpec;
   dispatch: Dispatch;
 }) {
+  const { lab } = useLab();
   const [choose, setChoose] = useState(false);
   const attached = graph.connections.filter((e) => e.to.node === node.id && e.to.port === port.id);
-  const label = portLabel(node.ports ?? [], port);
+  const label = portLabel(lab, node.ports ?? [], port);
   return (
     <div className="[&_label]:my-[5px]">
       <div className={portControls}>
@@ -63,9 +58,9 @@ function PortRow({
             })
           }
         >
-          {editablePortTypes(node.kind, port.direction).map((type) => (
+          {editablePortTypes(lab, node.kind, port.direction).map((type) => (
             <option key={type} value={type}>
-              {materials[type]}
+              {lab.materials[type]}
             </option>
           ))}
         </NativeSelect>
@@ -138,7 +133,8 @@ function PortList({
   direction: Direction;
   dispatch: Dispatch;
 }) {
-  const choices = editablePortTypes(node.kind, direction);
+  const { lab } = useLab();
+  const choices = editablePortTypes(lab, node.kind, direction);
   const [draft, setDraft] = useState<Material>(choices[0]);
   const title = direction === 'in' ? '입력' : '출력';
   if (!choices.length) return null;
@@ -161,7 +157,7 @@ function PortList({
         >
           {choices.map((type) => (
             <option key={type} value={type}>
-              {materials[type]}
+              {lab.materials[type]}
             </option>
           ))}
         </NativeSelect>
@@ -183,22 +179,6 @@ function PortList({
     </section>
   );
 }
-const hints = {
-  root: '시스템을 선택하면 아래에서 만들 수 있는 도구를 볼 수 있습니다.',
-  ec2: 'Docker와 Kubernetes를 배치할 실행 환경입니다.',
-  docker: '서빙 앱을 실행할 이미지와 컨테이너를 준비합니다.',
-  kubernetes: 'Pod의 실행과 요청 전달을 구성합니다.',
-  start: '학습된 모델 파일과 리뷰 요청 10건을 각각의 출력 포트로 제공합니다.',
-  end: '두 Pod의 응답 10건이 빠짐없이 도착했는지 확인합니다.',
-  model: '학습과 평가를 마친 예제 모델을 제공합니다.',
-  image: '서빙 앱과 의존성을 묶은 실행 자료입니다. Pod가 이 이미지로 컨테이너를 시작합니다.',
-  deployment: 'Pod의 수와 사용할 이미지 버전을 지정합니다.',
-  service:
-    '리뷰 요청을 받아 대상 라벨이 맞는 Pod로 전달합니다. 대상 라벨과 네트워크 포트는 Kubernetes 설정에서 바꿀 수 있습니다.',
-  pod: '이미지의 서빙 앱이 모델을 읽고 예측 응답을 만듭니다.',
-  container: '이미지와 모델을 사용해 예제 요청을 처리합니다.',
-};
-
 export function Inspector({
   node,
   graph,
@@ -210,14 +190,16 @@ export function Inspector({
   busy: boolean;
   dispatch: Dispatch;
 }) {
-  const locked = protectedKind(node.kind);
-  const required = requiredLabEntities(graph.entities).has(node.id);
-  const runnable = hasRunState(node.kind);
-  const blocked = !runnable || node.enabled ? blockedBy(graph, node.id) : undefined;
+  const { lab, view } = useLab();
+  const locked = protectedKind(lab, node.kind);
+  const required = requiredLabEntities(lab, graph.entities).has(node.id);
+  const runnable = hasRunState(lab, node.kind);
+  const blocked = !runnable || node.enabled ? blockedBy(graph, node.id, lab) : undefined;
+  const settings = { node, graph, dispatch, PortList };
   const children = descendants(graph, node.id);
   const parents = graph.entities.filter(
     (item) =>
-      item.type === 'system' && tools[item.kind].includes(node.kind) && !children.has(item.id),
+      item.type === 'system' && lab.tools[item.kind]?.includes(node.kind) && !children.has(item.id),
   );
   return (
     <>
@@ -226,42 +208,14 @@ export function Inspector({
         <div>
           <h3>{node.name}</h3>
           <small>
-            {node.type === 'system' ? '시스템' : (resourceRoles[node.kind] ?? labels[node.kind])}
+            {node.type === 'system'
+              ? '시스템'
+              : (lab.resourceRoles[node.kind] ?? lab.labels[node.kind])}
           </small>
         </div>
       </header>
-      <p className={hint}>{hints[node.kind]}</p>
-      {node.kind === 'start' && (
-        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
-          <h4>제공 데이터</h4>
-          <ol>
-            <li>
-              <strong>요청 출력</strong> · 분류할 리뷰 요청 {definition.requestIds.length}건을
-              제공합니다. 요청마다 고유 ID가 있습니다. Kubernetes 내부 Service의 요청 입력에
-              연결하세요.
-            </li>
-            <li>
-              <strong>모델 출력</strong> · 학습된 모델 파일 <code>model.pkl</code>을 제공합니다. 각
-              Pod의 모델 입력에 연결하세요.
-            </li>
-          </ol>
-        </section>
-      )}
-      {node.kind === 'end' && (
-        <section className="py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5">
-          <h4>응답 입력 · 완료 조건</h4>
-          <ol>
-            <li>서로 다른 Pod {definition.requiredPods}개 이상이 요청을 처리해야 합니다.</li>
-            <li>
-              출발의 리뷰 요청 {definition.requestIds.length}건에 대한 응답이 모두 도착해야 합니다.
-              누락, 중복, 알 수 없는 요청 ID는 허용하지 않습니다.
-            </li>
-            <li>모든 요청은 Kubernetes 내부 Service를 거쳐야 합니다.</li>
-            <li>응답을 보낸 Pod는 같은 배포에 속하며, 같은 모델과 이미지를 사용해야 합니다.</li>
-          </ol>
-          <p>실행에 성공한 뒤 왼쪽 패널의 이해 확인을 완료하세요.</p>
-        </section>
-      )}
+      <p className={hint}>{view.hints[node.kind]}</p>
+      {view.panels[node.kind]?.(graph, lab)}
       <fieldset
         className="m-0 grid min-w-0 gap-2.5 border-0 p-0 [&_label]:grid [&_label]:gap-1"
         disabled={busy}
@@ -329,88 +283,10 @@ export function Inspector({
             </Button>
           </div>
         )}
-        {node.type === 'system' &&
-          node.kubernetes &&
-          (() => {
-            const config = node.kubernetes;
-            const edit = (patch: Partial<typeof config>) =>
-              dispatch({ type: 'cluster', id: node.id, patch });
-            return (
-              <>
-                <h4>Deployment</h4>
-                <p className={hint}>
-                  이미지는 Kubernetes 옆면에, 요청은 내부 Service에 연결하세요.
-                </p>
-                <PortList node={node} graph={graph} direction="in" dispatch={dispatch} />
-                <label>
-                  원하는 Pod 수
-                  <Input
-                    type="number"
-                    min={1}
-                    max={10}
-                    key={config.replicas}
-                    defaultValue={config.replicas}
-                    onBlur={(e) => {
-                      if (!edit({ replicas: Number(e.target.value) }))
-                        e.target.value = String(config.replicas);
-                    }}
-                  />
-                </label>
-                <label>
-                  배포 Pod 라벨
-                  <Input
-                    key={config.workloadLabel}
-                    defaultValue={config.workloadLabel}
-                    onBlur={(e) => {
-                      if (!edit({ workloadLabel: e.target.value.trim() }))
-                        e.target.value = config.workloadLabel;
-                    }}
-                  />
-                </label>
-                <h4>Service</h4>
-                <label>
-                  대상 Pod 라벨
-                  <Input
-                    key={config.serviceSelector}
-                    defaultValue={config.serviceSelector}
-                    onBlur={(e) => {
-                      if (!edit({ serviceSelector: e.target.value.trim() }))
-                        e.target.value = config.serviceSelector;
-                    }}
-                  />
-                </label>
-                <label>
-                  Service 포트
-                  <Input
-                    type="number"
-                    min={1}
-                    max={65535}
-                    key={config.servicePort}
-                    defaultValue={config.servicePort}
-                    onBlur={(e) => {
-                      if (!edit({ servicePort: Number(e.target.value) }))
-                        e.target.value = String(config.servicePort);
-                    }}
-                  />
-                </label>
-              </>
-            );
-          })()}
+        {node.type === 'system' && view.systemSettings?.(settings)}
         {!locked && (
           <>
-            {node.type === 'resource' && node.kind === 'pod' && (
-              <label>
-                Pod 라벨
-                <Input
-                  key={appLabel(node)}
-                  defaultValue={appLabel(node)}
-                  onBlur={(e) => {
-                    if (!dispatch({ type: 'pod-label', id: node.id, value: e.target.value.trim() }))
-                      e.target.value = appLabel(node);
-                  }}
-                />
-              </label>
-            )}
+            {view.resourceHeader?.(settings)}
             <label>
               소속 시스템
               <NativeSelect
@@ -427,37 +303,7 @@ export function Inspector({
                 ))}
               </NativeSelect>
             </label>
-            {node.type === 'resource' && ['model', 'image', 'deployment'].includes(node.kind) && (
-              <label>
-                {node.kind === 'model' ? '모델 버전' : '이미지 태그'}
-                <NativeSelect
-                  value={node.version}
-                  onChange={(e) =>
-                    dispatch({ type: 'settings', id: node.id, version: e.target.value as Version })
-                  }
-                >
-                  <option value="v1">v1</option>
-                  <option value="v2">v2</option>
-                </NativeSelect>
-              </label>
-            )}
-            {node.type === 'resource' && node.kind === 'deployment' && (
-              <label>
-                원하는 Pod 수
-                <NativeSelect
-                  value={node.replicas}
-                  onChange={(e) =>
-                    dispatch({ type: 'settings', id: node.id, replicas: Number(e.target.value) })
-                  }
-                >
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <option key={i} value={i + 1}>
-                      {i + 1}개
-                    </option>
-                  ))}
-                </NativeSelect>
-              </label>
-            )}
+            {view.resourceSettings?.(settings)}
             {node.type === 'resource' && (
               <>
                 <PortList node={node} graph={graph} direction="in" dispatch={dispatch} />

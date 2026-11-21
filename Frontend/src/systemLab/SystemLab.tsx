@@ -17,17 +17,11 @@ import { Canvas, KindIcon, type MenuItem } from './Canvas';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
 import { Inspector } from './Inspector';
-import {
-  findPort,
-  labels,
-  materials,
-  pilotLesson,
-  rootId,
-  serviceRoutes,
-  signature,
-  tools,
-} from './model';
-import { useSystemLab } from './store';
+import { findPort, rootId, signature, type LabConfig } from './lab';
+import { LabProvider, type LabView } from './labContext';
+import { labFor } from './labs';
+import { labViews } from './labs/views';
+import { labStore } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
 import { divider, hint, kindColor, panel, panelBody } from './appearance';
@@ -35,7 +29,6 @@ import type { Lesson } from '../curriculum/types';
 import { useSystemLabHint } from './useSystemLabHint';
 import { HintPanel } from './HintPanel';
 
-const question = resolveScenario(pilotLesson, {});
 const panelSizes = [
   ['small', '작게'],
   ['medium', '중간'],
@@ -86,6 +79,18 @@ interface Menu {
   items: MenuItem[];
 }
 export function SystemLab({ lesson }: { lesson: Lesson }) {
+  const lab = labFor(lesson.id);
+  const view = labViews[lesson.id];
+  if (!lab || !view) throw new Error(lesson.id + ' 강의에는 시스템 실습 설정이 없습니다.');
+  return (
+    <LabProvider value={{ lab, view }}>
+      <SystemLabBody lesson={lesson} lab={lab} view={view} />
+    </LabProvider>
+  );
+}
+function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; view: LabView }) {
+  const question = resolveScenario(lab.id, {});
+  const useStore = labStore(lab);
   const {
     saved,
     past,
@@ -98,7 +103,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     prove,
     quiz,
     recover,
-  } = useSystemLab();
+  } = useStore();
   const { graph } = saved;
   const stamp = signature(graph);
   const [selectedId, setSelected] = useState(rootId);
@@ -189,7 +194,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   const dispatch = (command: Command) => {
     if (busy) return false;
     const changed = commit(command);
-    if (changed && signature(useSystemLab.getState().saved.graph) !== stamp) setRun(null);
+    if (changed && signature(useStore.getState().saved.graph) !== stamp) setRun(null);
     return changed;
   };
   const name = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
@@ -211,14 +216,14 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   };
   const start = () => {
     setMenu(null);
-    const result = runLab(graph, crypto.randomUUID());
+    const result = runLab(graph, crypto.randomUUID(), lab);
     setRun({ stamp, result, cursor: 0, stopped: false });
     if (!result.steps.length) {
       showResults(true);
       setFrontPanel('results');
     }
   };
-  const chosenWire = [...graph.connections, ...serviceRoutes(graph)].find(
+  const chosenWire = [...graph.connections, ...lab.routes(graph)].find(
     (edge) => edge.id === selectedEdge,
   );
   const chosenMaterial = chosenWire && findPort(graph, chosenWire.from)?.material;
@@ -231,7 +236,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     <section
       className="group/lab flex min-h-full w-full min-w-0 flex-1 flex-col bg-ui-paper text-sm text-ui-ink data-[focused=true]:fixed data-[focused=true]:inset-0 data-[focused=true]:z-(--z-modal) data-[focused=true]:h-dvh data-[focused=true]:overflow-auto [--lab-request:var(--color-accent)] [--lab-prediction:var(--color-success)] [--lab-model:light-dark(#815098,#dcb4f1)] [--lab-image:light-dark(#895b23,#f0c68e)] [--lab-control:light-dark(#356978,#a4dbe3)]"
       data-focused={focused}
-      aria-label="Docker·Kubernetes 시스템 실습"
+      aria-label={view.ariaLabel}
       data-testid="system-lab"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -259,11 +264,8 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
         )}
       >
         <div className="min-w-0 flex-[1_1_440px] [&_h2]:m-0 [&_h2]:text-xl [&_h2]:tracking-[-0.02em] [&_p]:mt-[3px] [&_p]:mb-0 [&_p]:break-keep [&_p]:text-ui-muted [&_p]:[overflow-wrap:anywhere] group-data-[focused=true]/lab:[&_p]:hidden">
-          <h2>모델 서빙 실습</h2>
-          <p>
-            이미지는 Kubernetes에, 요청은 내부 Service에 연결하세요. 두 Pod에 모델을 전달하고 각
-            응답을 도착에 연결하세요.
-          </p>
+          <h2>{view.title}</h2>
+          <p>{view.description}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
@@ -516,7 +518,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                 <strong>{parent?.name} 도구</strong>
               </div>
               {parent?.type === 'system' &&
-                tools[parent.kind].map((kind) => (
+                lab.tools[parent.kind].map((kind) => (
                   <Button
                     key={kind}
                     data-kind={kind}
@@ -526,20 +528,20 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                     )}
                     type="button"
                     disabled={busy}
-                    title={labels[kind] + ' 추가'}
-                    aria-label={labels[kind] + ' 추가'}
+                    title={lab.labels[kind] + ' 추가'}
+                    aria-label={lab.labels[kind] + ' 추가'}
                     onClick={() => {
                       const id = crypto.randomUUID();
                       if (dispatch({ type: 'add', id, kind, parent: parent.id })) select(id);
                     }}
                   >
-                    <KindIcon kind={kind} /> {labels[kind]} <Plus size={14} />
+                    <KindIcon kind={kind} /> {lab.labels[kind]} <Plus size={14} />
                   </Button>
                 ))}
               {chosenWire && chosenMaterial && (
                 <span role="status">
                   {name(chosenWire.from.node)} → {name(chosenWire.to.node)} ·{' '}
-                  {materials[chosenMaterial]}
+                  {lab.materials[chosenMaterial]}
                   {delivered && ' · ' + delivered.description}
                 </span>
               )}
