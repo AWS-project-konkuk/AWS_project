@@ -1,5 +1,5 @@
 import { catalog } from './catalog';
-import { datum, need, numbers, port, wired } from './kit';
+import { datum, josa, need, numbers, port, wired } from './kit';
 import { defineWorkflowLab } from './workflow';
 
 const filename = 'count_rows.py';
@@ -26,7 +26,7 @@ export const introWorkflowLab = defineWorkflowLab({
       ports: [port('out', 'code', 'code', false, '실행 코드')],
       run: ({ emit }) => {
         emit(datum('code', filename + ' · ' + commit, { filename, commit }));
-        return 'Git 커밋 ' + commit + '에서 ' + filename + '를 가져왔습니다.';
+        return 'Git 커밋 ' + commit + '에서 ' + josa(filename, '을/를') + ' 가져왔습니다.';
       },
     },
     executeCode: {
@@ -38,7 +38,7 @@ export const introWorkflowLab = defineWorkflowLab({
       ],
       run: (ctx) => {
         const code = need(ctx, 'code', 'Git에서 가져올 코드').data;
-        const file = need(ctx, 'dataset', 'S3에서 읽을 파일').data;
+        const file = need(ctx, 'dataset', '저장소에서 읽을 파일').data;
         const count = numbers(file, 'sampleIds').length;
         ctx.emit(
           datum('task-result', '리뷰 ' + count + '건', {
@@ -47,7 +47,7 @@ export const introWorkflowLab = defineWorkflowLab({
             commit: code.commit,
           }),
         );
-        return code.filename + '로 ' + file.key + '의 리뷰 수를 셌습니다.';
+        return josa(String(code.filename), '으로/로') + ' ' + file.key + '의 리뷰 수를 셌습니다.';
       },
     },
   },
@@ -56,7 +56,7 @@ export const introWorkflowLab = defineWorkflowLab({
     ports: [port('out', 'objects', 'objects', false, '읽을 파일')],
     run: ({ emit }) => {
       emit(datum('objects', key, { key, sampleIds }));
-      return 'S3에서 읽을 파일 ' + key + '를 지정했습니다.';
+      return josa('저장소에서 읽을 파일 ' + key, '을/를') + ' 지정했습니다.';
     },
   },
   end: {
@@ -77,7 +77,7 @@ export const introWorkflowLab = defineWorkflowLab({
       node('start', 'start', 'root', { x: 0, y: 235 }),
       system('git', 'git', 'root', { x: 260, y: 0 }, 244, 151),
       node('repo', 'repo', 'git', { x: 24, y: 54 }),
-      { ...system('storage', 'storage', 'root', { x: 260, y: 183 }, 244, 151), name: 'S3' },
+      { ...system('storage', 'storage', 'root', { x: 260, y: 183 }, 244, 151), name: '저장소' },
       node('readObjects', 'read', 'storage', { x: 24, y: 54 }),
       system('ec2', 'ec2', 'root', { x: 580, y: 87 }, 244, 170),
       node('executeCode', 'execute', 'ec2', { x: 24, y: 54 }),

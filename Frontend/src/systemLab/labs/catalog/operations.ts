@@ -1,5 +1,5 @@
 import type { CatalogKind } from '.';
-import { choice, datum, need, numbers, port, received, setting } from '../kit';
+import { choice, datum, josa, need, numbers, port, received, setting } from '../kit';
 
 export const APPROVAL_MINIMUM = 0.85;
 
@@ -192,7 +192,7 @@ export const operationKinds = {
           destination,
         }),
       );
-      return approved.modelId + '을(를) ' + action + '했습니다.';
+      return josa(String(approved.modelId), '을/를') + ' ' + action + '했습니다.';
     },
   },
 } satisfies Record<string, CatalogKind>;

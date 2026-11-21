@@ -1,3 +1,4 @@
+import { josa } from './josa';
 import type { Strategy } from './engine';
 
 /**
@@ -171,7 +172,7 @@ export function settingIssue(spec: SettingSpec, value: unknown): string | undefi
       value < (spec.min ?? -Infinity) ||
       value > (spec.max ?? Infinity)
     )
-      return spec.label + '은 ' + spec.min + '~' + spec.max + ' 범위로 입력하세요.';
+      return josa(spec.label, '은/는') + ' ' + spec.min + '~' + spec.max + ' 범위로 입력하세요.';
     return;
   }
   if (typeof value !== 'string' || !spec.options?.some((option) => option.value === value))

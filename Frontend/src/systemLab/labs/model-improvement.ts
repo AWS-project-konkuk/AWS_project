@@ -1,5 +1,5 @@
 import { APPROVAL_MINIMUM } from './catalog/operations';
-import { datum, need, port, wired } from './kit';
+import { datum, josa, need, port, wired } from './kit';
 import { defineWorkflowLab } from './workflow';
 
 export const improvementLab = defineWorkflowLab({
@@ -56,7 +56,7 @@ export const improvementLab = defineWorkflowLab({
         { label: '배포 모델', value: String(model.modelId) },
       ]);
       ctx.observe('deployed');
-      return '독립 평가를 통과한 ' + model.modelId + '을(를) 배포했습니다.';
+      return '독립 평가를 통과한 ' + josa(String(model.modelId), '을/를') + ' 배포했습니다.';
     },
   },
   initial: ({ system, node }) => ({
@@ -68,7 +68,7 @@ export const improvementLab = defineWorkflowLab({
       node('train', 'train', 'ec2', { x: 24, y: 54 }),
       node('evaluate', 'evaluate', 'ec2', { x: 24, y: 206 }),
       system('gateway', 'gateway', 'root', { x: 907, y: 60 }, 240, 175),
-      node('publish', 'publish', 'gateway', { x: 24, y: 54 }, { name: '승인 모델 배포' }),
+      node('publish', 'publish', 'gateway', { x: 24, y: 54 }, { name: '승인 모델 반영' }),
       node('end', 'end', 'root', { x: 1230, y: 126 }),
     ],
     connections: [

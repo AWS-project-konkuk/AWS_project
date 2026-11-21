@@ -20,10 +20,10 @@ export const dataSupplyLab = defineWorkflowLab({
     label: '도착',
     ports: [port('in', 'saved-model', 'saved-model')],
     run: (ctx) => {
-      const model = need(ctx, 'saved-model', 'S3에 저장한 모델').data;
+      const model = need(ctx, 'saved-model', '저장소에 저장한 모델').data;
       const batches = Number(model.batches);
       if (!Number.isFinite(batches) || model.sourceKey === undefined)
-        throw new Error('원본 읽기와 배치 준비를 거친 학습 결과를 S3에 저장하세요.');
+        throw new Error('원본 읽기와 배치 준비를 거친 학습 결과를 저장소에 저장하세요.');
       const waiting = Math.max(0, GPU_BATCH_CAPACITY - batches);
       ctx.report([
         { label: 'GPU 공급량', value: batches + '배치/초' },
@@ -39,7 +39,7 @@ export const dataSupplyLab = defineWorkflowLab({
         );
       if (model.cacheState !== '보존') throw new Error('Pod 교체 뒤에도 캐시가 유지되어야 합니다.');
       ctx.observe('supply-ready');
-      return 'GPU 공급 목표를 충족했고, 캐시와 S3 모델을 확인했습니다.';
+      return 'GPU 공급 목표를 충족했고, 캐시와 저장소 모델을 확인했습니다.';
     },
   },
   initial: ({ system, node }) => ({

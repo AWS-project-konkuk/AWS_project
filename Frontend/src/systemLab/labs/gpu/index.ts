@@ -1,6 +1,6 @@
 import { rootId, type Graph, type LabConfig } from '../../lab';
 import { exchanged, fromCatalog, syncParallelPorts } from '../catalog';
-import { datum, defineLab, layout, need, port, wired } from '../kit';
+import { datum, defineLab, josa, layout, need, port, wired } from '../kit';
 
 /** 4단원 종합 · GPU 두 장 학습. 학습 실행, 분할, 결합은 공통 EC2 노드이다. */
 export const gpuLessonId = 'week1-workflow';
@@ -34,8 +34,8 @@ const common = fromCatalog({
         if (mode === 'model' || mode === 'tensor') ctx.observe('split-complete');
         return (
           '두 워커가 ' +
-          (exchanged[mode as keyof typeof exchanged] ?? '결과') +
-          '을 주고받아 체크포인트를 갱신했습니다.'
+          josa(exchanged[mode as keyof typeof exchanged] ?? '결과', '을/를') +
+          ' 주고받아 체크포인트를 갱신했습니다.'
         );
       },
     },

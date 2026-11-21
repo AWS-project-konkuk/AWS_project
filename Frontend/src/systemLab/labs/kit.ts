@@ -201,3 +201,5 @@ export function numbers(data: Record<string, unknown>, key: string): number[] {
     throw new Error('자료에 필요한 숫자 목록이 없습니다.');
   return values;
 }
+
+export { josa } from '../josa';

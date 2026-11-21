@@ -9,16 +9,17 @@ function workflowView(view: WorkflowView) {
 
 export const workflowViews = {
   'intro-workflow': workflowView({
-    title: 'EC2·S3·Git 첫 연결 실습',
+    title: 'EC2·저장소·Git 첫 연결 실습',
     description:
-      '`Git`의 실행 코드와 `S3`의 입력 파일을 `EC2`의 코드 실행에 연결하세요. 실행해서 리뷰 3건을 확인하세요.',
+      '`Git`의 실행 코드와 `저장소`의 입력 파일을 `EC2`의 코드 실행에 연결하세요. 실행해서 리뷰 3건을 확인하세요.',
     entry: '준비된 노드의 출력을 알맞은 입력에 연결하고 첫 실습을 실행하세요.',
     hints: {
-      start: 'S3에서 읽을 reviews.csv를 지정합니다.',
+      start: '저장소에서 읽을 reviews.csv를 지정합니다.',
       git: '코드와 버전을 보관하는 저장소입니다.',
       repo: '커밋 a1b2c3d에서 리뷰 수를 세는 코드를 제공합니다.',
       storage: 'EC2가 읽을 입력 파일을 보관합니다.',
-      executeCode: 'Git의 코드와 S3의 파일을 모두 받으면 리뷰 수를 셉니다.',
+      readObjects: 'reviews.csv를 저장소에서 읽습니다. 출력을 EC2 코드 실행의 입력 파일에 연결하세요.',
+      executeCode: 'Git의 코드와 저장소의 파일을 모두 받으면 리뷰 수를 셉니다.',
       end: 'EC2에서 보낸 작업 결과를 표시합니다.',
     },
   }),
@@ -27,9 +28,9 @@ export const workflowViews = {
     description:
       '`원본 읽기`에서 `모델 저장`까지 연결하세요. Pod 교체 뒤에도 캐시를 보존하고, GPU 공급량을 `80배치/초` 이상으로 높이세요.',
     entry:
-      'S3의 원본을 EC2의 배치 준비와 학습에 전달하세요. 파일 묶음 읽기와 유지 볼륨을 적용해 다시 실행하세요.',
+      '저장소의 원본을 EC2의 배치 준비와 학습에 전달하세요. 파일 묶음 읽기와 유지 볼륨을 적용해 다시 실행하세요.',
     hints: {
-      start: 'S3에서 읽을 원본 이미지 목록과 GPU 학습 요청을 보냅니다.',
+      start: '저장소에서 읽을 원본 이미지 목록과 GPU 학습 요청을 보냅니다.',
       train: '준비된 배치로 모델을 학습하고 공급량과 캐시 상태를 결과에 남깁니다.',
       end: '저장된 모델, 80배치/초 이상의 공급량, Pod 교체 후 캐시 보존을 확인합니다.',
     },

@@ -1,5 +1,6 @@
 import type { Artifact, Strategy } from '../../engine';
 import { type Graph, type LabConfig, type ResourceEntity, type Version } from '../../lab';
+import { josa } from '../../josa';
 import { appLabel } from './rules';
 
 type Typed = 'model' | 'image' | 'control';
@@ -81,15 +82,15 @@ export const strategies: Record<string, Strategy> = {
   start: ({ lab, node, emit }) => {
     emit({ type: 'request', requests: lab.requestIds.map((id) => ({ id })) });
     emit({ type: 'model', version: node.version, source: node.id });
-    return '검증된 모델 ' + node.version + '과 리뷰 요청 10건을 보냈습니다.';
+    return josa('검증된 모델 ' + node.version, '과/와') + ' 리뷰 요청 10건을 보냈습니다.';
   },
   model: ({ node, emit }) => {
     emit({ type: 'model', version: node.version, source: node.id });
-    return '검증된 모델 ' + node.version + '을 제공했습니다.';
+    return josa('검증된 모델 ' + node.version, '을/를') + ' 제공했습니다.';
   },
   image: ({ node, emit }) => {
     emit({ type: 'image', version: node.version, source: node.id });
-    return '서빙 이미지 ' + node.version + '을 제공했습니다.';
+    return josa('서빙 이미지 ' + node.version, '을/를') + ' 제공했습니다.';
   },
   deployment: () => {
     throw new Error('Kubernetes에서 배포 설정을 확인하세요.');

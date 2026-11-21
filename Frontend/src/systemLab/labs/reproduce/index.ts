@@ -1,6 +1,6 @@
 import { rootId, type Graph, type LabConfig } from '../../lab';
 import { fromCatalog } from '../catalog';
-import { datum, defineLab, layout, need, port, wired } from '../kit';
+import { datum, defineLab, josa, layout, need, port, wired } from '../kit';
 
 /** 3단원 종합 · 과거 실험 재현. 공통 GitHub·저장소·EC2 노드로 코드와 데이터를 같은 버전으로 되돌린다. */
 export const reproduceLessonId = 'week4-workflow';
@@ -50,7 +50,7 @@ const common = fromCatalog({
           );
         }
         if (code !== TARGET)
-          throw new Error('재현할 실험은 ' + TARGET + '인데 ' + code + '로 복원됐습니다.');
+          throw new Error('재현할 실험은 ' + TARGET + '인데 ' + josa(code, '으로/로') + ' 복원됐습니다.');
         ctx.observe(source === 'remote' ? 'remote-restore' : 'cache-restore');
         return source === 'remote'
           ? '코드와 데이터가 모두 ' + TARGET + '입니다. 원격에서 가져와 복원했습니다.'

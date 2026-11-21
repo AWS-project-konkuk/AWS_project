@@ -59,7 +59,7 @@ test('마우스로 연결·실행하고 진도와 편집을 복원한다', async
   await expect(lab.getByRole('status').filter({ hasText: '출발 → Pod 1' })).toContainText(
     'model.pkl · v1',
   );
-  await lab.getByRole('radio').first().check();
+  await lab.getByRole('radio').nth(2).check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
   await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
   await page.reload();
@@ -323,7 +323,7 @@ for (const width of [1440, 1024, 390]) {
     const labBounds = (await lab.boundingBox())!;
     expect(labBounds.y + labBounds.height).toBeGreaterThanOrEqual(practice.y + practice.height - 1);
     await expect(lab.getByRole('button', { name: '실습 힌트' })).toHaveCount(0);
-    await expect(lab.getByText(/이미지는 Kubernetes.*도착에 연결하세요/)).toBeVisible();
+    await expect(lab.getByText(/이미지를 Kubernetes에 연결하세요.*도착에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
     const runButton = lab.getByRole('button', { name: '실습 실행', exact: true });

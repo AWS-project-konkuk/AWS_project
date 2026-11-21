@@ -55,10 +55,11 @@ async function addNode(lab: Locator, parent: string, name: string) {
   await fit(lab);
   return id;
 }
-async function answer(lab: Locator, page: Page) {
+/** correct는 이해 확인에서 정답 보기의 위치다. */
+async function answer(lab: Locator, page: Page, correct: number) {
   const showResults = lab.getByRole('button', { name: '실행 결과 펼치기' });
   if (await showResults.isVisible()) await showResults.click();
-  await lab.getByRole('radio').first().check();
+  await lab.getByRole('radio').nth(correct).check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
   await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
 }
@@ -116,7 +117,7 @@ test('3단원 · 직접 연결하고 Git만 이동한 실패, 캐시 복원, 원
   await run(lab);
   await expect(lab.getByRole('status').first()).toContainText('원격에서 가져와 복원');
   await expect(seen(lab)).toHaveCount(3);
-  await answer(lab, page);
+  await answer(lab, page, 1);
   await page.reload();
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await expect(lab.getByRole('status').first()).toHaveText('현재 구성 실행 성공');
@@ -171,7 +172,7 @@ test('4단원 · 워커 하나의 OOM에서 시작해 워커·분할·결합을 
   await expect(lab.getByRole('button', { name: '노드 삭제', exact: true })).toHaveCount(0);
   await select(lab, 'GPU 워커 2');
   await expect(lab.getByRole('button', { name: '노드 삭제', exact: true })).toBeVisible();
-  await answer(lab, page);
+  await answer(lab, page, 0);
 });
 
 test('6단원 · 질문 경로를 직접 만들고 저장소 유형과 임베딩 공간을 맞춘다', async ({ page }) => {
@@ -203,7 +204,7 @@ test('6단원 · 질문 경로를 직접 만들고 저장소 유형과 임베딩
   await expect(lab.getByRole('status').first()).toContainText('doc-return');
   await expect(lab.getByLabel('결과 지표')).toContainText('[doc-return]');
   await expect(seen(lab)).toHaveCount(2);
-  await answer(lab, page);
+  await answer(lab, page, 1);
 });
 
 test('2단원 · 공급 개선을 실행하고 이해 확인과 관찰을 복원한다', async ({ page }) => {
@@ -220,14 +221,14 @@ test('2단원 · 공급 개선을 실행하고 이해 확인과 관찰을 복원
   await run(lab);
   await expect(lab.getByLabel('결과 지표')).toContainText('120배치/초');
   await expect(seen(lab)).toHaveCount(3);
-  await answer(lab, page);
+  await answer(lab, page, 3);
 
   await page.reload();
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await expect(edges(lab)).toHaveCount(6);
   await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
   await lab.getByRole('button', { name: '실행 결과 펼치기' }).click();
-  await expect(lab.getByRole('radio').first()).toBeChecked();
+  await expect(lab.getByRole('radio').nth(3)).toBeChecked();
   await expect(seen(lab)).toHaveCount(3);
 });
 
@@ -246,7 +247,7 @@ test('5단원 · 조회를 하나 더 만들어 학습과 추론 피처를 받�
   await run(lab);
   await expect(lab.getByLabel('결과 지표')).toContainText('24시간 · 6회');
   await expect(lab.getByLabel('결과 지표')).toContainText('24시간 · 8회');
-  await answer(lab, page);
+  await answer(lab, page, 2);
 });
 
 test('5단원 · 좁은 화면에서도 학습 피처를 연결한다', async ({ page }) => {
@@ -281,7 +282,7 @@ test('7단원 · 신규 모델 경로를 만들고 Shadow로 응답을 유지한
   await expect(metrics.getByText('Shadow 비교 로그', { exact: true }).locator('..')).toContainText(
     '10건',
   );
-  await answer(lab, page);
+  await answer(lab, page, 3);
 });
 
 test('8단원 · 지표 수집을 추가하고 갱신 주기를 조정해 정확도를 높인다', async ({ page }) => {
@@ -299,7 +300,7 @@ test('8단원 · 지표 수집을 추가하고 갱신 주기를 조정해 정확
   await choose(lab, 'diagnose', '피처 갱신 주기', 'fresh');
   await run(lab);
   await expect(lab.getByLabel('결과 지표')).toContainText('0.90');
-  await answer(lab, page);
+  await answer(lab, page, 0);
 });
 
 test('9단원 · 평가 데이터와 기준을 고쳐 등록부터 운영 보고까지 실행한다', async ({ page }) => {
@@ -324,7 +325,7 @@ test('9단원 · 평가 데이터와 기준을 고쳐 등록부터 운영 보고
   await expect(lab.getByLabel('결과 지표')).toContainText('0.85 · 승인');
   await expect(lab.getByLabel('결과 지표')).toContainText('다음 실행의 입력 후보');
   await expect(seen(lab)).toHaveCount(3);
-  await lab.getByRole('radio').first().check();
+  await lab.getByRole('radio').nth(2).check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
   await expect(lab.getByText(/실습 완료\./)).toBeVisible();
 });

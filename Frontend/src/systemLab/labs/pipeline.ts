@@ -80,7 +80,7 @@ export const pipelineLab = defineWorkflowLab({
       node('train', 'train', 'ec2', { x: 302, y: 54 }),
       node('evaluate', 'evaluate', 'ec2', { x: 302, y: 245 }),
       system('gateway', 'gateway', 'root', { x: 1200, y: 0 }, 244, 350),
-      node('publish', 'publish', 'gateway', { x: 24, y: 54 }, { name: '승인 모델 등록' }),
+      node('publish', 'publish', 'gateway', { x: 24, y: 54 }, { name: '승인 모델 반영' }),
       node('infer', 'serve', 'gateway', { x: 24, y: 220 }, { name: '등록 모델 서빙' }),
       system('monitoring', 'monitoring', 'root', { x: 1200, y: 435 }, 244, 168),
       node('observeResponses', 'observe', 'monitoring', { x: 24, y: 54 }),

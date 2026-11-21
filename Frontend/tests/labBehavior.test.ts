@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/systemLab/commands';
 import { runLab } from '../src/systemLab/engine';
 import { type Connection, type Graph, type LabConfig, signature } from '../src/systemLab/lab';
-import { wired } from '../src/systemLab/labs/kit';
+import { lessonById } from '../src/curriculum/blockml';
+import { labConfigs } from '../src/systemLab/labs';
+import { josa, wired } from '../src/systemLab/labs/kit';
+import { quizzes } from '../src/systemLab/labs/quizzes';
 import { transitionLab } from '../src/systemLab/labs/transition';
 import { createLabStore } from '../src/systemLab/store';
 
@@ -79,5 +82,37 @@ describe('완료 기록과 되돌리기', () => {
     expect(created.getState().saved.proof).toBeNull();
     created.getState().undo();
     expect(created.getState().saved.proof).toBeNull();
+  });
+});
+
+describe('조사', () => {
+  it('받침에 맞게 붙인다', () => {
+    expect(josa('기울기', '을/를')).toBe('기울기를');
+    expect(josa('중간 활성값', '을/를')).toBe('중간 활성값을');
+    expect(josa('doc-return', '을/를')).toBe('doc-return을');
+    expect(josa('근거 doc-return', '이/가')).toBe('근거 doc-return이');
+    expect(josa('데이터 v2', '을/를')).toBe('데이터 v2를');
+    expect(josa('데이터 v1', '을/를')).toBe('데이터 v1을');
+    expect(josa('모델 v2', '과/와')).toBe('모델 v2와');
+    expect(josa('Pod', '으로/로')).toBe('Pod로');
+    expect(josa('count_rows.py', '으로/로')).toBe('count_rows.py로');
+    expect(josa('v1', '으로/로')).toBe('v1로');
+    expect(josa('커밋', '으로/로')).toBe('커밋으로');
+  });
+});
+
+describe('이해 확인', () => {
+  it('시스템 실습의 문항은 모두 4지선다이고 정답 위치가 고르게 나뉜다', () => {
+    const positions = new Set<number>();
+    for (const id of Object.keys(labConfigs)) {
+      const quiz = lessonById[id]?.assessment ?? quizzes[id];
+      expect(quiz, id).toBeDefined();
+      expect(quiz.options, id).toHaveLength(4);
+      expect(new Set(quiz.options).size, id).toBe(4);
+      expect(quiz.correct, id).toBeGreaterThanOrEqual(0);
+      expect(quiz.correct, id).toBeLessThan(4);
+      positions.add(quiz.correct);
+    }
+    expect(positions.size).toBe(4);
   });
 });

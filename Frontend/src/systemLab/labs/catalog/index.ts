@@ -8,7 +8,7 @@ import {
   type SettingSpec,
   type SettingValue,
 } from '../../lab';
-import { choice, datum, need, port, setting } from '../kit';
+import { choice, datum, josa, need, port, setting } from '../kit';
 import { dataKinds } from './data';
 import { featureKinds } from './features';
 import { operationKinds } from './operations';
@@ -150,8 +150,10 @@ const run: Record<string, Strategy> = {
     return source === 'workspace'
       ? 'Git만 이동했습니다. 작업 데이터는 ' + dataVersion + ' 그대로입니다.'
       : source === 'cache'
-        ? '로컬 캐시에서 데이터 ' + dataVersion + '을 복원했습니다. 원격 읽기는 없습니다.'
-        : '원격에서 데이터 ' + dataVersion + '을 가져와 복원했습니다.';
+        ? '로컬 캐시에서 ' +
+          josa('데이터 ' + dataVersion, '을/를') +
+          ' 복원했습니다. 원격 읽기는 없습니다.'
+        : '원격에서 ' + josa('데이터 ' + dataVersion, '을/를') + ' 가져와 복원했습니다.';
   },
   split: (ctx) => {
     const job = need(ctx, 'job');
@@ -166,7 +168,7 @@ const run: Record<string, Strategy> = {
     (['a', 'b'] as const).forEach((part, i) =>
       ctx.emit(datum('job', text[mode][i], { part, mode, gib, samples }), 'out-' + part),
     );
-    return exchanged[mode] + '을 주고받는 구성으로 작업을 둘로 나눴습니다.';
+    return josa(exchanged[mode], '을/를') + ' 주고받는 구성으로 작업을 둘로 나눴습니다.';
   },
   train: (ctx) => {
     const job = need(ctx, 'job');
@@ -220,7 +222,7 @@ const run: Record<string, Strategy> = {
       ' / ' +
       GPU_MEMORY +
       'GiB' +
-      (mode ? ' · ' + exchanged[mode] + '을 계산' : '')
+      (mode ? ' · ' + josa(exchanged[mode], '을/를') + ' 계산' : '')
     );
   },
   merge: (ctx) => {
@@ -231,7 +233,7 @@ const run: Record<string, Strategy> = {
       throw new Error(
         mode === 'model'
           ? '활성값을 받아 마지막 레이어를 계산한 워커의 결과를 결합 입력 2에 연결하세요.'
-          : '두 워커의 ' + exchanged[mode] + '을 각각 결합 입력에 연결하세요.',
+          : '두 워커의 ' + josa(exchanged[mode], '을/를') + ' 각각 결합 입력에 연결하세요.',
       );
     if (mode === 'model') {
       if (b[0].data.stage !== 'late')
@@ -326,23 +328,23 @@ const run: Record<string, Strategy> = {
     const documents = index.documents as { id: string; text: string }[];
     const best = documents.find((doc) => doc.id === 'doc-return') ?? documents[0];
     ctx.emit(datum('evidence', '근거 ' + best.id, { ids: [best.id], text: best.text }));
-    return '같은 공간에서 가장 가까운 문서 ' + best.id + '를 찾았습니다.';
+    return '같은 공간에서 가장 가까운 문서 ' + josa(best.id, '을/를') + ' 찾았습니다.';
   },
   api: (ctx) => {
     const evidence = need(ctx, 'evidence', '근거').data;
     const question = need(ctx, 'text', '질문').data;
     const ids = evidence.ids as string[];
     ctx.emit(
-      datum('answer', '근거 ' + ids.join(', ') + '가 붙은 답변', {
+      datum('answer', josa('근거 ' + ids.join(', '), '이/가') + ' 붙은 답변', {
         ids,
         text: String(evidence.text) + ' [' + ids.join(', ') + ']',
         question: question.text,
       }),
     );
     return (
-      '질문과 근거 ' +
-      ids.join(', ') +
-      '로 프롬프트를 만들어 답변했습니다. (고정 응답, 실제 LLM 호출 없음)'
+      '질문과 ' +
+      josa('근거 ' + ids.join(', '), '으로/로') +
+      ' 프롬프트를 만들어 답변했습니다. (고정 응답, 실제 LLM 호출 없음)'
     );
   },
 };
@@ -561,6 +563,8 @@ export function fromCatalog(pick: Pick) {
   const settingSpecs: Record<Kind, SettingSpec[]> = {};
   const strategies: Record<Kind, Strategy> = {};
   const defaults: Record<Kind, PortSpec[]> = {};
+  // Vector DB 유형은 색인·검색을 쓰는 실습에서만 보여 준다.
+  const usesVectorSearch = pick.kinds.some((k) => k === 'index' || k === 'search');
   for (const [kind, def] of Object.entries(all)) {
     labels[kind] = def.label;
     const ports = def.ports?.filter((port) => !pick.omitPorts?.[kind]?.includes(port.id));
@@ -582,7 +586,11 @@ export function fromCatalog(pick: Pick) {
     if (def.settings)
       settingSpecs[kind] = def.settings.map((spec) => {
         const initial = pick.defaults?.[kind]?.[spec.key];
-        return initial === undefined ? spec : { ...spec, initial };
+        const base =
+          kind === 'storage' && spec.key === 'type' && !usesVectorSearch
+            ? { ...spec, options: spec.options?.filter((option) => option.value !== 'vector') }
+            : spec;
+        return initial === undefined ? base : { ...base, initial };
       });
     if (def.run) strategies[kind] = def.run;
   }

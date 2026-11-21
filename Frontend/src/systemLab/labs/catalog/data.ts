@@ -21,7 +21,7 @@ export const dataKinds = {
       ctx.emit(
         datum('dataset', String(objects.key) + ' · 표본 ' + sampleIds.length + '개', objects),
       );
-      return 'S3에서 목록이 가리키는 원본을 읽었습니다.';
+      return '저장소에서 목록이 가리키는 원본을 읽었습니다.';
     },
   },
   prepareBatch: {
@@ -69,7 +69,7 @@ export const dataKinds = {
       const model = need(ctx, 'checkpoint').data;
       const key = 'models/model-v1.bin';
       ctx.emit(datum('saved-model', key, { ...model, sourceKey: model.key, key }));
-      return '학습 결과를 S3의 ' + key + '에 저장했습니다.';
+      return '학습 결과를 저장소의 ' + key + '에 저장했습니다.';
     },
   },
   partition: {

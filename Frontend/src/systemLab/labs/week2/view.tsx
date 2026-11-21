@@ -25,7 +25,7 @@ const panel = 'py-2 leading-[1.55] [&_h4]:m-0 [&_ol]:ps-5 [&_li+li]:mt-1.5';
 export const week2View: LabView = {
   title: '모델 서빙 실습',
   description:
-    '이미지는 `Kubernetes`에, 요청은 내부 `Service`에 연결하세요. 두 `Pod`에 모델을 전달하고 각 응답을 도착에 연결하세요.',
+    '이미지를 `Kubernetes`에 연결하세요. 요청은 처음부터 내부 `Service`로 들어옵니다. 두 `Pod`에 모델을 전달하고 각 응답을 도착에 연결하세요.',
   ariaLabel: 'Docker·Kubernetes 시스템 실습',
   entry: '입출력을 연결하고 두 Pod가 Service를 통해 응답하는지 확인하세요.',
   icons: {
