@@ -37,6 +37,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['registry', 'serving'],
+  activityView: {
+    type: 'release',
+    title: '새 버전을 준비하는 동안 들어온 요청은 어떻게 될까요?',
+    instruction: '중단 구간을 바꿔 전체 요청 중 실패한 수를 확인하세요.',
+  },
   activity: {
     kind: 'release',
     variant: 'recreate',

@@ -101,6 +101,11 @@ export default defineMdxLesson({
     kind: '자료 전달',
     afterSection: 1,
   },
+  activityView: {
+    type: 'scenario',
+    title: '같은 알림이라도 개선을 검증할 수 있을까요?',
+    instruction: '즉시 배포와 조사 후 배포를 선택해 어떤 근거를 확인하게 되는지 비교하세요.',
+  },
   activity: {
     kind: 'improve',
     fields: [

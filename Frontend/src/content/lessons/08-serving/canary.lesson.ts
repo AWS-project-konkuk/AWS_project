@@ -87,6 +87,11 @@ export default defineMdxLesson({
     kind: '자료 전달',
     afterSection: 1,
   },
+  activityView: {
+    type: 'release',
+    title: '새 모델은 요청 몇 건에 응답할까요?',
+    instruction: 'Canary 비율을 10%와 50%로 바꿔 신규 사용자 응답 수를 비교하세요.',
+  },
   activity: {
     kind: 'release',
     variant: 'canary',

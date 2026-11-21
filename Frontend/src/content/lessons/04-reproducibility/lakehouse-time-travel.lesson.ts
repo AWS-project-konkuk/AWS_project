@@ -1,42 +1,4 @@
 import { defineMdxLesson } from '../../defineLesson';
-import { createChoiceActivity } from './git-large.lesson';
-
-export const Activity = createChoiceActivity({
-  title: '어느 시점의 표를 읽을까요?',
-  context:
-    '어제 주문 100건에 오늘 20건이 추가되었습니다. 두 시점의 기록과 파일이 보존되어 있습니다.',
-  note: '과거 조회는 현재 표를 바꾸지 않습니다. 기록이나 파일을 삭제한 시점은 조회할 수 없습니다.',
-  choices: [
-    {
-      label: '오늘 표 조회',
-      result: '현재 주문 120건을 읽습니다.',
-      cards: [
-        { title: '읽는 데이터', value: '120건', detail: '오늘까지의 주문' },
-        { title: '현재 표', value: '120건', detail: '현재 상태 유지' },
-      ],
-      reason: '별도 시점을 지정하지 않으면 현재 테이블을 읽습니다.',
-    },
-    {
-      label: '어제 표 조회',
-      result: '어제 주문 100건만 읽습니다.',
-      cards: [
-        { title: '읽는 데이터', value: '100건', detail: '어제 스냅샷을 선택' },
-        { title: '현재 표', value: '120건', detail: '조회해도 바뀌지 않음' },
-      ],
-      reason: '타임 트래블은 과거 시점의 표를 선택해서 읽는 기능입니다.',
-    },
-    {
-      label: '새 열 추가',
-      result: '표의 구조도 버전으로 관리합니다.',
-      cards: [
-        { title: '표 구조', value: '배송 상태 열 추가', detail: '새 열을 사용할 수 있음' },
-        { title: '과거 행', value: '값 확인 필요', detail: '새 열은 값이 없을 수 있음' },
-        { title: '학습 코드', value: '호환성 확인', detail: '새 열 처리 방법 점검' },
-      ],
-      reason: '열을 추가했다고 과거 행의 배송 상태가 자동으로 채워지지는 않습니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
@@ -89,4 +51,41 @@ export default defineMdxLesson({
   ],
   sourceWeek: 5,
   mapStages: ['data', 'training', 'evaluation'],
+  activityView: {
+    type: 'scenario',
+    title: '어느 시점의 표를 읽을까요?',
+    instruction:
+      '어제 주문 100건에 오늘 20건이 추가되었습니다. 두 시점의 기록과 파일이 보존되어 있습니다.',
+    note: '과거 조회는 현재 표를 바꾸지 않습니다. 기록이나 파일을 삭제한 시점은 조회할 수 없습니다.',
+    cases: [
+      {
+        label: '오늘 표 조회',
+        result: '현재 주문 120건을 읽습니다.',
+        cards: [
+          { title: '읽는 데이터', value: '120건', detail: '오늘까지의 주문' },
+          { title: '현재 표', value: '120건', detail: '현재 상태 유지' },
+        ],
+        reason: '별도 시점을 지정하지 않으면 현재 테이블을 읽습니다.',
+      },
+      {
+        label: '어제 표 조회',
+        result: '어제 주문 100건만 읽습니다.',
+        cards: [
+          { title: '읽는 데이터', value: '100건', detail: '어제 스냅샷을 선택' },
+          { title: '현재 표', value: '120건', detail: '조회해도 바뀌지 않음' },
+        ],
+        reason: '타임 트래블은 과거 시점의 표를 선택해서 읽는 기능입니다.',
+      },
+      {
+        label: '새 열 추가',
+        result: '표의 구조도 버전으로 관리합니다.',
+        cards: [
+          { title: '표 구조', value: '배송 상태 열 추가', detail: '새 열을 사용할 수 있음' },
+          { title: '과거 행', value: '값 확인 필요', detail: '새 열은 값이 없을 수 있음' },
+          { title: '학습 코드', value: '호환성 확인', detail: '새 열 처리 방법 점검' },
+        ],
+        reason: '열을 추가했다고 과거 행의 배송 상태가 자동으로 채워지지는 않습니다.',
+      },
+    ],
+  },
 });

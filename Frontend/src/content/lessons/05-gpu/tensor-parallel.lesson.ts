@@ -51,6 +51,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 3,
   mapStages: ['training'],
+  activityView: {
+    type: 'parallel',
+    title: '하나의 연산을 나누면 언제 통신이 병목이 될까요?',
+    instruction: 'GPU 수와 통신 비용을 바꿔 장치별 부분 연산이 결합되는 경로를 확인하세요.',
+  },
   activity: {
     kind: 'parallel',
     variant: 'tensor',

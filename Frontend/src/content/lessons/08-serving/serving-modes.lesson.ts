@@ -34,6 +34,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['registry', 'serving'],
+  activityView: {
+    type: 'scenario',
+    title: '첫 요청은 언제 결과를 받을까요?',
+    instruction: '요청은 그대로 두고 Batch와 Real-time의 응답 시점과 용도를 비교하세요.',
+  },
   activity: {
     kind: 'serving',
     fields: [

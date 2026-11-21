@@ -42,6 +42,10 @@ export default defineMdxLesson({
   ],
   sourceWeek: 2,
   mapStages: ['training', 'serving'],
+  activityView: {
+    type: 'virtual',
+    title: '앱을 하나 더 넣으면, 커널도 하나 더 필요할까요?',
+  },
   activity: {
     kind: 'virtual',
     fields: [

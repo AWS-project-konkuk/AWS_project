@@ -108,6 +108,12 @@ export default defineMdxLesson({
     kind: '자료 전달',
     afterSection: 1,
   },
+  activityView: {
+    type: 'structure',
+    title: '검색한 자료를 바꾸면 답변도 달라질까요?',
+    instruction:
+      '관련 자료, 무관한 자료, 근거가 없는 상황 중 하나를 골라 답변 예시까지 따라가세요.',
+  },
   activity: {
     kind: 'rag',
     fields: [

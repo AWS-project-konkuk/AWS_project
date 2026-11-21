@@ -51,6 +51,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 3,
   mapStages: ['training'],
+  activityView: {
+    type: 'parallel',
+    title: '레이어를 나누면 GPU당 무엇이 줄어들까요?',
+    instruction: 'GPU 수를 바꿔 장치당 메모리와 레이어 사이 활성값 전달 비용을 비교하세요.',
+  },
   activity: {
     kind: 'parallel',
     variant: 'model',
