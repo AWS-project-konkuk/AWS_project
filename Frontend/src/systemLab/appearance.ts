@@ -30,6 +30,6 @@ export const panelBody = 'min-h-0 flex-1 overflow-auto overscroll-contain';
 export const entityFrame =
   'border border-solid border-ui-rule-2 data-[selected=true]:outline-2 data-[selected=true]:outline-offset-1 data-[selected=true]:outline-ui-accent data-[status=성공]:border-2 data-[status=성공]:border-ui-success data-[status=실패]:border-2 data-[status=실패]:border-ui-error data-[status=차단]:border-2 data-[status=차단]:border-ui-error';
 export const entityStatus =
-  'group-data-[status=실행_준비]/entity:text-ui-success group-data-[status=성공]/entity:text-ui-success group-data-[status=정지]/entity:text-ui-error group-data-[status=실패]/entity:text-ui-error group-data-[status=차단]/entity:text-ui-error';
+  'group-data-[status=성공]/entity:text-ui-success group-data-[status=실패]/entity:text-ui-error group-data-[status=차단]/entity:text-ui-error';
 export const portHandle =
   'size-7! min-h-7! min-w-7! border-0! bg-transparent! before:absolute before:inset-[6px] before:rounded-full before:border-2 before:border-solid before:border-(--port-color) before:bg-ui-paper before:content-[""] hover:before:bg-(--port-color) [&.connectingfrom]:before:bg-(--port-color) [&.valid]:before:bg-(--port-color) group-data-[connected=true]/port:before:bg-(--port-color)';

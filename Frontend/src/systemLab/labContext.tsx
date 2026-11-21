@@ -19,6 +19,7 @@ export interface LabSettingsProps {
 /** 화면에서 실습별로 달라지는 문구·아이콘·설정 항목. 규칙은 LabConfig가 가진다. */
 export interface LabView {
   title: string;
+  /** 제목 아래 실습 목표. 백틱으로 감싼 키워드는 인라인 코드로 표시한다. */
   description: string;
   ariaLabel: string;
   /** 본문 끝의 실습 시작 안내 문구. */

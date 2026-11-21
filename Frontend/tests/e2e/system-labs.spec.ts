@@ -1,8 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import type { Connection } from '../../src/systemLab/lab';
+import { dataSupplyLab } from '../../src/systemLab/labs/data-supply';
+import { featuresLab } from '../../src/systemLab/labs/features';
+import { introWorkflowLab } from '../../src/systemLab/labs/intro-workflow';
+import { wired } from '../../src/systemLab/labs/kit';
+import { improvementLab } from '../../src/systemLab/labs/model-improvement';
+import { pipelineLab } from '../../src/systemLab/labs/pipeline';
+import { transitionLab } from '../../src/systemLab/labs/transition';
 
-async function openLab(page: Page, lesson: string) {
+async function openLab(page: Page, lesson: string, viewport = { width: 1680, height: 1000 }) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.setViewportSize({ width: 1680, height: 1000 });
+  await page.setViewportSize(viewport);
   await page.addInitScript(() => {
     localStorage.setItem(
       'blockml:preferences:v1',
@@ -20,6 +28,10 @@ async function link(lab: Locator, from: string, to: string) {
   await handle(lab, from).click();
   await handle(lab, to).click();
 }
+async function connectTasks(lab: Locator, tasks: Connection[]) {
+  for (const { from, to } of tasks)
+    await link(lab, 'port-' + from.node + '-' + from.port, 'port-' + to.node + '-' + to.port);
+}
 async function fit(lab: Locator) {
   await lab.getByRole('button', { name: '전체 서비스', exact: true }).click();
 }
@@ -36,7 +48,16 @@ async function choose(lab: Locator, node: string, label: string, value: string) 
   await select(lab, node);
   await lab.getByLabel(label, { exact: true }).selectOption(value);
 }
+async function addNode(lab: Locator, parent: string, name: string) {
+  await select(lab, parent);
+  await lab.getByRole('button', { name: name + ' 추가', exact: true }).click();
+  const id = await lab.getByLabel('캔버스에서 항목 찾기').inputValue();
+  await fit(lab);
+  return id;
+}
 async function answer(lab: Locator, page: Page) {
+  const showResults = lab.getByRole('button', { name: '실행 결과 펼치기' });
+  if (await showResults.isVisible()) await showResults.click();
   await lab.getByRole('radio').first().check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
   await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
@@ -44,6 +65,20 @@ async function answer(lab: Locator, page: Page) {
 const observed = (lab: Locator) => lab.getByRole('region', { name: '관찰할 조건' });
 const seen = (lab: Locator) => observed(lab).locator('[data-observed="true"]');
 const edges = (lab: Locator) => lab.getByTestId('system-lab-canvas').locator('.react-flow__edge');
+
+test('0단원 · Git의 코드와 S3의 파일을 연결해 EC2에서 리뷰 3건을 센다', async ({ page }) => {
+  const lab = await openLab(page, introWorkflowLab.id);
+  await expect(edges(lab)).toHaveCount(2);
+  await connectTasks(lab, introWorkflowLab.starterTasks);
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표').getByText('3건', { exact: true })).toBeVisible();
+  await lab.getByRole('radio').nth(1).check();
+  await lab.getByRole('button', { name: '정답 확인' }).click();
+  await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toHaveAttribute(
+    'href',
+    '#/learn/runtime-overview',
+  );
+});
 
 test('3단원 · 직접 연결하고 Git만 이동한 실패, 캐시 복원, 원격 복원을 비교한다', async ({
   page,
@@ -169,4 +204,127 @@ test('6단원 · 질문 경로를 직접 만들고 저장소 유형과 임베딩
   await expect(lab.getByLabel('결과 지표')).toContainText('[doc-return]');
   await expect(seen(lab)).toHaveCount(2);
   await answer(lab, page);
+});
+
+test('2단원 · 공급 개선을 실행하고 이해 확인과 관찰을 복원한다', async ({ page }) => {
+  const lab = await openLab(page, dataSupplyLab.id);
+  await expect(edges(lab)).toHaveCount(2);
+  await connectTasks(lab, dataSupplyLab.starterTasks);
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('70%');
+  await choose(lab, 'batch', '반복 읽기 캐시', 'on');
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('손실');
+  await choose(lab, 'batch', '캐시 보관 경로', 'persistent');
+  await choose(lab, 'batch', '작은 파일 읽기', 'on');
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('120배치/초');
+  await expect(seen(lab)).toHaveCount(3);
+  await answer(lab, page);
+
+  await page.reload();
+  await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
+  await expect(edges(lab)).toHaveCount(6);
+  await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
+  await lab.getByRole('button', { name: '실행 결과 펼치기' }).click();
+  await expect(lab.getByRole('radio').first()).toBeChecked();
+  await expect(seen(lab)).toHaveCount(3);
+});
+
+test('5단원 · 조회를 하나 더 만들어 학습과 추론 피처를 받는다', async ({ page }) => {
+  const lab = await openLab(page, featuresLab.id);
+  await connectTasks(lab, featuresLab.starterTasks);
+  await run(lab);
+  await expect(lab.getByRole('status').first()).toContainText('추론 피처가 도착하지 않았습니다');
+  await lab.getByRole('button', { name: '실행 결과 접기' }).click();
+  const latest = await addNode(lab, 'feature-store', '조회');
+  await connectTasks(lab, [
+    wired('definition', 'definition', latest, 'definition'),
+    wired('start', 'serve', latest, 'query'),
+    wired(latest, 'feature', 'end', 'serve'),
+  ]);
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('24시간 · 6회');
+  await expect(lab.getByLabel('결과 지표')).toContainText('24시간 · 8회');
+  await answer(lab, page);
+});
+
+test('5단원 · 좁은 화면에서도 학습 피처를 연결한다', async ({ page }) => {
+  const lab = await openLab(page, featuresLab.id, { width: 390, height: 844 });
+  await fit(lab);
+  await connectTasks(lab, featuresLab.starterTasks.slice(0, 1));
+  await expect(edges(lab)).toHaveCount(4);
+});
+
+test('7단원 · 신규 모델 경로를 만들고 Shadow로 응답을 유지한다', async ({ page }) => {
+  const lab = await openLab(page, transitionLab.id);
+  const model = await addNode(lab, 'gateway', '모델 처리');
+  await connectTasks(lab, [
+    wired('router', 'new', model, 'request'),
+    wired('start', 'new', model, 'model'),
+    wired(model, 'prediction', 'observe', 'prediction'),
+  ]);
+  await run(lab);
+  await expect(lab.getByRole('status').first()).toContainText('20건이 실패했습니다');
+  await choose(lab, 'router', '배포 전략', 'blue-green');
+  await run(lab);
+  await expect(lab.getByRole('status').first()).toContainText('이번 배포를 반려합니다');
+  await choose(lab, 'router', '배포 전략', 'shadow');
+  await run(lab);
+  const metrics = lab.getByLabel('결과 지표');
+  await expect(metrics.getByText('사용자 응답', { exact: true }).locator('..')).toContainText(
+    '100건',
+  );
+  await expect(
+    metrics.getByText('신규 모델 사용자 응답', { exact: true }).locator('..'),
+  ).toHaveText(/응답0건$/);
+  await expect(metrics.getByText('Shadow 비교 로그', { exact: true }).locator('..')).toContainText(
+    '10건',
+  );
+  await answer(lab, page);
+});
+
+test('8단원 · 지표 수집을 추가하고 갱신 주기를 조정해 정확도를 높인다', async ({ page }) => {
+  const lab = await openLab(page, improvementLab.id);
+  const collect = await addNode(lab, 'monitoring', '지표 수집');
+  await connectTasks(lab, [
+    wired('start', 'metrics', collect, 'metrics'),
+    wired('start', 'labels', collect, 'labels'),
+    wired(collect, 'signal', 'diagnose', 'signal'),
+  ]);
+  await run(lab);
+  await expect(lab.getByText(/피처 갱신 지연 120분/).first()).toBeVisible();
+  await expect(lab.getByText(/정확도 0.72가 기준 0.85에 미달/).first()).toBeVisible();
+  await expect(seen(lab)).toHaveCount(2);
+  await choose(lab, 'diagnose', '피처 갱신 주기', 'fresh');
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('0.90');
+  await answer(lab, page);
+});
+
+test('9단원 · 평가 데이터와 기준을 고쳐 등록부터 운영 보고까지 실행한다', async ({ page }) => {
+  const lab = await openLab(page, pipelineLab.id);
+  await connectTasks(lab, pipelineLab.starterTasks.slice(1));
+  await run(lab);
+  await expect(
+    lab.getByText(/학습에 사용한 표본이 평가 입력에 들어왔습니다/).first(),
+  ).toBeVisible();
+  await lab.getByRole('button', { name: '실행 결과 접기' }).click();
+  await fit(lab);
+  await handle(lab, 'port-evaluate-in-dataset').click({ button: 'right' });
+  await lab.getByRole('button', { name: '데이터 분할 연결 삭제', exact: true }).click();
+  await connectTasks(lab, pipelineLab.starterTasks.slice(0, 1));
+  await run(lab);
+  await expect(lab.getByText(/정확도 0.85가 기준 0.90에 미달/).first()).toBeVisible();
+  await select(lab, 'evaluate');
+  const threshold = lab.getByLabel('평가 통과 기준', { exact: true });
+  await threshold.fill('0.8');
+  await threshold.blur();
+  await run(lab);
+  await expect(lab.getByLabel('결과 지표')).toContainText('0.85 · 승인');
+  await expect(lab.getByLabel('결과 지표')).toContainText('다음 실행의 입력 후보');
+  await expect(seen(lab)).toHaveCount(3);
+  await lab.getByRole('radio').first().check();
+  await lab.getByRole('button', { name: '정답 확인' }).click();
+  await expect(lab.getByText(/실습 완료\./)).toBeVisible();
 });

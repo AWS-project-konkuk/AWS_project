@@ -15,12 +15,7 @@ import { parseSaved, useSystemLab } from '../src/systemLab/store';
 
 const model = connection('start', 'out-model', 'pod-b', 'in-model');
 function ready() {
-  let graph = applyCommand(definition.initial(), {
-    type: 'toggle',
-    id: 'root',
-    enabled: true,
-    children: true,
-  });
+  let graph = definition.initial();
   for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
   return graph;
 }
@@ -45,28 +40,26 @@ describe('Docker·Kubernetes 시범 실행', () => {
     expect(result.responses.map((r) => r.id).sort((a, b) => a - b)).toEqual(definition.requestIds);
     expect(result.responses.filter((r) => r.pod === 'new-pod-b')).toHaveLength(5);
   });
-  it('선언과 자료는 개별 실행 상태 없이 동작하고 이전 완료 기록을 읽는다', () => {
+  it('이전 실행 플래그를 지우고 성공 기록과 그래프를 복원한다', () => {
     const graph = ready();
-    for (const id of ['start', 'image']) {
-      expect(graph.entities.find((item) => item.id === id)).not.toHaveProperty('enabled');
-      expect(() => applyCommand(graph, { type: 'toggle', id, enabled: false })).toThrow();
-    }
+    const flags = new Map(graph.entities.map((item) => [item.id, item.kind !== 'model']));
     const legacy = {
       ...graph,
-      entities: graph.entities.map((item) => ({ ...item, enabled: true })),
+      entities: graph.entities.map((item) => ({ ...item, enabled: flags.get(item.id) })),
     };
     const restored = parseSaved(
-      JSON.stringify({ version: 1, graph: legacy, proof: signature(legacy), quiz: true }),
+      JSON.stringify({ version: 1, graph: legacy, proof: signature(graph, flags), quiz: true }),
     );
     expect(restored.graph).toEqual(graph);
     expect(restored.proof).toBe(signature(graph));
     expect(runLab(restored.graph, 'migrated').success).toBe(true);
-    const stoppedDocker = applyCommand(graph, { type: 'toggle', id: 'docker', enabled: false });
-    expect(
-      runLab(stoppedDocker, 'stopped').steps.find((step) => step.node === 'pod-a')?.message,
-    ).toContain('Docker 정지 상태');
+    const stopped = { ...legacy, entities: legacy.entities.map((e) => ({ ...e, enabled: false })) };
+    const { graph: resumed } = parseSaved(
+      JSON.stringify({ version: 1, graph: stopped, proof: null, quiz: false }),
+    );
+    expect(runLab(resumed, 'resumed').success).toBe(true);
   });
-  it('빠진 모델, 이미지, 관리 대상 수, 시스템 정지를 구분한다', () => {
+  it('빠진 모델, 이미지, 관리 대상 수를 구분한다', () => {
     const graph = ready();
     const cases = [
       [applyCommand(graph, { type: 'disconnect', ids: [model.id] }), '모델 입력이 없습니다.'],
@@ -80,10 +73,6 @@ describe('Docker·Kubernetes 시범 실행', () => {
       [
         applyCommand(graph, { type: 'cluster', id: 'kubernetes', patch: { replicas: 3 } }),
         '원하는 수 3개',
-      ],
-      [
-        applyCommand(graph, { type: 'toggle', id: 'kubernetes', enabled: false }),
-        'Kubernetes 정지 상태',
       ],
     ] as const;
     for (const [config, message] of cases) {
@@ -300,18 +289,31 @@ describe('Docker·Kubernetes 시범 실행', () => {
   });
   it('Kubernetes 이미지 입력을 삭제하고 새 ID의 포트로 다시 연결한다', () => {
     const deleted = applyCommand(ready(), {
-      type: 'port-remove', id: 'kubernetes', port: 'in-image',
+      type: 'port-remove',
+      id: 'kubernetes',
+      port: 'in-image',
     });
     expect(deleted.connections.some((edge) => edge.to.node === 'kubernetes')).toBe(false);
     expect(runLab(deleted, 'deleted').success).toBe(false);
     const added = applyCommand(deleted, {
-      type: 'port-add', id: 'kubernetes', port: 'new-image', material: 'image', direction: 'in',
+      type: 'port-add',
+      id: 'kubernetes',
+      port: 'new-image',
+      material: 'image',
+      direction: 'in',
     });
-    expect(() => applyCommand(added, {
-      type: 'port-add', id: 'kubernetes', port: 'output', material: 'image', direction: 'out',
-    })).toThrow();
+    expect(() =>
+      applyCommand(added, {
+        type: 'port-add',
+        id: 'kubernetes',
+        port: 'output',
+        material: 'image',
+        direction: 'out',
+      }),
+    ).toThrow();
     const graph = applyCommand(added, {
-      type: 'connect', edge: connection('image', 'out-image', 'kubernetes', 'new-image'),
+      type: 'connect',
+      edge: connection('image', 'out-image', 'kubernetes', 'new-image'),
     });
     const saved = parseSaved(
       JSON.stringify({ version: 1, graph, quiz: true, proof: signature(graph) }),
@@ -332,8 +334,9 @@ describe('Docker·Kubernetes 시범 실행', () => {
     const saved = parseSaved(
       JSON.stringify({ version: 1, graph: legacy, quiz: true, proof: signature(legacy) }),
     );
-    expect(saved.graph.entities.find((entity) => entity.kind === 'kubernetes')?.ports)
-      .toHaveLength(imageInput ? 1 : 0);
+    expect(saved.graph.entities.find((entity) => entity.kind === 'kubernetes')?.ports).toHaveLength(
+      imageInput ? 1 : 0,
+    );
     expect(runLab(saved.graph, 'legacy').success).toBe(imageInput);
   });
   it('위치 이동은 완료 증거를 유지하고 잘못된 저장 구조를 거부한다', () => {

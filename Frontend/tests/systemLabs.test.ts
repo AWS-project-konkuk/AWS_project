@@ -232,9 +232,9 @@ describe('4단원 GPU 두 장 학습', () => {
         applyCommand(graph, { type: 'remove', id }, config).entities.some((e) => e.id === id),
       ).toBe(false);
   });
-  it('워커를 끄면 실행이 차단된다', () => {
-    const graph = edit(build('tensor'), config, { type: 'toggle', id: 'worker2', enabled: false });
-    expect(messages(graph, config)).toContain('GPU 워커 2 정지 상태');
+  it('두 번째 워커 없이 결과를 합치면 실패한다', () => {
+    const graph = edit(build('tensor'), config, { type: 'remove', id: 'worker2' });
+    expect(runLab(graph, 'missing-worker', config).success).toBe(false);
   });
 });
 

@@ -101,8 +101,6 @@ export const week2Lab: LabConfig = {
     container: { in: ['image', 'model', 'request'], out: ['prediction'] },
   },
   fixedKinds: ['root', 'start', 'end'],
-  runStateKinds: ['ec2', 'docker', 'kubernetes', 'pod', 'container'],
-  createEnabled: false,
   toolPosition: (index) => ({ x: 24, y: 52 + index * 164 }),
   managedPorts: { pod: ['image', 'control'] },
   multipleInput: ['end'],

@@ -43,7 +43,6 @@ interface EntityBase {
   name: string;
   parent: string;
   position: Point;
-  enabled?: boolean;
   settings?: Record<string, SettingValue>;
 }
 export interface KubernetesSettings {
@@ -86,6 +85,8 @@ export interface Graph {
 
 /** 저장 데이터를 읽을 때 실습별로 필요한 검증과 이전 형식 변환. */
 export interface LabPersistence {
+  /** 이전 노드 종류나 설정을 현재 형식으로 읽는다. */
+  readEntity?: (item: Record<string, unknown>) => Record<string, unknown>;
   /** 공통 필드 검사 뒤에 종류별 필드를 검사한다. */
   validateEntity: (item: Record<string, unknown>, kind: Kind) => boolean;
   /** 고정 노드를 기준 정의와 비교해 복원한다. 맞지 않으면 undefined. */
@@ -109,12 +110,9 @@ export interface LabConfig {
   portTypes: Record<Kind, Record<Direction, readonly Material[]>>;
   /** 삭제·이동이 막히는 고정 종류(루트, 시작, 도착). */
   fixedKinds: readonly Kind[];
-  /** 실행·정지 상태를 갖는 종류. */
-  runStateKinds: readonly Kind[];
   /** 서비스 안에서 도구로 만든 index번째 노드의 위치. */
   toolPosition: (index: number) => Point;
   /** 도구로 만든 노드를 켠 상태로 시작할지. 1단원은 직접 켜는 과제라 false이다. */
-  createEnabled: boolean;
   /** 서비스 설정이 관리해 학습자가 포트를 바꾸지 않는 자료 타입. */
   managedPorts: Partial<Record<Kind, readonly Material[]>>;
   /** 입력 포트가 여러 연결을 받는 종류. */
@@ -189,7 +187,6 @@ export const isComplete = (
 
 export const isSystemKind = (lab: LabConfig, kind: Kind) => Object.hasOwn(lab.tools, kind);
 export const protectedKind = (lab: LabConfig, kind: Kind) => lab.fixedKinds.includes(kind);
-export const hasRunState = (lab: LabConfig, kind: Kind) => lab.runStateKinds.includes(kind);
 export const editablePortTypes = (lab: LabConfig, kind: Kind, direction: Direction) =>
   (lab.portTypes[kind]?.[direction] ?? []).filter(
     (material) => !lab.managedPorts[kind]?.includes(material),
@@ -212,7 +209,6 @@ export function makeEntity(
     name: lab.labels[kind],
     parent,
     position,
-    ...(hasRunState(lab, kind) && { enabled: lab.createEnabled }),
     ...(settings && { settings }),
   };
   if (isSystemKind(lab, kind))
@@ -293,14 +289,25 @@ export function connectionIssue(graph: Graph, edge: Connection): string | undefi
   )
     return '이 입력에는 연결을 하나만 받을 수 있습니다.';
 }
-export const manualConnectionIssue = (lab: LabConfig, graph: Graph, edge: Connection) =>
-  lab.manualIssue(graph, edge) ?? connectionIssue(graph, edge);
+/** 단일 입력 포트가 이미 차 있으면 새 연결이 기존 연결을 대신한다. */
+export const withoutOccupant = (graph: Graph, edge: Connection): Graph => {
+  const input = findPort(graph, edge.to);
+  if (!input || input.multiple) return graph;
+  const connections = graph.connections.filter(
+    (e) => e.id === edge.id || e.to.node !== edge.to.node || e.to.port !== edge.to.port,
+  );
+  return connections.length === graph.connections.length ? graph : { ...graph, connections };
+};
+export const manualConnectionIssue = (lab: LabConfig, graph: Graph, edge: Connection) => {
+  const target = withoutOccupant(graph, edge);
+  return lab.manualIssue(target, edge) ?? connectionIssue(target, edge);
+};
 export function absolute(graph: Graph, entity: Entity): Point {
   const parent = graph.entities.find((item) => item.id === entity.parent);
   const offset = parent ? absolute(graph, parent) : { x: 0, y: 0 };
   return { x: offset.x + entity.position.x, y: offset.y + entity.position.y };
 }
-export function signature(graph: Graph) {
+export function signature(graph: Graph, legacyRunFlags?: ReadonlyMap<string, boolean>) {
   return JSON.stringify([
     graph.entities
       .map((entity) => ({
@@ -308,7 +315,7 @@ export function signature(graph: Graph) {
         kind: entity.kind,
         parent: entity.parent,
         name: entity.name,
-        enabled: entity.enabled,
+        enabled: legacyRunFlags?.get(entity.id),
         ...(entity.settings && { settings: entity.settings }),
         ...(entity.type === 'system' && entity.kubernetes && { kubernetes: entity.kubernetes }),
         ...(entity.type === 'system' && entity.ports && { ports: entity.ports }),
@@ -322,10 +329,4 @@ export function signature(graph: Graph) {
       .sort((a, b) => a.id.localeCompare(b.id)),
     graph.connections.map((edge) => edge.id).sort(),
   ]);
-}
-export function blockedBy(lab: LabConfig, graph: Graph, id: string): string | undefined {
-  const node = graph.entities.find((e) => e.id === id);
-  if (!node || node.id === rootId) return;
-  if (hasRunState(lab, node.kind) && !node.enabled) return node.name;
-  return blockedBy(lab, graph, node.parent);
 }

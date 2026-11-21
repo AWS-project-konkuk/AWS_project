@@ -8,7 +8,11 @@ import {
   type SettingSpec,
   type SettingValue,
 } from '../../lab';
-import { datum, need, port, setting } from '../kit';
+import { choice, datum, need, port, setting } from '../kit';
+import { dataKinds } from './data';
+import { featureKinds } from './features';
+import { operationKinds } from './operations';
+import { servingKinds } from './serving';
 
 /**
  * 모든 실습이 함께 쓰는 서비스와 작업 노드.
@@ -28,6 +32,7 @@ export interface CatalogKind {
 }
 
 export const materials: Record<string, string> = {
+  'task-result': '작업 결과',
   workdata: '작업 데이터',
   code: '코드·포인터',
   file: '파일',
@@ -42,6 +47,22 @@ export const materials: Record<string, string> = {
   index: '색인',
   evidence: '근거',
   answer: '답변',
+  objects: '객체 목록',
+  dataset: '데이터 표본',
+  'saved-model': '저장된 모델',
+  'click-events': '클릭 이력',
+  'feature-definition': '피처 정의',
+  'feature-query': '조회 요청',
+  'feature-value': '피처 값',
+  request: '사용자 요청',
+  'deployed-model': '사용할 모델',
+  'traffic-plan': '요청 분배 내역',
+  prediction: '모델 결과',
+  'serving-report': '운영 보고',
+  'service-metrics': '서비스 지표',
+  labels: '정답 표본',
+  'quality-signal': '품질 조사 자료',
+  approval: '평가 승인',
 };
 
 export const GPU_MEMORY = 16;
@@ -64,21 +85,6 @@ const parallelMode = (graph: Graph, parent: string): Mode | undefined => {
 
 const storageType = (graph: Graph, parent: string) =>
   graph.entities.find((e) => e.id === parent)?.settings?.type;
-
-const choice = (
-  key: string,
-  label: string,
-  initial: string,
-  options: [string, string][],
-  help?: string,
-): SettingSpec => ({
-  key,
-  label,
-  type: 'choice',
-  initial,
-  options: options.map(([value, text]) => ({ value, label: text })),
-  help,
-});
 
 const run: Record<string, Strategy> = {
   repo: (ctx) => {
@@ -154,7 +160,7 @@ const run: Record<string, Strategy> = {
     const samples = Number(job.data.samples) / 2;
     const text: Record<Mode, [string, string]> = {
       data: ['표본 절반 + 전체 모델 복제', '나머지 표본 + 전체 모델 복제'],
-      model: ['앞 레이어 그룹', '뒤 레이어 그룹'],
+      model: ['레이어 그룹 A', '레이어 그룹 B'],
       tensor: ['행렬의 왼쪽 조각', '행렬의 오른쪽 조각'],
     };
     (['a', 'b'] as const).forEach((part, i) =>
@@ -189,7 +195,7 @@ const run: Record<string, Strategy> = {
       const upstream = activation[0];
       if (activation.length > 1) throw new Error('활성값 입력은 하나만 연결하세요.');
       if (upstream && upstream.type === 'data' && upstream.data.part === part)
-        throw new Error('앞 레이어를 맡은 다른 워커의 활성값을 받아야 합니다.');
+        throw new Error('활성값은 레이어 그룹이 다른 워커에게서 받아야 합니다.');
     }
     const out = ctx.node.ports.find((p) => p.id === 'out-result')?.material ?? 'checkpoint';
     ctx.emit(
@@ -197,6 +203,7 @@ const run: Record<string, Strategy> = {
         out,
         mode ? exchanged[mode] + (stage === 'late' ? ' · 최종 출력' : '') : '갱신된 체크포인트',
         {
+          ...job.data,
           part,
           worker: ctx.node.id,
           stage,
@@ -223,7 +230,7 @@ const run: Record<string, Strategy> = {
     if (b.length !== 1 || (mode !== 'model' && a.length !== 1))
       throw new Error(
         mode === 'model'
-          ? '뒤 레이어 워커의 결과를 결합 입력 2에 연결하세요.'
+          ? '활성값을 받아 마지막 레이어를 계산한 워커의 결과를 결합 입력 2에 연결하세요.'
           : '두 워커의 ' + exchanged[mode] + '을 각각 결합 입력에 연결하세요.',
       );
     if (mode === 'model') {
@@ -341,6 +348,10 @@ const run: Record<string, Strategy> = {
 };
 
 export const catalog: Record<string, CatalogKind> = {
+  ...dataKinds,
+  ...featureKinds,
+  ...operationKinds,
+  ...servingKinds,
   root: { label: '전체 서비스' },
   ec2: { label: 'EC2', service: true },
   storage: {
@@ -535,6 +546,8 @@ type Pick = {
   tools: Record<string, string[]>;
   /** 공통 설정의 초기값을 이 실습에 맞게 바꾼다. 예: { embed: { space: 'A' } } */
   defaults?: Record<string, Record<string, SettingValue>>;
+  /** 이번 실습에서 쓰지 않는 포트 ID. */
+  omitPorts?: Record<string, readonly string[]>;
 };
 /** 선택한 종류에서 LabConfig의 공통 부분을 만든다. */
 export function fromCatalog(pick: Pick) {
@@ -550,21 +563,22 @@ export function fromCatalog(pick: Pick) {
   const defaults: Record<Kind, PortSpec[]> = {};
   for (const [kind, def] of Object.entries(all)) {
     labels[kind] = def.label;
+    const ports = def.ports?.filter((port) => !pick.omitPorts?.[kind]?.includes(port.id));
     const ins = [
       ...new Set([
-        ...(def.ports ?? []).filter((p) => p.direction === 'in').map((p) => p.material),
+        ...(ports ?? []).filter((p) => p.direction === 'in').map((p) => p.material),
         ...(def.extra?.in ?? []),
       ]),
     ];
     const outs = [
       ...new Set([
-        ...(def.ports ?? []).filter((p) => p.direction === 'out').map((p) => p.material),
+        ...(ports ?? []).filter((p) => p.direction === 'out').map((p) => p.material),
         ...(def.extra?.out ?? []),
       ]),
     ];
     portTypes[kind] = { in: ins, out: outs };
     managedPorts[kind] = [...ins, ...outs];
-    if (def.ports) defaults[kind] = def.ports;
+    if (ports) defaults[kind] = ports;
     if (def.settings)
       settingSpecs[kind] = def.settings.map((spec) => {
         const initial = pick.defaults?.[kind]?.[spec.key];
@@ -576,9 +590,6 @@ export function fromCatalog(pick: Pick) {
     .filter(([, def]) => def.service || def === all.root)
     .map(([kind]) => kind);
   const serviceKinds = services.filter((kind) => kind !== 'root');
-  const taskKinds = Object.keys(all).filter(
-    (kind) => !services.includes(kind) && kind !== 'start' && kind !== 'end',
-  );
   return {
     labels,
     materials,
@@ -589,7 +600,6 @@ export function fromCatalog(pick: Pick) {
     tools: Object.fromEntries([
       ...services.map((kind) => [kind, kind === 'root' ? serviceKinds : (pick.tools[kind] ?? [])]),
     ]) as Record<Kind, readonly Kind[]>,
-    runStateKinds: [...serviceKinds, ...taskKinds],
     resourceDefaults: (kind: Kind) => (defaults[kind] ? { ports: defaults[kind] } : {}),
   };
 }

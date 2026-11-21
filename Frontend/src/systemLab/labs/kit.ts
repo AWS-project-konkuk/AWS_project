@@ -11,6 +11,7 @@ import {
   type Point,
   type PortSpec,
   type ResourceEntity,
+  type SettingSpec,
   type SettingValue,
   type SystemEntity,
 } from '../lab';
@@ -19,17 +20,15 @@ import {
 export const plainPersistence: LabPersistence = {
   validateEntity: () => true,
   restoreFixed(entity, fixed) {
-    const comparable = { ...entity, enabled: undefined } as Entity;
     if (
-      signature({ entities: [comparable], connections: [] }) !==
+      signature({ entities: [entity], connections: [] }) !==
       signature({ entities: [fixed], connections: [] })
     )
       return undefined;
     return {
       ...fixed,
       position: fixed.kind === 'root' ? fixed.position : entity.position,
-      enabled: entity.enabled,
-    } as Entity;
+    };
   },
   normalizeEntity: (entity) => entity,
   allowsPort: (lab, kind, direction, material) =>
@@ -39,7 +38,6 @@ export const plainPersistence: LabPersistence = {
 
 type Defaults =
   | 'fixedKinds'
-  | 'createEnabled'
   | 'toolPosition'
   | 'managedPorts'
   | 'multipleInput'
@@ -69,7 +67,6 @@ export function defineLab(
 ): LabConfig {
   const lab: LabConfig = {
     fixedKinds: ['root', 'start', 'end'],
-    createEnabled: true,
     // 서비스는 가로로 나란히 놓이므로 새 노드는 아래로 쌓아 서로 겹치지 않게 한다.
     toolPosition: (index) => ({ x: 24, y: 52 + index * 150 }),
     managedPorts: {},
@@ -133,24 +130,22 @@ interface Layout {
     id: string,
     parent: string,
     at: Point,
-    options?: { name?: string; enabled?: boolean; settings?: Record<string, SettingValue> },
+    options?: { name?: string; settings?: Record<string, SettingValue> },
   ) => ResourceEntity;
 }
-/** 초기 그래프를 만들 때 쓰는 생성 도구. 서비스와 작업 노드는 켜진 상태로 시작한다. */
+/** 초기 그래프의 서비스와 작업 노드를 만든다. */
 export function layout(lab: LabConfig): Layout {
   return {
     system: (kind, id, parent, at, width, height) => ({
       ...(makeEntity(lab, kind, id, parent, at) as SystemEntity),
       width,
       height,
-      ...(lab.runStateKinds.includes(kind) && { enabled: true }),
     }),
     node: (kind, id, parent, at, options = {}) => {
       const entity = makeEntity(lab, kind, id, parent, at) as ResourceEntity;
       return {
         ...entity,
         name: options.name ?? entity.name,
-        ...(lab.runStateKinds.includes(kind) && { enabled: options.enabled ?? true }),
         ...(options.settings && { settings: { ...entity.settings, ...options.settings } }),
       };
     },
@@ -184,3 +179,25 @@ export const setting = (entity: Entity | undefined, key: string): SettingValue =
 };
 export const parentOf = (graph: Graph, entity: Entity) =>
   graph.entities.find((e) => e.id === entity.parent);
+
+export const choice = (
+  key: string,
+  label: string,
+  initial: string,
+  options: [string, string][],
+  help?: string,
+): SettingSpec => ({
+  key,
+  label,
+  type: 'choice',
+  initial,
+  options: options.map(([value, text]) => ({ value, label: text })),
+  help,
+});
+
+export function numbers(data: Record<string, unknown>, key: string): number[] {
+  const values = data[key];
+  if (!Array.isArray(values) || !values.every((value) => typeof value === 'number'))
+    throw new Error('자료에 필요한 숫자 목록이 없습니다.');
+  return values;
+}

@@ -21,7 +21,7 @@ test('실패 후 수동 요청, 오류와 fallback 재시도, 평문 표시, 작
     const body = route.request().postDataJSON();
     expect(body.lessonId).toBe('week2-workflow');
     expect(body.ruleCheck.success).toBe(false);
-    expect(body.ruleCheck.first_failure).toContain('차단');
+    expect(body.ruleCheck.first_failure).toContain('응답 0 / 10건');
     expect(body.nodes.find((node: { id: string }) => node.id === 'pod-a').parent).toBe(
       'kubernetes',
     );
@@ -40,9 +40,8 @@ test('실패 후 수동 요청, 오류와 fallback 재시도, 평문 표시, 작
       await route.fulfill({
         json: {
           status: 'ok',
-          conecpt:
-            '상위 시스템이 정지하면 내부 Pod도 요청을 처리하지 못합니다. <script>실행 안 됨</script>',
-          hint: 'EC2와 Kubernetes의 실행 상태를 확인했나요?',
+          conecpt: 'Pod는 모델 파일을 받은 뒤 요청을 처리합니다. <script>실행 안 됨</script>',
+          hint: '모델 입력에 선을 연결했나요?',
         },
       });
   });
@@ -82,15 +81,15 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
     finish = resolve;
   });
   let calls = 0;
-  const ec2States: boolean[] = [];
+  const selectors: string[] = [];
   await page.route('**/api/chat/ai/hint', async (route) => {
     calls++;
     const first = calls === 1;
-    ec2States.push(
+    selectors.push(
       route
         .request()
         .postDataJSON()
-        .nodes.find((node: { id: string }) => node.id === 'ec2').enabled,
+        .nodes.find((node: { id: string }) => node.id === 'kubernetes').kubernetes.serviceSelector,
     );
     if (first) await pending;
     await route
@@ -109,7 +108,10 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await panel.getByRole('button', { name: 'AI 조언 받기', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'AI 조언 요청 중…' })).toBeDisabled();
-  await lab.getByRole('button', { name: '내부 일괄 실행', exact: true }).click();
+  await lab.getByLabel('캔버스에서 항목 찾기').selectOption('kubernetes');
+  const selector = lab.getByLabel('대상 Pod 라벨');
+  await selector.fill('different');
+  await selector.blur();
   await expect(panel.getByRole('button', { name: 'AI 조언 받기', exact: true })).toBeDisabled();
   release();
   await finished;
@@ -117,7 +119,7 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await panel.getByRole('button', { name: 'AI 조언 받기', exact: true }).click();
   await expect(panel.getByText('새 실행의 조언')).toBeVisible();
-  expect(ec2States).toEqual([false, true]);
+  expect(selectors).toEqual(['review', 'different']);
   await lab.getByRole('button', { name: '실습 실행', exact: true }).click();
   await expect(panel.getByLabel('AI 조언 결과')).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'AI 조언 받기', exact: true })).toBeEnabled();
@@ -125,12 +127,7 @@ test('요청 중 구성 변경과 재실행은 이전 조언을 폐기한다', a
 });
 
 test('성공 실행은 AI 호출을 하지 않고 다른 단원에는 조언 패널이 없다', async ({ page }) => {
-  let graph = applyCommand(definition.initial(), {
-    type: 'toggle',
-    id: 'root',
-    enabled: true,
-    children: true,
-  });
+  let graph = definition.initial();
   for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
   await page.addInitScript((graph) => {
     localStorage.setItem(

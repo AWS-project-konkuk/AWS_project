@@ -41,7 +41,7 @@ if (canRequest) {
 | 필드      | 의미                                                                                            |
 | --------- | ----------------------------------------------------------------------------------------------- |
 | lessonId  | `week2-workflow`                                                                                |
-| nodes     | 부모 노드, 포트, 실행 상태, 버전, Kubernetes 설정을 담은 배열. 위치와 크기는 제외               |
+| nodes     | 부모 노드, 포트, 버전, Kubernetes 설정을 담은 배열. 위치와 크기는 제외                         |
 | edges     | 직접 연결(`manual`)과 Service가 만든 요청 경로(`service-route`)를 담은 배열                     |
 | settings  | 강의 정보, 성공 조건에 쓰이는 요청 ID와 최소 Pod 수, 수집된 응답과 순환 연결                    |
 | ruleCheck | `success: false`, 실패·차단 메시지 배열 `issues`, 첫 실패 또는 차단 근거 문자열 `first_failure` |

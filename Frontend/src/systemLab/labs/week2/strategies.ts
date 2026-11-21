@@ -1,11 +1,5 @@
 import type { Artifact, Strategy } from '../../engine';
-import {
-  blockedBy,
-  type Graph,
-  type LabConfig,
-  type ResourceEntity,
-  type Version,
-} from '../../lab';
+import { type Graph, type LabConfig, type ResourceEntity, type Version } from '../../lab';
 import { appLabel } from './rules';
 
 type Typed = 'model' | 'image' | 'control';
@@ -60,11 +54,7 @@ function deploymentImage(lab: LabConfig, graph: Graph, pod: ResourceEntity) {
   if (!images.length) throw new Error('Kubernetes의 이미지 입력에 컨테이너 이미지를 연결하세요.');
   return required(
     lab,
-    images.map((image) => {
-      const blocked = blockedBy(lab, graph, image.id);
-      if (blocked) throw new Error(blocked + ' 정지 상태 · 이미지를 사용할 수 없습니다.');
-      return { type: 'image', version: image.version, source: image.id };
-    }),
+    images.map((image) => ({ type: 'image', version: image.version, source: image.id })),
     'image',
   );
 }
@@ -129,7 +119,9 @@ export const strategies: Record<string, Strategy> = {
     if (responses.some((r) => !lab.requestIds.includes(r.id)))
       throw new Error('알 수 없는 요청의 응답이 있습니다.');
     if (ids.size !== lab.requestIds.length)
-      throw new Error('응답 ' + ids.size + ' / 10건 · 연결과 Pod 상태를 확인하세요.');
+      throw new Error(
+        '응답 ' + ids.size + ' / 10건 · Pod의 입력 연결과 Service 대상 라벨을 확인하세요.',
+      );
     if (responses.some((response) => !response.viaService))
       throw new Error('모든 요청은 Kubernetes Service를 거쳐야 합니다.');
     const pods = new Set(responses.map((r) => r.pod));

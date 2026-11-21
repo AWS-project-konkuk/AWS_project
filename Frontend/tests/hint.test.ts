@@ -29,15 +29,15 @@ it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제�
   const request = payload();
   const reply = {
     status: 'ok',
-    concept: '상위 시스템이 정지해 있습니다.',
-    hint: 'EC2가 실행 중인가요?',
+    concept: 'Pod에 모델을 연결해야 합니다.',
+    hint: '시작의 모델 포트를 확인했나요?',
   };
   post.mockResolvedValue({
     data: {
       status: reply.status,
       conecpt: reply.concept,
       hint: reply.hint,
-      errorBasis: '시스템 정지',
+      errorBasis: '모델 입력 누락',
       display: reply.concept + ' ' + reply.hint,
     },
   });
@@ -56,13 +56,16 @@ it('실패 실행과 계층·자동 경로를 전송하고 화면 좌표는 제�
   ]);
   expect(request.nodes.find((node) => node.id === 'pod-a')).toMatchObject({
     parent: 'kubernetes',
-    enabled: false,
   });
   expect(
     request.edges.filter((edge) => edge.kind === 'service-route').map((edge) => edge.to.node),
   ).toEqual(['pod-a', 'pod-b']);
-  expect(request.nodes.every((node) => !('position' in node) && !('width' in node))).toBe(true);
-  expect(request.ruleCheck.first_failure).toContain('차단');
+  expect(
+    request.nodes.every(
+      (node) => !('position' in node) && !('width' in node) && !('enabled' in node),
+    ),
+  ).toBe(true);
+  expect(request.ruleCheck.first_failure).toContain('응답 0 / 10건');
   expect(request.ruleCheck.issues).toContain(request.ruleCheck.first_failure);
 });
 
@@ -75,7 +78,7 @@ it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 �
     expect(() => buildHintRequest(lesson, graph, current)).toThrow('끝까지 실행');
   }
   expect(() => buildHintRequest({ ...lesson, id: 'week3-workflow' }, graph, run)).toThrow();
-  const edited = applyCommand(graph, { type: 'toggle', id: 'ec2', enabled: true });
+  const edited = applyCommand(graph, { type: 'connect', edge: starterTasks[0] });
   expect(canRequestHint(lesson.id, edited, run)).toBe(false);
   const moved = structuredClone(graph);
   moved.entities[1].position.x += 10;
@@ -83,12 +86,7 @@ it('실행 전·실행 중·중단·다른 단원·구성 변경 후 요청을 �
 });
 
 it('성공 실행은 거절하고 API 호출도 성공·다른 단원 요청을 방어한다', async () => {
-  let graph = applyCommand(definition.initial(), {
-    type: 'toggle',
-    id: 'root',
-    enabled: true,
-    children: true,
-  });
+  let graph = definition.initial();
   for (const edge of starterTasks) graph = applyCommand(graph, { type: 'connect', edge });
   const run = completedRun(graph);
   expect(run.result.success).toBe(true);

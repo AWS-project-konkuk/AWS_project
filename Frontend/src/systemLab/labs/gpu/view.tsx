@@ -3,7 +3,7 @@ import { viewFrom } from '../catalog/view';
 export const gpuView = viewFrom({
   title: 'GPU 두 장 학습 실습',
   description:
-    '24GiB 모델 상태를 16GiB GPU로 학습하세요. 워커 하나의 OOM을 확인하고, 워커를 늘리고, 작업을 나누고 합친 뒤, 병렬 전략을 바꿔 완료합니다.',
+    '`24GiB` 모델 상태를 `16GiB` GPU로 학습하세요. 워커 하나의 OOM을 확인한 뒤 워커를 늘리고, 작업을 나누고 합쳐 병렬 전략을 비교하세요.',
   ariaLabel: 'GPU 병렬 학습 시스템 실습',
   entry:
     '워커 하나의 OOM에서 시작해 워커를 늘리고, 분할과 결합을 만들고, 병렬 전략을 바꿔 두 워커가 주고받는 자료와 통신량을 비교하세요.',

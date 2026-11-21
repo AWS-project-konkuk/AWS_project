@@ -89,7 +89,8 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   );
 }
 function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; view: LabView }) {
-  const question = resolveScenario(lab.id, {});
+  const question = lesson.assessment ?? resolveScenario(lab.id, {});
+  const correctAnswer = lesson.assessment?.correct ?? 0;
   const useStore = labStore(lab);
   const {
     saved,
@@ -266,9 +267,25 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
           'flex flex-wrap items-center justify-between gap-x-[18px] gap-y-2.5 px-[18px] py-3.5 group-data-[focused=true]/lab:py-2 max-[540px]:px-2.5',
         )}
       >
-        <div className="min-w-0 flex-[1_1_440px] [&_h2]:m-0 [&_h2]:text-xl [&_h2]:tracking-[-0.02em] [&_p]:mt-[3px] [&_p]:mb-0 [&_p]:break-keep [&_p]:text-ui-muted [&_p]:[overflow-wrap:anywhere] group-data-[focused=true]/lab:[&_p]:hidden">
-          <h2>{view.title}</h2>
-          <p>{view.description}</p>
+        <div className="min-w-0 flex-[1_1_440px]">
+          <h2 className="m-0 text-xl tracking-[-0.02em]">{view.title}</h2>
+          <div className="mt-2 max-w-[75ch] rounded-lg bg-ui-accent-wash px-3 py-2.5 group-data-[focused=true]/lab:hidden">
+            <h3 className="m-0 text-xs font-bold text-ui-accent-deep">실습 목표</h3>
+            <p className="mt-1 mb-0 leading-relaxed break-keep text-ui-ink [overflow-wrap:anywhere]">
+              {view.description.split(/`([^`]+)`/g).map((part, index) =>
+                index % 2 ? (
+                  <code
+                    key={index}
+                    className="box-decoration-clone rounded bg-ui-paper px-1 py-px font-(family-name:--font-outlier) text-[0.93em] font-semibold text-ui-accent-deep"
+                  >
+                    {part}
+                  </code>
+                ) : (
+                  part
+                ),
+              )}
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
@@ -511,7 +528,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                           <input
                             type="radio"
                             name="system-lab-quiz"
-                            checked={(answer ?? (saved.quiz ? 0 : null)) === i}
+                            checked={(answer ?? (saved.quiz ? correctAnswer : null)) === i}
                             onChange={() => {
                               setAnswer(i);
                               setChecked(false);
@@ -525,7 +542,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                         type="button"
                         disabled={answer === null}
                         onClick={() => {
-                          quiz(answer === 0);
+                          quiz(answer === correctAnswer);
                           setChecked(true);
                         }}
                       >

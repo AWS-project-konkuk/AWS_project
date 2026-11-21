@@ -1,5 +1,4 @@
 import {
-  blockedBy as labBlockedBy,
   type Graph,
   type LabConfig,
   type Material,
@@ -75,8 +74,6 @@ export interface StepContext {
 }
 export type Strategy = (ctx: StepContext) => string;
 
-export const blockedBy = (graph: Graph, id: string, lab: LabConfig = week2Lab) =>
-  labBlockedBy(lab, graph, id);
 function cycleEdges(graph: Graph) {
   const visited = new Set<string>();
   const active = new Map<string, number>();
@@ -156,16 +153,6 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
     if (index === -1) break;
     const [node] = pending.splice(index, 1);
     done.add(node.id);
-    const blocked = labBlockedBy(lab, graph, node.id);
-    if (blocked) {
-      steps.push({
-        node: node.id,
-        status: 'blocked',
-        message: blocked + ' 정지 상태',
-        transfers: [],
-      });
-      continue;
-    }
     const incoming = graph.connections.filter((e) => e.to.node === node.id);
     const inputs = incoming.flatMap((e) => {
       const value = values.get(e.id);
@@ -234,6 +221,24 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
     }
   }
   const last = steps.find((step) => step.node === end?.id);
+  const nameOf = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
+  /** 도착이 입력을 받지 못했을 때, 상류에서 처음 실패한 노드를 찾는다. */
+  const rootCause = (id: string, seen = new Set<string>()): RunStep | undefined => {
+    if (seen.has(id)) return undefined;
+    seen.add(id);
+    for (const wire of graph.connections) {
+      if (wire.to.node !== id) continue;
+      const step = steps.find((s) => s.node === wire.from.node);
+      if (!step || step.status === 'success') continue;
+      if (step.status === 'failed') return step;
+      const deeper = rootCause(step.node, seen);
+      if (deeper) return deeper;
+    }
+  };
+  const failing = last && last.status !== 'success' && end;
+  const cause = failing ? rootCause(end.id) : undefined;
+  const sideFailure =
+    failing && !cause ? steps.find((s) => s.status === 'failed' && s.node !== end.id) : undefined;
   return {
     id,
     steps,
@@ -242,6 +247,10 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
     metrics,
     observations: [...observations],
     success: last?.status === 'success',
-    message: last?.message ?? '도착 노드에서 결과를 확인하지 못했습니다.',
+    message: cause
+      ? nameOf(cause.node) + ': ' + cause.message
+      : sideFailure
+        ? last?.message + ' (' + nameOf(sideFailure.node) + ': ' + sideFailure.message + ')'
+        : (last?.message ?? '도착 노드에서 결과를 확인하지 못했습니다.'),
   };
 }

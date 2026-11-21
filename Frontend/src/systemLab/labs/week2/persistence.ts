@@ -74,7 +74,6 @@ function restoreFixed(entity: Entity, fixed: Entity): Entity | undefined {
   const start = fixed.type === 'resource' && fixed.kind === 'start' && entity.type === 'resource';
   const comparable = {
     ...entity,
-    enabled: undefined,
     ...(start && { version: fixed.version }),
   };
   const expected =
@@ -98,12 +97,10 @@ function restoreFixed(entity: Entity, fixed: Entity): Entity | undefined {
       position: entity.position,
       ports: entity.ports,
       version: entity.version,
-      enabled: entity.enabled,
     };
   return {
     ...fixed,
     position: fixed.kind === 'root' ? fixed.position : entity.position,
-    enabled: entity.enabled,
   } as Entity;
 }
 function normalizeEntity(entity: Entity): Entity {

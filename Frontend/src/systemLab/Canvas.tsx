@@ -21,14 +21,13 @@ import {
 } from '@xyflow/react';
 import { ChevronDown, ChevronRight, Maximize } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
-import { blockedBy, type RunResult } from './engine';
+import type { RunResult } from './engine';
 import {
   absolute,
   connection,
   manualConnectionIssue,
   descendants,
   findPort,
-  hasRunState,
   portLabel,
   rootId,
   type Connection,
@@ -86,15 +85,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   }, [id, update, portSignature, data.collapsed]);
   const status =
     data.status ??
-    (entity.kind === 'start'
-      ? '출력 전용'
-      : entity.kind === 'end'
-        ? '입력 전용'
-        : hasRunState(lab, entity.kind)
-          ? entity.enabled
-            ? '실행 준비'
-            : '정지'
-          : undefined);
+    (entity.kind === 'start' ? '출력 전용' : entity.kind === 'end' ? '입력 전용' : undefined);
   if (entity.type === 'system')
     return (
       <section
@@ -453,9 +444,7 @@ export function Canvas({
           ? { success: '성공', failed: '실패', blocked: '차단' }[step.status]
           : active?.node === entity.id
             ? '처리 중'
-            : entity.enabled && blockedBy(graph, entity.id, lab)
-              ? '차단'
-              : undefined;
+            : undefined;
         const groupSize =
           entity.type === 'system'
             ? {
@@ -480,7 +469,7 @@ export function Canvas({
           deletable: false,
           selected: entity.id === selected,
           ariaLabel: entity.name,
-          zIndex: entity.type === 'system' ? 0 : 2,
+          zIndex: entity.type === 'system' ? 0 : 3,
           data: {
             entity,
             editable,
@@ -574,7 +563,8 @@ export function Canvas({
       selected: selectedEdge === e.id,
       deletable: false,
       reconnectable: false,
-      zIndex: 4,
+      // 서비스 영역 위에서 보이되 작업 노드의 포트 클릭을 가리지 않는다.
+      zIndex: 2,
       markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color },
       style: {
         stroke: color,
@@ -601,7 +591,7 @@ export function Canvas({
       label: '연결 ' + summary.count,
       selectable: false,
       deletable: false,
-      zIndex: 4,
+      zIndex: 2,
       style: {
         strokeDasharray: '5 5',
         stroke: summary.cycle ? 'var(--color-error)' : 'var(--color-muted)',

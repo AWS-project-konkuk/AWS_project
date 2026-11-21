@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test('54개 강의에서 공통 프레임과 초기 펼침 상태를 확인한다', async ({ page }) => {
+test('56개 강의에서 공통 프레임과 초기 펼침 상태를 확인한다', async ({ page }) => {
   test.setTimeout(150_000);
   await page.goto('/#/learn');
   const lessons = await readLessons(page);
@@ -27,7 +27,7 @@ test('54개 강의에서 공통 프레임과 초기 펼침 상태를 확인한�
   ]);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  expect(lessons).toHaveLength(54);
+  expect(lessons).toHaveLength(56);
   expect(lessons.filter((lesson) => lesson.activityView)).toHaveLength(29);
 
   for (const lesson of lessons) {

@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Minimize2, Minus, Plus, Trash2 } from 'lucide-react';
 import { reparent, type Command } from './commands';
-import { blockedBy } from './engine';
 import {
   descendants,
   editablePortTypes,
-  hasRunState,
   portLabel,
   protectedKind,
   requiredLabEntities,
@@ -24,8 +22,6 @@ import { NativeSelect } from '../components/ui/native-select';
 import { hint } from './appearance';
 
 type Dispatch = (command: Command) => boolean;
-const settingActions =
-  'flex flex-wrap items-center justify-between gap-[5px] [&>button]:px-[7px] [&>button]:text-xs';
 const portControls = 'flex gap-[5px] [&>select]:min-w-0 [&>select]:flex-1 [&>button]:px-1.5';
 
 function PortRow({
@@ -193,8 +189,6 @@ export function Inspector({
   const { lab, view } = useLab();
   const locked = protectedKind(lab, node.kind);
   const required = requiredLabEntities(lab, graph.entities).has(node.id);
-  const runnable = hasRunState(lab, node.kind);
-  const blocked = !runnable || node.enabled ? blockedBy(graph, node.id, lab) : undefined;
   const settings = { node, graph, dispatch, PortList };
   const children = descendants(graph, node.id);
   const parents = graph.entities.filter(
@@ -240,48 +234,12 @@ export function Inspector({
                 }}
               />
             </label>
-            {runnable && (
-              <div className={settingActions}>
-                <span>실행 상태</span>
-                <Button
-                  type="button"
-                  role="switch"
-                  className="aria-checked:bg-ui-accent-wash aria-checked:text-ui-success aria-[checked=false]:text-ui-error"
-                  aria-label={node.name + ' 실행 상태'}
-                  aria-checked={node.enabled}
-                  onClick={() => dispatch({ type: 'toggle', id: node.id, enabled: !node.enabled })}
-                >
-                  {node.enabled ? '실행' : '정지'}
-                </Button>
-              </div>
-            )}
-            {blocked && <p className={hint}>{blocked} 정지로 차단</p>}
           </>
         )}
         {node.type === 'system' && !locked && (
           <Button type="button" onClick={() => dispatch({ type: 'compact', id: node.id })}>
             <Minimize2 size={15} /> 크기 정리
           </Button>
-        )}
-        {node.type === 'system' && (
-          <div className={settingActions}>
-            <Button
-              type="button"
-              onClick={() =>
-                dispatch({ type: 'toggle', id: node.id, enabled: true, children: true })
-              }
-            >
-              내부 일괄 실행
-            </Button>
-            <Button
-              type="button"
-              onClick={() =>
-                dispatch({ type: 'toggle', id: node.id, enabled: false, children: true })
-              }
-            >
-              내부 일괄 정지
-            </Button>
-          </div>
         )}
         {lab.settingSpecs[node.kind]?.map((spec) => {
           const current = node.settings?.[spec.key] ?? spec.initial;

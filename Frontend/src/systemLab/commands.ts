@@ -1,8 +1,8 @@
 import {
   absolute,
   manualConnectionIssue,
+  withoutOccupant,
   descendants,
-  hasRunState,
   makeEntity,
   editablePortTypes,
   protectedKind,
@@ -34,7 +34,6 @@ export type Command =
   | { type: 'pod-label'; id: string; value: string }
   | { type: 'setting'; id: string; key: string; value: SettingValue }
   | { type: 'settings'; id: string; name?: string; version?: Version; replicas?: number }
-  | { type: 'toggle'; id: string; enabled: boolean; children?: boolean }
   | { type: 'connect'; edge: Connection }
   | { type: 'disconnect'; ids: string[] }
   | { type: 'port-add'; id: string; port: string; direction: Direction; material: Material }
@@ -60,7 +59,8 @@ function applyRaw(graph: Graph, cmd: Command, lab: LabConfig): Graph {
   if (cmd.type === 'connect') {
     const error = manualConnectionIssue(lab, graph, cmd.edge);
     if (error) throw new Error(error);
-    return { ...graph, connections: [...graph.connections, cmd.edge] };
+    const target = withoutOccupant(graph, cmd.edge);
+    return { ...graph, connections: [...target.connections, cmd.edge] };
   }
   if (cmd.type === 'disconnect')
     return { ...graph, connections: graph.connections.filter((e) => !cmd.ids.includes(e.id)) };
@@ -93,10 +93,7 @@ function applyRaw(graph: Graph, cmd: Command, lab: LabConfig): Graph {
     }
     return change(item.id, (e) => ({ ...e, position: cmd.position }));
   }
-  if (
-    protectedKind(lab, item.kind) &&
-    !(cmd.type === 'toggle' && item.kind === 'root' && cmd.children)
-  ) {
+  if (protectedKind(lab, item.kind)) {
     throw new Error('고정 항목은 변경할 수 없습니다.');
   }
   switch (cmd.type) {
@@ -217,19 +214,6 @@ function applyRaw(graph: Graph, cmd: Command, lab: LabConfig): Graph {
           replicas: cmd.replicas ?? e.replicas,
         }),
       }));
-    }
-    case 'toggle': {
-      if (item.kind !== 'root' && !hasRunState(lab, item.kind)) {
-        throw new Error('이 항목은 실행 상태를 따로 설정하지 않습니다.');
-      }
-      const ids =
-        cmd.children && item.type === 'system' ? descendants(graph, item.id) : new Set([item.id]);
-      return {
-        ...graph,
-        entities: graph.entities.map((e) =>
-          ids.has(e.id) && hasRunState(lab, e.kind) ? { ...e, enabled: cmd.enabled } : e,
-        ),
-      };
     }
     case 'port-add':
     case 'port-change':

@@ -17,7 +17,7 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize(viewport);
-    await page.goto('/#/learn/week7-workflow');
+    await page.goto('/#/learn/week5-workflow');
     await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
     await expect(page.getByRole('button', { name: '강의 목차 열기' })).toBeVisible();
     const canvas = page.getByTestId('weekly-canvas');
@@ -59,7 +59,7 @@ for (const viewport of [
 
 test('모바일 전체 화면과 설정 패널을 닫으면 넓은 캔버스로 돌아온다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/#/learn/feature-workflow');
+  await page.goto('/#/learn/week5-workflow');
   await page.getByRole('button', { name: '실습 영역 확장', exact: true }).click();
   await page.getByRole('button', { name: '실습 전체 화면', exact: true }).click();
   const canvas = page.getByTestId('weekly-canvas');

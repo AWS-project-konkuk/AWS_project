@@ -7,19 +7,21 @@ import { readingIndex } from '../src/content/templates/new-lesson.mdx';
 
 describe('강의 문서 작성과 자동 등록', () => {
   it('실제 강의 문서만 등록하고 작성용 템플릿은 노출하지 않는다', () => {
-    expect(lessonDocuments).toHaveLength(54);
+    expect(lessonDocuments).toHaveLength(56);
     expect(lessonById['my-first-lesson']).toBeUndefined();
     expect(lessonById['ec2-compute'].reading[1].body).toContain('EC2');
     expect(lessonDocuments.filter((document) => document.lesson.nodeExample)).toHaveLength(12);
   });
-  it('0단원을 전체 흐름·EC2·S3 순서로 통합하고 삭제한 두 강의를 노출하지 않는다', () => {
+  it('0단원에서 전체 흐름, EC2, S3, Git을 배운 뒤 첫 실습을 시작한다', () => {
     const foundation = lessonDocuments.filter((document) => document.lesson.week === 0);
     expect(foundation.map((document) => document.lesson.id)).toEqual([
       'mlops-overview',
       'ec2-compute',
       's3-objects',
+      'git-basics',
+      'intro-workflow',
     ]);
-    expect(foundation.map((document) => document.order)).toEqual([1, 2, 3]);
+    expect(foundation.map((document) => document.order)).toEqual([1, 2, 3, 4, 5]);
     expect(lessonById['iam-role-network']).toBeUndefined();
     expect(lessonById['ami-spot-recovery']).toBeUndefined();
     expect(lessonById['container-isolation'].week).toBe(1);
@@ -38,7 +40,7 @@ describe('강의 문서 작성과 자동 등록', () => {
     );
     modules['./new-topic.lesson.ts'] = document;
     const result = collectLessons(modules);
-    expect(result).toHaveLength(55);
+    expect(result).toHaveLength(57);
     const index = result.findIndex((item) => item.lesson.id === 'new-topic');
     expect(result[index - 1].order).toBe(2);
     expect(result[index + 1].order).toBe(3);

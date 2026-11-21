@@ -7,7 +7,7 @@ import type { Lesson } from '../curriculum/types';
 import { CourseSidebar } from './CourseSidebar';
 import { LessonArticle } from './LessonArticle';
 import { SystemLab } from '../systemLab/SystemLab';
-import { labFor } from '../systemLab/labs';
+import { hasNodePractice, labFor } from '../systemLab/labs';
 import { useLessonCompletion } from '../systemLab/store';
 import { WeeklyLab } from '../weekly/WeeklyLab';
 import { useLearning } from './LearningStore';
@@ -28,6 +28,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
   const next = lessons[index + 1];
   const completed = useLessonCompletion(state.data)(lesson.id);
   const pilot = labFor(lesson.id) !== undefined;
+  const hasPractice = hasNodePractice(lesson);
   const pendingGoal =
     lesson.workflow && !pilot
       ? workflowGoals(lesson, getLab(state.data, lesson.id)).find((goal) => !goal.passed)
@@ -56,7 +57,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
             <ChevronRight size={13} />
             <span>{lesson.title}</span>
           </div>
-          {lesson.workflow && (
+          {hasPractice && (
             <div className={styles.viewControls} role="group" aria-label="학습 화면 보기">
               <button
                 type="button"
@@ -81,19 +82,19 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
               </button>
             </div>
           )}
-          <TourGuide workflow={Boolean(lesson.workflow)} prepare={() => setView('split')} />
+          <TourGuide workflow={hasPractice} prepare={() => setView('split')} />
         </div>
         <div
           className={styles.content}
-          data-view={lesson.workflow ? view : 'interactive'}
+          data-view={hasPractice ? view : 'interactive'}
           data-testid="lesson-workspace"
         >
           <LessonArticle
             lesson={lesson}
             completed={completed}
-            onStartPractice={lesson.workflow ? startPractice : undefined}
+            onStartPractice={hasPractice ? startPractice : undefined}
           />
-          {lesson.workflow && (
+          {hasPractice && (
             <div
               className={styles.practice}
               aria-label="고정 실습 영역"
@@ -116,7 +117,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
           <span>
             {completed
               ? '목표 달성이 기록되었습니다.'
-              : lesson.workflow
+              : hasPractice
                 ? view === 'reading'
                   ? '설명을 읽었다면 실습을 시작하세요.'
                   : pendingGoal
@@ -126,7 +127,7 @@ export function LessonPage({ lesson }: { lesson: Lesson }) {
                       : '설정·결과에서 실습 완료를 기록하세요.'
                 : '설명을 읽고 이해 확인 문제에 답하세요.'}
           </span>
-          {lesson.workflow && !completed && view === 'reading' && (
+          {hasPractice && !completed && view === 'reading' && (
             <button className={styles.next} onClick={startPractice}>
               실습 시작하기
             </button>

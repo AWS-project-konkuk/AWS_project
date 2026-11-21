@@ -50,7 +50,6 @@ export function buildHintRequest(
         id: entity.id,
         name: entity.name,
         parent: entity.parent,
-        enabled: entity.enabled,
         ports: entity.ports,
       };
       return entity.type === 'system'

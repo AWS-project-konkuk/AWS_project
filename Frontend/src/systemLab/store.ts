@@ -4,7 +4,6 @@ import {
   connection,
   connectionIssue,
   defaultSettings,
-  hasRunState,
   isComplete,
   isSystemKind,
   protectedKind,
@@ -15,7 +14,6 @@ import {
   type Connection,
   type Entity,
   type Graph,
-  type Kind,
   type LabConfig,
 } from './lab';
 import { labConfigs } from './labs';
@@ -62,10 +60,13 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
   const persistence = lab.persistence;
   const base = lab.initial();
   const entities: Entity[] = [];
+  const sourceEntities: Entity[] = [];
+  const legacyRunFlags = new Map<string, boolean>();
   const ids = new Set<string>();
-  for (const item of saved.graph.entities as unknown[]) {
+  for (const sourceItem of saved.graph.entities as unknown[]) {
+    if (!record(sourceItem)) return fail();
+    const item = persistence.readEntity?.(sourceItem) ?? sourceItem;
     if (
-      !record(item) ||
       typeof item.id !== 'string' ||
       !item.id ||
       ids.has(item.id) ||
@@ -73,16 +74,14 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
       !item.name.trim() ||
       item.name.length > 63 ||
       typeof item.kind !== 'string' ||
-      !Object.hasOwn(lab.labels, item.kind) ||
       typeof item.parent !== 'string' ||
-      (item.enabled !== undefined && typeof item.enabled !== 'boolean') ||
       !record(item.position) ||
       !number(item.position.x) ||
       !number(item.position.y)
     )
       return fail();
-    const kind = item.kind as Kind;
-    if (hasRunState(lab, kind) && typeof item.enabled !== 'boolean') return fail();
+    const kind = item.kind;
+    if (!Object.hasOwn(lab.labels, kind)) return fail();
     if (isSystemKind(lab, kind)) {
       if (
         item.type !== 'system' ||
@@ -119,14 +118,20 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
         if (!spec || settingIssue(spec, value)) return fail();
       }
     }
-    const entity = item as unknown as Entity;
+    const { enabled, ...fields } = item;
+    if (typeof enabled === 'boolean') legacyRunFlags.set(item.id, enabled);
+    const entity = { ...fields, kind } as unknown as Entity;
     if (protectedKind(lab, kind)) {
       const fixed = base.entities.find((e) => e.kind === kind);
       if (!fixed || entity.id !== fixed.id) return fail();
       const restored = persistence.restoreFixed(entity, fixed);
       if (!restored) return fail();
       entities.push(restored);
-    } else entities.push(entity);
+      sourceEntities.push(restored);
+    } else {
+      entities.push(entity);
+      sourceEntities.push(sourceItem as unknown as Entity);
+    }
     ids.add(entity.id);
   }
   if (!base.entities.filter((e) => protectedKind(lab, e.kind)).every((e) => ids.has(e.id)))
@@ -198,15 +203,12 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
       return fail();
     graph.connections.push(edge);
   }
-  const previousSignature = signature({ ...graph, entities });
+  const source = { ...graph, entities: sourceEntities };
+  const sameProof =
+    saved.proof === signature(source) ||
+    (legacyRunFlags.size > 0 && saved.proof === signature(source, legacyRunFlags));
+  const changed = signature(graph) !== signature(source);
   const { compatible, migrated } = persistence.migrate(lab, graph);
-  // Old saves recorded an execution flag for resources that are applied automatically.
-  graph.entities = graph.entities.map((entity) => {
-    if (hasRunState(lab, entity.kind) || !Object.hasOwn(entity, 'enabled')) return entity;
-    const normalized = { ...entity };
-    delete normalized.enabled;
-    return normalized;
-  });
   return {
     version: 1,
     graph,
@@ -214,14 +216,16 @@ export function parseSaved(raw: string, lab: LabConfig = week2Lab): Saved {
     observed: (saved.observed as string[] | undefined) ?? [],
     proof:
       compatible &&
-      saved.proof === previousSignature &&
-      (!migrated || runLab(graph, 'migration', lab).success)
+      sameProof &&
+      (!(changed || migrated || legacyRunFlags.size) || runLab(graph, 'migration', lab).success)
         ? signature(graph)
         : null,
   };
 }
 interface Store {
   saved: Saved;
+  /** 마지막으로 성공을 증명한 구성. 편집을 되돌려 같은 구성이 되면 다시 인정한다. */
+  proven: string | null;
   blocked: boolean;
   warning: string;
   past: Graph[];
@@ -234,19 +238,20 @@ interface Store {
   observe: (tags: string[]) => void;
   recover: () => void;
 }
-const update = (saved: Saved, graph: Graph): Saved => ({
-  ...saved,
-  graph,
-  proof: saved.proof && signature(graph) === saved.proof ? saved.proof : null,
-});
+const update = (saved: Saved, graph: Graph, proven: string | null): Saved => {
+  const now = signature(graph);
+  const known = saved.proof ?? proven;
+  return { ...saved, graph, proof: known === now ? now : null };
+};
 /** 실습 설정마다 독립된 저장 키와 편집 기록을 가진 스토어를 만든다. */
 export function createLabStore(lab: LabConfig) {
   const load = () => {
     try {
       const raw = globalThis.localStorage?.getItem(lab.storageKey);
-      return { saved: raw ? parseSaved(raw, lab) : fresh(lab), blocked: false };
+      const saved = raw ? parseSaved(raw, lab) : fresh(lab);
+      return { saved, proven: saved.proof, blocked: false };
     } catch {
-      return { saved: fresh(lab), blocked: true };
+      return { saved: fresh(lab), proven: null, blocked: true };
     }
   };
   const store = create<Store>()((set, get) => ({
@@ -260,9 +265,17 @@ export function createLabStore(lab: LabConfig) {
         const graph = applyCommand(saved.graph, command, lab);
         if (JSON.stringify(graph) === JSON.stringify(saved.graph) && command.type !== 'restore')
           return false;
-        const next = update(saved, graph);
-        if (command.type === 'restore') next.proof = null;
-        set({ saved: next, past: [...past, saved.graph].slice(-50), future: [], warning: '' });
+        const { proven } = get();
+        const restored = command.type === 'restore';
+        const next = update(saved, graph, restored ? null : proven);
+        if (restored) next.proof = null;
+        set({
+          saved: next,
+          proven: restored ? null : (saved.proof ?? proven),
+          past: [...past, saved.graph].slice(-50),
+          future: [],
+          warning: '',
+        });
         return true;
       } catch (error) {
         set({ warning: (error as Error).message });
@@ -270,22 +283,24 @@ export function createLabStore(lab: LabConfig) {
       }
     },
     undo() {
-      const { saved, past, future } = get();
+      const { saved, past, future, proven } = get();
       const graph = past.at(-1);
       if (graph)
         set({
-          saved: update(saved, graph),
+          saved: update(saved, graph, saved.proof ?? proven),
+          proven: saved.proof ?? proven,
           past: past.slice(0, -1),
           future: [saved.graph, ...future],
           warning: '',
         });
     },
     redo() {
-      const { saved, past, future } = get();
+      const { saved, past, future, proven } = get();
       const graph = future[0];
       if (graph)
         set({
-          saved: update(saved, graph),
+          saved: update(saved, graph, saved.proof ?? proven),
+          proven: saved.proof ?? proven,
           past: [...past, saved.graph].slice(-50),
           future: future.slice(1),
           warning: '',
@@ -293,7 +308,7 @@ export function createLabStore(lab: LabConfig) {
     },
     prove(proof) {
       const { saved } = get();
-      if (proof === signature(saved.graph)) set({ saved: { ...saved, proof } });
+      if (proof === signature(saved.graph)) set({ saved: { ...saved, proof }, proven: proof });
     },
     quiz(correct) {
       set(({ saved }) => ({ saved: { ...saved, quiz: correct } }));
@@ -304,7 +319,7 @@ export function createLabStore(lab: LabConfig) {
       if (observed.length !== saved.observed.length) set({ saved: { ...saved, observed } });
     },
     recover() {
-      set({ blocked: false, saved: fresh(lab), past: [], future: [], warning: '' });
+      set({ blocked: false, saved: fresh(lab), proven: null, past: [], future: [], warning: '' });
     },
   }));
   store.subscribe((state, previous) => {
@@ -338,6 +353,6 @@ export function useLessonCompletion(data: LearningData) {
   const done = labList.map((lab) => labStore(lab)((state) => isComplete(lab, state.saved)));
   return (id: string) => {
     const index = labList.findIndex((lab) => lab.id === id);
-    return index >= 0 ? done[index] : !!data.lessons[id]?.completed;
+    return (index >= 0 && done[index]) || !!data.lessons[id]?.completed;
   };
 }

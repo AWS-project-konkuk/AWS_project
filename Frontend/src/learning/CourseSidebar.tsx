@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronDown, X } from 'lucide-react';
 import { chapters, chapterLabel, lessons } from '../curriculum/catalog';
 import type { Lesson } from '../curriculum/types';
+import { hasNodePractice } from '../systemLab/labs';
 import { useLessonCompletion } from '../systemLab/store';
 import { useLearning } from './LearningStore';
 import styles from './LessonLayout.module.css';
@@ -82,7 +83,7 @@ export function CourseSidebar({
                     </span>
                     <div className={styles.lessonLabel}>
                       {item.title}
-                      {item.workflow ? (
+                      {hasNodePractice(item) ? (
                         <div>
                           <small className={styles.practiceBadge}>노드 실습</small>
                         </div>
