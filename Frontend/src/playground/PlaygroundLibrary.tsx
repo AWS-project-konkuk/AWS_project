@@ -1,5 +1,5 @@
 import { Copy, FolderOpen, Pencil, Save, Trash2, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -20,6 +20,9 @@ const dateText = (time: number) =>
 /** 브라우저에 저장한 내 Playground를 만들고 불러오고 정리한다. */
 export function PlaygroundLibrary() {
   const [shown, show] = useState(false);
+  // 버튼이 화면 오른쪽에 있으면 패널을 왼쪽으로 펼쳐 화면 밖으로 나가지 않게 한다.
+  const [alignRight, setAlignRight] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState('');
   const store = labStore(playgroundLab);
   const graph = store((state) => state.saved.graph);
@@ -36,13 +39,25 @@ export function PlaygroundLibrary() {
   };
   return (
     <div className="relative">
-      <Button type="button" aria-expanded={shown} onClick={() => show(!shown)}>
+      <Button
+        ref={trigger}
+        type="button"
+        aria-expanded={shown}
+        onClick={() => {
+          const left = trigger.current?.getBoundingClientRect().left ?? 0;
+          setAlignRight(left + 416 + 16 > window.innerWidth);
+          show(!shown);
+        }}
+      >
         <FolderOpen size={15} /> 내 Playground ({items.length})
       </Button>
       {shown && (
         <section
           aria-label="내 Playground"
-          className="absolute right-0 z-30 mt-1.5 grid w-[min(26rem,calc(100vw-2rem))] gap-3 rounded-lg border border-solid border-ui-rule-2 bg-ui-paper p-3 shadow-(--shadow-card)"
+          className={
+            (alignRight ? 'right-0' : 'left-0') +
+            ' absolute z-30 mt-1.5 grid w-[min(26rem,calc(100vw-2rem))] gap-3 rounded-lg border border-solid border-ui-rule-2 bg-ui-paper p-3 shadow-(--shadow-card)'
+          }
         >
           <form
             className="grid gap-2"
