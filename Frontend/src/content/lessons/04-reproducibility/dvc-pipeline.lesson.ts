@@ -1,44 +1,4 @@
 import { defineMdxLesson } from '../../defineLesson';
-import { createChoiceActivity } from './git-large.lesson';
-
-export const Activity = createChoiceActivity({
-  title: '어디부터 다시 계산할까요?',
-  context:
-    '자료 준비 → 모델 학습 → 점수 확인 순서입니다. 입력이 바뀌면 영향을 받는 단계도 달라집니다.',
-  note: '같은 결과가 캐시에 있다면 실제 재실행 범위는 더 줄어들 수 있습니다.',
-  choices: [
-    {
-      label: '학습 설정만 변경',
-      result: '준비한 자료는 쓰고, 학습부터 다시 합니다.',
-      cards: [
-        { title: '자료 준비', value: '재사용', detail: '자료와 준비 방법은 그대로' },
-        { title: '모델 학습', value: '다시 실행', detail: '학습 설정이 바뀜' },
-        { title: '점수 확인', value: '다시 실행', detail: '새 모델로 점수 계산' },
-      ],
-      reason: '학습 설정은 자료를 준비하는 단계에 영향을 주지 않습니다.',
-    },
-    {
-      label: '원본 데이터 변경',
-      result: '자료 준비부터 모두 다시 확인합니다.',
-      cards: [
-        { title: '자료 준비', value: '다시 실행', detail: '입력 데이터가 바뀜' },
-        { title: '모델 학습', value: '다시 실행', detail: '새 자료로 학습' },
-        { title: '점수 확인', value: '다시 실행', detail: '새 모델과 자료로 평가' },
-      ],
-      reason: '앞 단계의 결과를 뒷 단계가 사용하므로 변경의 영향이 이어집니다.',
-    },
-    {
-      label: '변경 없음',
-      result: '기존 결과가 남아 있다면 재사용합니다.',
-      cards: [
-        { title: '자료 준비', value: '재사용', detail: '같은 입력' },
-        { title: '모델 학습', value: '재사용', detail: '같은 코드와 설정' },
-        { title: '점수 확인', value: '재사용', detail: '같은 모델과 평가 자료' },
-      ],
-      reason: '같은 일을 반복하지 않도록 이전 결과를 활용합니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({

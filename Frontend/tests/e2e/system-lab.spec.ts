@@ -15,11 +15,10 @@ async function openLab(page: Page) {
   return page.getByTestId('system-lab');
 }
 
-test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다', async ({ page }) => {
+test('마우스로 연결·실행하고 진도와 편집을 복원한다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   const lab = await openLab(page);
   await expect(lab.getByRole('button', { name: 'EC2 추가' })).toBeEnabled();
-  await lab.getByRole('button', { name: '내부 일괄 실행', exact: true }).click();
   const canvas = lab.getByTestId('system-lab-canvas');
   await expect(canvas.locator('.react-flow__edge')).toHaveCount(3);
   const finder = lab.getByLabel('캔버스에서 항목 찾기');
@@ -60,7 +59,7 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await expect(lab.getByRole('status').filter({ hasText: '출발 → Pod 1' })).toContainText(
     'model.pkl · v1',
   );
-  await lab.getByRole('radio').first().check();
+  await lab.getByRole('radio').nth(2).check();
   await lab.getByRole('button', { name: '정답 확인' }).click();
   await expect(page.getByRole('link', { name: '다음 강의', exact: true })).toBeVisible();
   await page.reload();
@@ -79,9 +78,9 @@ test('마우스로 준비·연결·실행하고 진도와 편집을 복원한다
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
   await expect(lab.getByLabel('캔버스에서 항목 찾기').locator('option')).toHaveCount(11);
   await lab.getByRole('button', { name: '초기 복원' }).click();
-  await expect(lab.getByTestId('node-pod-b')).toHaveAttribute('data-status', '정지');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(3);
   await lab.getByRole('button', { name: '실행 취소', exact: true }).click();
-  await expect(lab.getByTestId('node-pod-b')).toHaveAttribute('data-status', '실행 준비');
+  await expect(canvas.locator('.react-flow__edge')).toHaveCount(9);
 });
 
 test('실패한 실행도 왼쪽 결과를 펼치고 오른쪽 설정은 좁게 접힌다', async ({ page }) => {
@@ -125,7 +124,7 @@ test('실패한 실행도 왼쪽 결과를 펼치고 오른쪽 설정은 좁게 
   expect(await empty.evaluate(painted)).toBe(false);
 });
 
-test('패널 폭을 따로 선택하고 실행 가능한 항목에서만 스위치를 표시한다', async ({ page }) => {
+test('패널 폭을 따로 선택하고 항목 설정에 실행 스위치가 없다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   const lab = await openLab(page);
   const settings = lab.getByRole('complementary', { name: '항목 설정' });
@@ -148,17 +147,11 @@ test('패널 폭을 따로 선택하고 실행 가능한 항목에서만 스위�
   );
 
   const finder = lab.getByLabel('캔버스에서 항목 찾기');
-  for (const id of ['image']) {
+  for (const id of ['image', 'pod-a', 'kubernetes', 'root']) {
     await finder.selectOption(id);
     await expect(settings.getByRole('switch')).toHaveCount(0);
-    await expect(lab.getByTestId('node-' + id).locator('header small')).toHaveText(
-      /진입점|실행 자료/,
-    );
   }
-  await finder.selectOption('pod-a');
-  await expect(settings.getByRole('switch', { name: 'Pod 1 실행 상태' })).toBeVisible();
-  await finder.selectOption('kubernetes');
-  await expect(settings.getByRole('switch', { name: 'Kubernetes 실행 상태' })).toBeVisible();
+  await expect(settings.getByRole('button', { name: /내부 일괄/ })).toHaveCount(0);
 });
 
 test('처음부터 포트와 도구를 편집하고 드롭 한 번으로 위치를 저장한다', async ({ page }) => {
@@ -223,7 +216,11 @@ test('영역을 접고, 선을 우클릭해 삭제한 뒤 되돌린다', async (
   const nodeLayer = await canvas
     .getByTestId('node-image')
     .evaluate((element) => Number(getComputedStyle(element.closest('.react-flow__node')!).zIndex));
-  expect(edgeLayer).toBeGreaterThan(nodeLayer);
+  const serviceLayer = await canvas
+    .getByTestId('system-kubernetes')
+    .evaluate((element) => Number(getComputedStyle(element.closest('.react-flow__node')!).zIndex));
+  expect(edgeLayer).toBeGreaterThan(serviceLayer);
+  expect(edgeLayer).toBeLessThan(nodeLayer);
   const point = await edge
     .locator('path.react-flow__edge-path')
     .evaluate((path: SVGPathElement) => {
@@ -283,7 +280,7 @@ test('손상된 시범 저장만 보호하고 초기화한다', async ({ page })
     playground: localStorage.getItem('flow-lab:playground:v1'),
   }));
   await expect(lab.getByRole('alert')).toContainText('원본을 보존');
-  await lab.getByRole('button', { name: '내부 일괄 실행', exact: true }).click();
+  await lab.getByRole('button', { name: 'EC2 추가', exact: true }).click();
   expect(
     await page.evaluate(() => localStorage.getItem('blockml:system-lab:week2-workflow:v1')),
   ).toBe(keys.pilot);
@@ -326,7 +323,7 @@ for (const width of [1440, 1024, 390]) {
     const labBounds = (await lab.boundingBox())!;
     expect(labBounds.y + labBounds.height).toBeGreaterThanOrEqual(practice.y + practice.height - 1);
     await expect(lab.getByRole('button', { name: '실습 힌트' })).toHaveCount(0);
-    await expect(lab.getByText(/이미지는 Kubernetes.*도착에 연결하세요/)).toBeVisible();
+    await expect(lab.getByText(/이미지를 Kubernetes에 연결하세요.*도착에 연결하세요/)).toBeVisible();
     expect(c.x + c.width).toBeLessThanOrEqual(width + 1);
     expect(p.x >= c.x + c.width - 1 || p.y >= c.y + c.height - 1).toBe(true);
     const runButton = lab.getByRole('button', { name: '실습 실행', exact: true });

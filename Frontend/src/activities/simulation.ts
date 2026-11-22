@@ -68,6 +68,50 @@ export function activityGoals(lesson: Lesson, lab: LabState): GoalResult[] {
 }
 const metric = (label: string, value: string, amount?: number) => ({ label, value, amount });
 const round = (v: number) => Math.round(v * 100) / 100;
+
+export function memoryBudget(answers: Record<string, Answer>) {
+  const fixed = 3;
+  const batch = Number(answers.batch);
+  const activation = round(batch * (answers.precision === 'amp' ? 0.1 : 0.2));
+  const capacity = Number(answers.vram);
+  const total = round(fixed + activation);
+  return {
+    fixed,
+    activation,
+    total,
+    capacity,
+    effectiveBatch: batch * Number(answers.accumulation),
+    overflow: round(Math.max(0, total - capacity)),
+  };
+}
+
+export function searchExample(spec: ActivitySpec, answers: Record<string, Answer>) {
+  const exact = spec.kind === 'search' && answers.mode === 'exact';
+  const point = answers.query === 'fruit' ? { x: 22, y: 26 } : { x: 73, y: 68 };
+  const phrase =
+    spec.fields
+      .find((field) => field.id === 'query')
+      ?.options?.find((option) => option.value === answers.query)?.label ?? String(answers.query);
+  const documents = [
+    { label: '사과', excerpt: '사과는 단맛과 신맛이 나는 열매입니다.', x: 19, y: 19 },
+    { label: '바나나', excerpt: '바나나는 익으면 단맛이 강해집니다.', x: 30, y: 30 },
+    { label: 'PyTorch', excerpt: 'PyTorch는 신경망을 훈련하는 프레임워크입니다.', x: 68, y: 73 },
+    {
+      label: 'Docker',
+      excerpt: 'Docker는 프로그램의 실행 환경을 컨테이너로 묶습니다.',
+      x: 79,
+      y: 62,
+    },
+  ].map((doc) => ({ ...doc, distance: Math.hypot(doc.x - point.x, doc.y - point.y) }));
+  const matches = exact
+    ? documents.filter((doc) => doc.excerpt.includes(phrase)).map((doc) => doc.label)
+    : [...documents]
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 2)
+        .map((doc) => doc.label);
+  return { query: point, phrase, exact, documents, matches };
+}
+
 export function simulate(spec: ActivitySpec, a: Record<string, Answer>): ActivityResult {
   if (!validInputs(spec, a))
     return {
@@ -89,8 +133,10 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
         gpu = n('setup') + Math.ceil(cpu / n('width'));
       headline =
         cpu > gpu
-          ? '많은 연산을 병렬로 나눠 GPU 처리량이 유리합니다.'
-          : '준비 비용 때문에 작은 작업에서는 GPU 이득이 작습니다.';
+          ? 'GPU가 더 짧은 시간에 처리합니다.'
+          : cpu < gpu
+            ? 'CPU가 더 짧은 시간에 처리합니다.'
+            : '이 예시에서는 CPU와 GPU의 처리 시간이 같습니다.';
       metrics = [
         metric('CPU 상대 시간', String(cpu), cpu),
         metric('GPU 상대 시간', String(gpu), gpu),
@@ -107,26 +153,24 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
       break;
     }
     case 'memory': {
-      const fixed = 3,
-        activation = n('batch') * (a.precision === 'amp' ? 0.1 : 0.2),
-        total = fixed + activation;
+      const { fixed, activation, total, capacity, effectiveBatch, overflow } = memoryBudget(a);
       headline =
-        total > n('vram')
+        overflow > 0
           ? 'OOM · 요청한 메모리가 예산을 초과합니다.'
           : '현재 예시 배치가 VRAM 안에 들어갑니다.';
       metrics = [
         metric('고정 학습 상태', `${fixed} GiB`, fixed),
-        metric('활성값', `${round(activation)} GiB`, activation),
-        metric('VRAM 사용 / 용량', `${round(total)} / ${n('vram')} GiB`, total),
-        metric('유효 배치', String(n('batch') * n('accumulation'))),
+        metric('활성값', `${activation} GiB`, activation),
+        metric('VRAM 요구량 / 용량', `${total} / ${capacity} GiB`, total),
+        metric('유효 배치', String(effectiveBatch)),
       ];
-      steps = [
-        '가중치·학습 상태 적재',
-        '활성값 메모리 할당',
-        total > n('vram') ? '할당 실패 · OOM' : '순전파·역전파',
-        '기울기 누적 후 갱신',
-      ];
-      if (total > n('vram')) warning = '배치를 줄이거나 정밀도·메모리 예산을 검토하세요.';
+      steps = ['가중치·학습 상태 적재', '활성값 메모리 할당'];
+      if (overflow > 0) {
+        steps.push('할당 실패 · OOM');
+        warning = `한도를 ${overflow} GiB 초과했습니다. 마이크로 배치를 줄이거나 정밀도를 바꿔 보세요.`;
+      } else {
+        steps.push('순전파·역전파', '기울기 누적 후 갱신');
+      }
       break;
     }
     case 'parallel': {
@@ -160,7 +204,9 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
             ]
           : ['앞 레이어 실행', '중간 활성값 전송', '뒤 레이어 실행', '역전파 결과 전달'];
       if (memory > n('vram'))
-        warning = '일반 데이터 병렬은 각 장치의 모델 복제본 메모리를 줄이지 않습니다.';
+        warning = data
+          ? '일반 데이터 병렬은 각 장치의 모델 복제본 메모리를 줄이지 않습니다.'
+          : '분할한 모델 상태가 장치당 VRAM에 들어가지 않습니다.';
       detail += ' 메모리는 모델 학습 상태만 분할한 단순 예시로 활성값 등 추가 공간은 별도입니다.';
       break;
     }
@@ -377,11 +423,10 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
       break;
     case 'embedding':
     case 'search': {
-      const fruit = a.query === 'fruit',
-        exact = a.mode === 'exact';
-      headline = exact
-        ? '정확한 문구를 포함한 문서가 없습니다.'
-        : `가장 가까운 예시: ${fruit ? '사과·바나나' : 'PyTorch·Docker'}`;
+      const { exact, matches } = searchExample(spec, a);
+      headline = matches.length
+        ? `${exact ? '문구를 포함한 문서' : '가장 가까운 예시'}: ${matches.join(' · ')}`
+        : '정확한 문구를 포함한 문서가 없습니다.';
       steps = [
         '질문 선택',
         exact ? '문구 포함 검사' : '같은 공간의 예시 벡터',
@@ -389,8 +434,8 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
         '관련성 판단',
       ];
       metrics = [
-        metric('검색 결과', exact ? '0건' : fruit ? '사과, 바나나' : 'PyTorch, Docker'),
-        metric('좌표', '교육용 고정 2차원'),
+        metric('검색 결과', matches.length ? matches.join(', ') : '0건'),
+        metric('비교 기준', exact ? '문구 포함' : '교육용 2차원 좌표의 거리'),
       ];
       break;
     }
@@ -452,7 +497,11 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
               : '준비·전환·롤백에 따라 응답 모델이 바뀝니다.';
       metrics = [
         metric('신규 사용자 응답', `${actual} / 100`, actual),
-        metric('기존 사용자 응답', `${100 - actual - failed} / 100`, 100 - actual - failed),
+        metric(
+          v === 'recreate' ? '처리한 요청' : '기존 사용자 응답',
+          `${100 - actual - failed} / 100`,
+          100 - actual - failed,
+        ),
         metric('실패 요청', `${failed} / 100`, failed),
         metric('Shadow 복제', `${shadow} / 100`, shadow),
       ];
@@ -478,13 +527,23 @@ export function simulate(spec: ActivitySpec, a: Record<string, Answer>): Activit
     }
     case 'drift':
       headline =
-        a.change === 'data'
-          ? '입력 분포 변화가 관측되었습니다.'
-          : '입력과 정답 관계가 바뀌었습니다.';
+        n('shift') === 0
+          ? '기준 구간과 관측값이 같습니다.'
+          : a.change === 'data'
+            ? '입력 분포 변화가 관측되었습니다.'
+            : '입력과 정답 관계가 바뀌었습니다.';
       metrics = [
-        metric('입력 분포 차이', a.change === 'data' ? `${n('shift')}%` : '0%'),
-        metric('예시 정확도', a.change === 'concept' ? `${90 - n('shift')}%` : '90% 유지'),
-        metric('시스템 오류율', '0%'),
+        metric(
+          '입력 분포 차이',
+          a.change === 'data' ? `${n('shift')}%` : '0%',
+          a.change === 'data' ? n('shift') : 0,
+        ),
+        metric(
+          '예시 정확도',
+          a.change === 'concept' ? `${90 - n('shift')}%` : '90% 유지',
+          a.change === 'concept' ? 90 - n('shift') : 90,
+        ),
+        metric('시스템 오류율', '0%', 0),
       ];
       steps = [
         '기준 구간',

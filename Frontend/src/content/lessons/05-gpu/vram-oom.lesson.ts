@@ -51,6 +51,12 @@ export default defineMdxLesson({
   ],
   sourceWeek: 3,
   mapStages: ['training'],
+  activityView: {
+    type: 'numbers',
+    title: '유효 배치를 유지하면서 OOM을 피할 수 있을까요?',
+    instruction: '같은 VRAM에서 마이크로 배치를 줄이고 기울기 누적을 늘려 보세요.',
+    note: '이 모형은 고정 상태와 활성값만 더합니다. 실제 학습의 임시 공간과 할당기 오버헤드는 별도입니다.',
+  },
   activity: {
     kind: 'memory',
     fields: [

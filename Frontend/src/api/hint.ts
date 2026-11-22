@@ -1,10 +1,11 @@
 import { api } from './client';
-import type { RunResult } from '../systemLab/engine';
+import type { Metric, RunResult } from '../systemLab/engine';
 import type { Connection, ResourceEntity, SystemEntity } from '../systemLab/model';
 
 /** Request body for POST /api/chat/ai/hint. */
 export interface HintRequest {
-  lessonId: 'week2-workflow';
+  /** 시스템 실습이 있는 강의 ID. */
+  lessonId: string;
   nodes: (Omit<SystemEntity, 'position' | 'width' | 'height'> | Omit<ResourceEntity, 'position'>)[];
   edges: (Connection & { kind: 'manual' | 'service-route' })[];
   settings: {
@@ -12,6 +13,9 @@ export interface HintRequest {
     requirements: { requestIds: number[]; requiredPods: number };
     responses: RunResult['responses'];
     cycle: string[];
+    /** 실행에서 계산한 지표와 관찰한 조건. 실습마다 다르다. */
+    metrics: Metric[];
+    observations: string[];
   };
   ruleCheck: { success: false; issues: string[]; first_failure: string };
 }
@@ -47,8 +51,8 @@ export async function requestHint(
   request: HintRequest,
   signal?: AbortSignal,
 ): Promise<HintResponse> {
-  if (request.lessonId !== 'week2-workflow') {
-    throw new Error('AI 조언은 현재 1단원 노드 실습에서만 사용할 수 있습니다.');
+  if (!request.lessonId.trim()) {
+    throw new Error('AI 조언을 요청할 강의 ID가 필요합니다.');
   }
   if (request.ruleCheck.success !== false || !request.ruleCheck.first_failure.trim()) {
     throw new Error('실패한 실습 실행 결과가 있어야 AI 조언을 요청할 수 있습니다.');

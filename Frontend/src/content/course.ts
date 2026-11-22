@@ -8,7 +8,7 @@ export const notionWeeks = [
   '8f3ebb1cb38a828a88b401186cd88e3b',
 ];
 const titles = [
-  '전체 흐름과 EC2·S3 기초',
+  '전체 흐름과 EC2·S3·Git 기초',
   '같은 환경에서 실행하기',
   '데이터를 보존하고 공급하기',
   '데이터 버전과 실험 재현성',
@@ -20,7 +20,7 @@ const titles = [
   '전체 과정 설명하기',
 ];
 const summaries = [
-  '전체 워크플로우·EC2의 실행·S3의 저장',
+  '전체 흐름·EC2의 실행·S3의 파일·Git의 코드',
   'VM·Docker·k8s·Pod',
   'Storage lifecycle·share·데이터 공급 병목',
   '코드·데이터·환경과 실험 재현성',

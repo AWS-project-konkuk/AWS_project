@@ -47,6 +47,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 4,
   mapStages: ['data', 'training'],
+  activityView: {
+    type: 'structure',
+    title: '학습 데이터와 모델 파일은 어디로 이동할까요?',
+    instruction: '객체를 읽는 경로와 결과 모델을 저장하는 경로를 비교하세요.',
+  },
   activity: {
     kind: 'objects',
     variant: 'mlops',

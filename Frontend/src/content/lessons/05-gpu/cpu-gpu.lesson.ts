@@ -47,6 +47,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 3,
   mapStages: ['training'],
+  activityView: {
+    type: 'numbers',
+    title: '언제 GPU의 준비 비용을 상쇄할까요?',
+    instruction: '연산 1개와 128개를 비교해 같은 작업의 상대 처리 시간이 어떻게 달라지는지 보세요.',
+  },
   activity: {
     kind: 'compute',
     fields: [

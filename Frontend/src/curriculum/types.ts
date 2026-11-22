@@ -1,7 +1,7 @@
 import type { NodeExampleSpec } from './nodeExamples';
 import type { Node, Edge } from '@xyflow/react';
 import type { ResourceConfig } from '../console/resources';
-import type { ActivitySpec } from '../activities/types';
+import type { ActivitySpec, ActivityView } from '../activities/types';
 
 export type Answer = string | number | boolean;
 export interface Reading {
@@ -52,6 +52,7 @@ export interface Lesson {
   contentRevision?: number;
   workflow?: string;
   activity?: ActivitySpec;
+  activityView?: ActivityView;
   practice?: 'required' | 'explore' | 'interactive';
   flow?: [string, string][];
   id: string;

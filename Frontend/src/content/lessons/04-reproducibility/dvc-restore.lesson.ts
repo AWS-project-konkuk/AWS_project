@@ -1,40 +1,4 @@
 import { defineMdxLesson } from '../../defineLesson';
-import { createChoiceActivity } from './git-large.lesson';
-
-export const Activity = createChoiceActivity({
-  title: '지난주 데이터를 다시 쓰려면?',
-  context: '목표는 지난주 v1입니다. 현재 작업 폴더에는 이번 주 v2가 있습니다.',
-  note: '복원에 필요한 파일을 원격에 보관했고 읽기 권한이 있다고 가정합니다.',
-  choices: [
-    {
-      label: 'Git만 v1로 변경',
-      result: '아직 코드와 데이터가 서로 다릅니다.',
-      cards: [
-        { title: '코드·이름표', value: 'v1', detail: '지난주 기록' },
-        { title: '작업 데이터', value: 'v2', detail: '이번 주 파일이 남음' },
-      ],
-      reason: 'Git이 관리하지 않는 큰 데이터 파일은 따로 복원해야 합니다.',
-    },
-    {
-      label: '캐시에 v1 있음',
-      result: 'dvc checkout으로 내 보관본을 꺼냅니다.',
-      cards: [
-        { title: '가져오는 곳', value: '로컬 캐시 v1', detail: '내 컴퓨터에 이미 있음' },
-        { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
-      ],
-      reason: '필요한 파일이 가까이 있으므로 다시 내려받을 필요가 없습니다.',
-    },
-    {
-      label: '캐시에 v1 없음',
-      result: 'dvc pull로 팀 보관소에서 가져옵니다.',
-      cards: [
-        { title: '가져오는 곳', value: '데이터 원격 v1', detail: '캐시를 거쳐 복원' },
-        { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
-      ],
-      reason: '이름표만으로 데이터가 생기지는 않습니다. 실제 파일을 받아야 합니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
@@ -280,4 +244,39 @@ export default defineMdxLesson({
     ['n0', 'n1'],
     ['n1', 'n2'],
   ],
+  activityView: {
+    type: 'scenario',
+    title: '지난주 데이터를 다시 쓰려면?',
+    instruction: '목표는 지난주 v1입니다. 현재 작업 폴더에는 이번 주 v2가 있습니다.',
+    note: '복원에 필요한 파일을 원격에 보관했고 읽기 권한이 있다고 가정합니다.',
+    cases: [
+      {
+        label: 'Git만 v1로 변경',
+        result: '아직 코드와 데이터가 서로 다릅니다.',
+        cards: [
+          { title: '코드·이름표', value: 'v1', detail: '지난주 기록' },
+          { title: '작업 데이터', value: 'v2', detail: '이번 주 파일이 남음' },
+        ],
+        reason: 'Git이 관리하지 않는 큰 데이터 파일은 따로 복원해야 합니다.',
+      },
+      {
+        label: '캐시에 v1 있음',
+        result: 'dvc checkout으로 내 보관본을 꺼냅니다.',
+        cards: [
+          { title: '가져오는 곳', value: '로컬 캐시 v1', detail: '내 컴퓨터에 이미 있음' },
+          { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
+        ],
+        reason: '필요한 파일이 가까이 있으므로 다시 내려받을 필요가 없습니다.',
+      },
+      {
+        label: '캐시에 v1 없음',
+        result: 'dvc pull로 팀 보관소에서 가져옵니다.',
+        cards: [
+          { title: '가져오는 곳', value: '데이터 원격 v1', detail: '캐시를 거쳐 복원' },
+          { title: '작업 데이터', value: 'v1', detail: '지난주 코드와 맞음' },
+        ],
+        reason: '이름표만으로 데이터가 생기지는 않습니다. 실제 파일을 받아야 합니다.',
+      },
+    ],
+  },
 });

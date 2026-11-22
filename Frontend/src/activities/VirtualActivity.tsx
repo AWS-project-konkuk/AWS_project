@@ -30,6 +30,16 @@ export function VirtualActivity() {
       <p className={styles.legend}>
         파란 영역이 커널입니다. 앱을 3개까지 추가하고 파란 영역의 개수를 비교하세요.
       </p>
+      <div className={styles.explanation} role="status" aria-live="polite" aria-atomic="true">
+        <strong>
+          {count === 1 ? '지금은 양쪽 모두 앱 1개입니다.' : `앱을 ${count}개로 늘렸습니다.`}
+        </strong>
+        <p>
+          {count === 1
+            ? '앱 하나만 보면 커널 개수의 차이가 드러나지 않습니다. 앱 하나 추가를 눌러 보세요.'
+            : `VM 쪽은 앱마다 별도 OS를 실행해 게스트 커널도 ${count}개입니다. 컨테이너 쪽은 앱 환경만 ${count}개가 되고, 아래의 호스트 커널은 여전히 1개입니다.`}
+        </p>
+      </div>
       <div className={styles.comparison}>
         <section className={styles.diagram} aria-label={`VM ${count}개: 각 VM에 별도 게스트 커널`}>
           <h4>VM</h4>
@@ -90,16 +100,6 @@ export function VirtualActivity() {
             호스트 커널 <strong>1개 공유</strong>
           </p>
         </section>
-      </div>
-      <div className={styles.explanation} role="status" aria-live="polite" aria-atomic="true">
-        <strong>
-          {count === 1 ? '지금은 양쪽 모두 앱 1개입니다.' : `앱을 ${count}개로 늘렸습니다.`}
-        </strong>
-        <p>
-          {count === 1
-            ? '앱 하나만 보면 커널 개수의 차이가 드러나지 않습니다. 앱 하나 추가를 눌러 보세요.'
-            : `VM 쪽은 앱마다 별도 OS를 실행해 게스트 커널도 ${count}개입니다. 컨테이너 쪽은 앱 환경만 ${count}개가 되고, 아래의 호스트 커널은 여전히 1개입니다.`}
-        </p>
       </div>
       <table className={styles.summary}>
         <caption>현재 그림에서 직접 세어 볼 것</caption>

@@ -1,0 +1,328 @@
+.scene {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.scene > figcaption {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  text-align: start;
+}
+
+.scene > figcaption strong {
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+
+.scene > figcaption span,
+.scene .chartNote {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.searchLayout,
+.trafficLayout {
+  display: grid;
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.searchLayout {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.searchPlot {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  color: var(--color-ink-2);
+}
+
+.searchPlot text {
+  fill: currentColor;
+  font: 13px var(--font-body);
+}
+
+.searchPlot circle {
+  fill: var(--color-paper);
+  stroke: var(--color-muted);
+  stroke-width: 2;
+}
+
+.searchPlot [data-near='true'] circle {
+  fill: var(--color-accent);
+  stroke: var(--color-accent);
+}
+
+.gridLine,
+.axis,
+.distanceLine {
+  fill: none;
+}
+
+.gridLine {
+  stroke: var(--color-rule);
+}
+
+.axis {
+  stroke: var(--color-muted);
+}
+
+.distanceLine {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.queryPoint {
+  fill: var(--color-ink);
+}
+
+.ranking {
+  padding: var(--space-sm);
+  border-radius: var(--radius-input);
+  background: var(--color-paper-2);
+}
+
+.ranking > p,
+.ranking h4,
+.scene .chartNote {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.ranking h4 {
+  margin-block: var(--space-xs);
+}
+
+.ranking ol {
+  margin: 0;
+  padding-inline-start: var(--space-lg);
+}
+
+.ranking li > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-xs);
+}
+
+.ranking li + li {
+  margin-top: var(--space-xs);
+}
+
+.ranking li span,
+.documentList li span {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.scene .documentList,
+.scene .gpuLayout,
+.scene .trafficLegend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.documentList li {
+  display: grid;
+  grid-template-columns: minmax(4.25rem, auto) 1fr;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.parallelScene {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.gpuLayout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: var(--space-xs);
+}
+
+.gpuLayout li {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-input);
+  background: var(--color-paper-2);
+  font-size: var(--text-sm);
+}
+
+.gpuLayout li[data-over='true'] {
+  border-color: var(--color-error);
+}
+
+.gpuLayout li > span:first-child {
+  color: var(--color-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.modelBlock {
+  padding: var(--space-2xs) var(--space-xs);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-input);
+  background: var(--color-accent-wash);
+}
+
+.gpuLayout:not([data-variant='data']) .modelBlock {
+  border-style: dashed;
+}
+
+.gpuLayout[data-variant='model'] {
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.gpuLayout[data-variant='model'] li {
+  position: relative;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gpuLayout[data-variant='model'] li + li::before {
+  position: absolute;
+  bottom: 100%;
+  left: var(--space-md);
+  height: var(--space-md);
+  border-left: 2px dashed var(--color-accent);
+  content: '';
+}
+
+.scene .communication {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: var(--space-sm) 0 0;
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.timeBar,
+.shadowBar {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--color-paper-3);
+}
+
+.timeBar > span {
+  flex-basis: 0;
+}
+
+.timeBar > span:first-child,
+.computeKey,
+.shadowBar > span {
+  background: var(--color-accent);
+}
+
+.timeBar > span:last-child,
+.transferKey {
+  background: var(--color-muted);
+}
+
+.computeKey,
+.transferKey {
+  display: inline-block;
+  width: var(--space-xs);
+  height: var(--space-xs);
+  margin-inline: var(--space-xs) var(--space-2xs);
+  border-radius: 2px;
+}
+
+.scene .computeKey {
+  margin-inline-start: 0;
+}
+
+.trafficLayout {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.requests {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 3px;
+  width: min(100%, 11rem);
+}
+
+.requests > span {
+  aspect-ratio: 1;
+}
+
+.scene [data-outcome='old'] {
+  border: 1px solid var(--color-muted);
+  border-radius: 2px;
+  background: var(--color-paper-2);
+}
+
+.scene [data-outcome='new'] {
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+
+.scene [data-outcome='failed'] {
+  border: 1px solid var(--color-error);
+  border-radius: 50%;
+  background: var(--color-error);
+}
+
+.trafficLegend > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-xs);
+  border-bottom: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.trafficLegend dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.trafficLegend dt > span {
+  width: var(--space-sm);
+  height: var(--space-sm);
+  flex: none;
+}
+
+.trafficLegend dd {
+  margin: 0;
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.shadowTraffic {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-rule-2);
+  font-size: var(--text-sm);
+}
+
+.shadowBar {
+  margin-top: var(--space-xs);
+}
+
+.scene .shadowTraffic p {
+  margin: 0;
+  color: var(--color-ink-2);
+}

@@ -140,8 +140,8 @@
   color: var(--color-ink);
 }
 .explanation {
-  padding-block: 20px;
-  margin-top: 20px;
+  padding-block: 12px;
+  margin-bottom: 20px;
   border-block: 1px solid var(--color-rule);
 }
 .explanation strong {

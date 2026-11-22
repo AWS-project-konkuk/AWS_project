@@ -25,6 +25,7 @@ import {
   Target,
 } from 'lucide-react';
 import { lessons, lessonById, chapters, chapterLabel } from '../curriculum/catalog';
+import { hasNodePractice } from '../systemLab/labs';
 import { useLessonCompletion } from '../systemLab/store';
 import { useLearning } from './LearningStore';
 import styles from './Learning.module.css';
@@ -267,6 +268,7 @@ function LearningHub() {
               <div className={styles.cards}>
                 {items.map((lesson) => {
                   const complete = isComplete(lesson.id);
+                  const practice = hasNodePractice(lesson);
                   return (
                     <Link
                       key={lesson.id}
@@ -282,13 +284,13 @@ function LearningHub() {
                         <p>{lesson.summary}</p>
                       </div>
                       <div className={styles.lessonDetails}>
-                        {(lesson.workflow ||
+                        {(practice ||
                           lesson.nodeExample ||
                           lesson.activity ||
                           lesson.contentFeatures?.nodeExamples ||
                           lesson.contentFeatures?.activities) && (
                           <span className={styles.practiceBadge}>
-                            {lesson.workflow
+                            {practice
                               ? '노드 실습'
                               : lesson.nodeExample || lesson.contentFeatures?.nodeExamples
                                 ? '본문 노드 학습'

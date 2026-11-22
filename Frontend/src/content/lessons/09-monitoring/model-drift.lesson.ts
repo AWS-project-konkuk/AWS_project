@@ -38,6 +38,11 @@ export default defineMdxLesson({
   ],
   sourceWeek: 7,
   mapStages: ['serving', 'monitoring'],
+  activityView: {
+    type: 'numbers',
+    title: '입력 분포가 바뀌면 정확도도 낮아질까요?',
+    instruction: '입력 분포 변화와 입력·정답 관계 변화를 번갈아 선택해 관측값을 비교하세요.',
+  },
   activity: {
     kind: 'drift',
     fields: [

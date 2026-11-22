@@ -40,9 +40,7 @@ test('정답·오답은 제출 뒤 색상과 아이콘으로 구분하고 동작
 
 test('선택 활동과 본문 노드 학습을 테두리로 구분하고 연결 판정도 강조한다', async ({ page }) => {
   await page.goto('/#/learn/cpu-gpu');
-  const optional = page
-    .locator('details')
-    .filter({ has: page.getByText('선택 활동 · 결과를 예측하고 비교하기', { exact: true }) });
+  const optional = page.getByTestId('activity-frame');
   expect(await optional.evaluate((el) => getComputedStyle(el).borderRightStyle)).toBe('solid');
   expect(
     await optional.evaluate((el) => parseFloat(getComputedStyle(el).borderRightWidth)),
@@ -79,7 +77,7 @@ test('선택 활동과 본문 노드 학습을 테두리로 구분하고 연결 
 
 test('실습 실행 단계의 성공과 실패를 표시한다', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/#/learn/rag-workflow');
+  await page.goto('/#/learn/week5-workflow');
   await page.getByRole('button', { name: '실습 시작하기', exact: true }).click();
   await page.getByRole('button', { name: '3. 새로운 상황 구성' }).click();
   await page.getByRole('button', { name: '단계 실행', exact: true }).click();

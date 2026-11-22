@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import {
   Background,
   Controls,
@@ -12,90 +19,41 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import {
-  Box,
-  Cable,
-  ChevronDown,
-  ChevronRight,
-  CircleCheck,
-  CirclePlay,
-  Cpu,
-  FileBox,
-  FileCog,
-  Layers,
-  Maximize,
-  Network,
-  Package,
-  Route,
-  Send,
-  Server,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Maximize } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
-import { blockedBy, type RunResult } from './engine';
+import type { RunResult } from './engine';
 import {
   absolute,
   connection,
   manualConnectionIssue,
-  serviceRoutes,
   descendants,
   findPort,
-  hasRunState,
-  materials,
   portLabel,
-  resourceRoles,
   rootId,
-  starterTasks,
   type Connection,
   type Entity,
   type Graph,
   type Kind,
-  type Material,
   type Point,
-} from './model';
+} from './lab';
+import { kindClass, useLab } from './labContext';
 import { Button } from '../components/ui/button';
 import { NativeSelect } from '../components/ui/native-select';
 import { cn } from '../components/ui/styles';
-import {
-  divider,
-  entityFrame,
-  entityStatus,
-  kindColor,
-  materialColor,
-  portHandle,
-} from './appearance';
+import { divider, entityFrame, entityStatus, portHandle } from './appearance';
 
-const icons = {
-  root: Layers,
-  ec2: Server,
-  docker: Package,
-  kubernetes: Network,
-  start: CirclePlay,
-  end: CircleCheck,
-  model: FileBox,
-  image: Box,
-  deployment: FileCog,
-  service: Route,
-  pod: Cpu,
-  container: Package,
-};
 export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
-  const Icon = icons[kind];
+  const { view } = useLab();
+  const Icon = view.icons[kind] ?? view.icons.root;
   return (
     <Icon
       size={size}
       aria-hidden
-      className={cn('shrink-0 text-(--kind-color)', kindColor[kind])}
+      className={cn('shrink-0 text-(--kind-color)', kindClass(view, kind))}
       data-kind-icon={kind}
     />
   );
 }
-const materialIcons = {
-  request: Send,
-  prediction: CircleCheck,
-  model: FileBox,
-  image: Box,
-  control: Cable,
-};
 export interface MenuItem {
   label: string;
   ids: string[];
@@ -117,6 +75,7 @@ interface CanvasData extends Record<string, unknown> {
 type CanvasNode = Node<CanvasData, 'entity'>;
 
 function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
+  const { lab, view } = useLab();
   const { entity } = data;
   const update = useUpdateNodeInternals();
   const ports = entity.ports;
@@ -126,21 +85,13 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
   }, [id, update, portSignature, data.collapsed]);
   const status =
     data.status ??
-    (entity.kind === 'start'
-      ? '출력 전용'
-      : entity.kind === 'end'
-        ? '입력 전용'
-        : hasRunState(entity.kind)
-          ? entity.enabled
-            ? '실행 준비'
-            : '정지'
-          : undefined);
+    (entity.kind === 'start' ? '출력 전용' : entity.kind === 'end' ? '입력 전용' : undefined);
   if (entity.type === 'system')
     return (
       <section
         className={cn(
           entityFrame,
-          kindColor[entity.kind],
+          kindClass(view, entity.kind),
           'group/entity size-full rounded-[10px] bg-[color-mix(in_srgb,var(--kind-color)_6%,var(--color-paper-2))]',
         )}
         data-kind={entity.kind}
@@ -203,15 +154,15 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
         {ports && (
           <div className="absolute top-16 left-0">
             {ports.map((port) => {
-              const label = portLabel(ports, port) + ' 입력';
-              const Icon = materialIcons[port.material];
+              const label = portLabel(lab, ports, port) + ' 입력';
+              const Icon = view.materialIcons[port.material];
               return (
                 <div
                   key={port.id}
                   className={cn(
                     'group/port relative flex h-7 items-center gap-1 pl-4 text-[11px] text-(--port-color)',
-                    materialColor[port.material],
                   )}
+                  style={{ '--port-color': view.tones[port.material] } as CSSProperties}
                   data-connected={data.connected.has(port.id)}
                 >
                   <Handle
@@ -238,7 +189,7 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
     <article
       className={cn(
         entityFrame,
-        kindColor[entity.kind],
+        kindClass(view, entity.kind),
         'group/entity rounded-lg bg-ui-paper shadow-(--shadow-card) data-[status=처리_중]:outline-2 data-[status=처리_중]:outline-ui-accent',
       )}
       data-kind={entity.kind}
@@ -256,13 +207,13 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
         <strong className="min-w-0 flex-1 truncate text-sm" title={entity.name}>
           {entity.name}
         </strong>
-        {(status || resourceRoles[entity.kind]) && (
+        {(status || lab.resourceRoles[entity.kind]) && (
           <small className={cn('whitespace-nowrap text-[11px] text-ui-muted', entityStatus)}>
-            {status ?? resourceRoles[entity.kind]}
+            {status ?? lab.resourceRoles[entity.kind]}
           </small>
         )}
       </header>
-      {entity.kind === 'service' && (
+      {lab.routeSources.includes(entity.kind) && (
         <Handle
           id="service-route"
           type="source"
@@ -277,15 +228,15 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
             {entity.ports
               .filter((p) => p.direction === direction)
               .map((port) => {
-                const Icon = materialIcons[port.material];
-                const label = portLabel(entity.ports, port);
+                const Icon = view.materialIcons[port.material];
+                const label = portLabel(lab, entity.ports, port);
                 return (
                   <div
                     key={port.id}
                     className={cn(
-                      materialColor[port.material],
                       'group/port relative flex h-7 items-center gap-[3px] whitespace-nowrap pr-0.5 pl-2.5 text-[11px] data-[direction=out]:justify-end data-[direction=out]:pr-2.5 data-[direction=out]:pl-0.5 [&>span]:truncate [&>svg]:shrink-0 [&>svg]:text-(--port-color)',
                     )}
+                    style={{ '--port-color': view.tones[port.material] } as CSSProperties}
                     data-direction={direction}
                     data-material={port.material}
                     data-connected={data.connected.has(port.id)}
@@ -297,12 +248,8 @@ function EntityView({ id, data, selected }: NodeProps<CanvasNode>) {
                       position={direction === 'in' ? Position.Left : Position.Right}
                       isConnectable={
                         data.editable &&
-                        !(entity.kind === 'service' && direction === 'out') &&
-                        !(
-                          entity.kind === 'pod' &&
-                          port.material === 'request' &&
-                          direction === 'in'
-                        )
+                        !(lab.routeSources.includes(entity.kind) && direction === 'out') &&
+                        !lab.autoInput(entity, port)
                       }
                       className={cn(
                         portHandle,
@@ -398,13 +345,6 @@ function ResizeGrip({
   );
 }
 const nodeTypes = { entity: EntityView };
-const tones: Record<Material, string> = {
-  request: 'var(--lab-request)',
-  prediction: 'var(--lab-prediction)',
-  model: 'var(--lab-model)',
-  image: 'var(--lab-image)',
-  control: 'var(--lab-control)',
-};
 
 interface Props {
   graph: Graph;
@@ -432,6 +372,7 @@ export function Canvas({
   selectedEdge,
   selectEdge,
 }: Props) {
+  const { lab, view } = useLab();
   const flow = useReactFlow<CanvasNode>();
   const element = useRef<HTMLDivElement>(null);
   const [folded, setFolded] = useState<string[]>([]);
@@ -475,13 +416,13 @@ export function Canvas({
       cancelAnimationFrame(frame);
     };
   }, []);
-  const nextTask = starterTasks.find((task) => !manualConnectionIssue(graph, task));
+  const nextTask = lab.starterTasks.find((task) => !manualConnectionIssue(lab, graph, task));
   const recommended = nextTask ? [nextTask.from, nextTask.to] : [];
   const shownSteps = run?.steps.slice(0, cursor) ?? [];
   const active = editable ? undefined : run?.steps[cursor];
   const byNode = new Map(shownSteps.map((step) => [step.node, step]));
   const transfers = new Set(shownSteps.flatMap((step) => step.transfers.map((t) => t.edge)));
-  const generated = serviceRoutes(graph);
+  const generated = lab.routes(graph);
   const derived = new Set(generated.map((edge) => edge.id));
   const connections = [...graph.connections, ...generated];
   const connected = new Map<string, Set<string>>();
@@ -503,9 +444,7 @@ export function Canvas({
           ? { success: '성공', failed: '실패', blocked: '차단' }[step.status]
           : active?.node === entity.id
             ? '처리 중'
-            : entity.enabled && blockedBy(graph, entity.id)
-              ? '차단'
-              : undefined;
+            : undefined;
         const groupSize =
           entity.type === 'system'
             ? {
@@ -530,7 +469,7 @@ export function Canvas({
           deletable: false,
           selected: entity.id === selected,
           ariaLabel: entity.name,
-          zIndex: entity.type === 'system' ? 0 : 2,
+          zIndex: entity.type === 'system' ? 0 : 3,
           data: {
             entity,
             editable,
@@ -611,7 +550,7 @@ export function Canvas({
       continue;
     }
     const material = findPort(graph, e.from)?.material ?? 'request';
-    const color = cycle ? 'var(--color-error)' : tones[material];
+    const color = cycle ? 'var(--color-error)' : view.tones[material];
     edgeLookup.set(e.id, e);
     edges.push({
       id: e.id,
@@ -624,7 +563,8 @@ export function Canvas({
       selected: selectedEdge === e.id,
       deletable: false,
       reconnectable: false,
-      zIndex: 4,
+      // 서비스 영역 위에서 보이되 작업 노드의 포트 클릭을 가리지 않는다.
+      zIndex: 2,
       markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color },
       style: {
         stroke: color,
@@ -637,7 +577,7 @@ export function Canvas({
         ' → ' +
         entityMap.get(target)?.name +
         ' ' +
-        materials[material],
+        lab.materials[material],
     });
   }
   for (const [id, summary] of summaries)
@@ -651,7 +591,7 @@ export function Canvas({
       label: '연결 ' + summary.count,
       selectable: false,
       deletable: false,
-      zIndex: 4,
+      zIndex: 2,
       style: {
         strokeDasharray: '5 5',
         stroke: summary.cycle ? 'var(--color-error)' : 'var(--color-muted)',
@@ -674,7 +614,7 @@ export function Canvas({
             fit();
           }}
         >
-          <Layers size={15} /> 전체 서비스
+          <view.icons.root size={15} /> 전체 서비스
         </Button>
         <NativeSelect
           aria-label="캔버스에서 항목 찾기"
@@ -744,6 +684,7 @@ export function Canvas({
           !!e.sourceHandle &&
           !!e.targetHandle &&
           !manualConnectionIssue(
+            lab,
             graph,
             connection(e.source, e.sourceHandle, e.target, e.targetHandle),
           )

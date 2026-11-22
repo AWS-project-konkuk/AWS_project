@@ -10,7 +10,7 @@ export default defineMdxLesson({
     '주차 종합 실습 · Canary의 신규 응답은 사용자에게 전달됩니다. Shadow는 복제 요청을 비교하지만 사용자에게는 기존 모델의 응답을 전달합니다.',
   minutes: 18,
   scenario:
-    '요청 경로·사용자 응답·비교 로그를 각각 연결하세요. 중단 배포 실패와 안전한 전략을 비교하고 신규 모델의 실제 응답 수를 확인하세요.',
+    '모델 처리 노드를 추가하고 중단 배포와 Blue-Green의 응답 누락을 확인하세요. Canary나 Shadow로 사용자 요청 100건에 응답하세요.',
   concepts: ['워크플로 실습', '자료 전달', '실패·개선 비교'],
   caution: '요청 복제와 사용자 응답 전환은 다른 관계입니다. 관측 후 승격 여부를 별도로 결정합니다.',
   reflection: 'Shadow에서 새 모델로 복제 요청 100건을 보냈다면 신규 사용자 응답 수는?',
@@ -22,6 +22,10 @@ export default defineMdxLesson({
     {
       title: '공식 자료 · 원리와 적용 조건',
       url: 'https://argo-rollouts.readthedocs.io/en/stable/features/canary/',
+    },
+    {
+      title: 'AWS · Blue-Green에서 무중단 전환을 구성하는 예',
+      url: 'https://aws.amazon.com/blogs/compute/zero-downtime-blue-green-deployments-with-amazon-api-gateway/',
     },
     {
       title: '공식 자료 · 더 알아보기',

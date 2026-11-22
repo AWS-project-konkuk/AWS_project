@@ -13,29 +13,23 @@ import {
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { resolveScenario } from '../weekly/scenarios';
+import { quizzes } from './labs/quizzes';
 import { Canvas, KindIcon, type MenuItem } from './Canvas';
 import type { Command } from './commands';
 import { runLab, type RunResult } from './engine';
 import { Inspector } from './Inspector';
-import {
-  findPort,
-  labels,
-  materials,
-  pilotLesson,
-  rootId,
-  serviceRoutes,
-  signature,
-  tools,
-} from './model';
-import { useSystemLab } from './store';
+import { findPort, isComplete, rootId, signature, type LabConfig } from './lab';
+import { LabProvider, kindClass, type LabView } from './labContext';
+import { labFor } from './labs';
+import { labViews } from './labs/views';
+import { labStore } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
-import { divider, hint, kindColor, panel, panelBody } from './appearance';
+import { divider, hint, panel, panelBody } from './appearance';
 import type { Lesson } from '../curriculum/types';
 import { useSystemLabHint } from './useSystemLabHint';
 import { HintPanel } from './HintPanel';
 
-const question = resolveScenario(pilotLesson, {});
 const panelSizes = [
   ['small', '작게'],
   ['medium', '중간'],
@@ -86,6 +80,20 @@ interface Menu {
   items: MenuItem[];
 }
 export function SystemLab({ lesson }: { lesson: Lesson }) {
+  const lab = labFor(lesson.id);
+  const view = labViews[lesson.id];
+  if (!lab || !view) throw new Error(lesson.id + ' 강의에는 시스템 실습 설정이 없습니다.');
+  return (
+    <LabProvider value={{ lab, view }}>
+      <SystemLabBody lesson={lesson} lab={lab} view={view} />
+    </LabProvider>
+  );
+}
+function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; view: LabView }) {
+  const fixedQuiz = lesson.assessment ?? quizzes[lab.id];
+  const question = fixedQuiz ?? resolveScenario(lab.id, {});
+  const correctAnswer = fixedQuiz?.correct ?? 0;
+  const useStore = labStore(lab);
   const {
     saved,
     past,
@@ -97,8 +105,9 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     redo,
     prove,
     quiz,
+    observe,
     recover,
-  } = useSystemLab();
+  } = useStore();
   const { graph } = saved;
   const stamp = signature(graph);
   const [selectedId, setSelected] = useState(rootId);
@@ -150,13 +159,14 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
         if (cursor === active.result.steps.length) {
           showResults(true);
           setFrontPanel('results');
+          observe(active.result.observations);
           if (active.result.success) prove(active.stamp);
         }
       },
       reduced ? 25 : 270,
     );
     return () => clearTimeout(timer);
-  }, [active, busy, prove]);
+  }, [active, busy, prove, observe]);
   useEffect(() => {
     if (!menu) return;
     menuBox.current?.querySelector('button')?.focus();
@@ -189,7 +199,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   const dispatch = (command: Command) => {
     if (busy) return false;
     const changed = commit(command);
-    if (changed && signature(useSystemLab.getState().saved.graph) !== stamp) setRun(null);
+    if (changed && signature(useStore.getState().saved.graph) !== stamp) setRun(null);
     return changed;
   };
   const name = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
@@ -211,14 +221,14 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
   };
   const start = () => {
     setMenu(null);
-    const result = runLab(graph, crypto.randomUUID());
+    const result = runLab(graph, crypto.randomUUID(), lab);
     setRun({ stamp, result, cursor: 0, stopped: false });
     if (!result.steps.length) {
       showResults(true);
       setFrontPanel('results');
     }
   };
-  const chosenWire = [...graph.connections, ...serviceRoutes(graph)].find(
+  const chosenWire = [...graph.connections, ...lab.routes(graph)].find(
     (edge) => edge.id === selectedEdge,
   );
   const chosenMaterial = chosenWire && findPort(graph, chosenWire.from)?.material;
@@ -226,12 +236,13 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     .slice(0, active.cursor)
     .flatMap((step) => step.transfers)
     .find((transfer) => transfer.edge === selectedEdge);
-  const completed = !!saved.proof && saved.quiz;
+  const completed = isComplete(lab, saved);
+  const missing = lab.requiredObservations.filter((tag) => !saved.observed.includes(tag));
   return (
     <section
       className="group/lab flex min-h-full w-full min-w-0 flex-1 flex-col bg-ui-paper text-sm text-ui-ink data-[focused=true]:fixed data-[focused=true]:inset-0 data-[focused=true]:z-(--z-modal) data-[focused=true]:h-dvh data-[focused=true]:overflow-auto [--lab-request:var(--color-accent)] [--lab-prediction:var(--color-success)] [--lab-model:light-dark(#815098,#dcb4f1)] [--lab-image:light-dark(#895b23,#f0c68e)] [--lab-control:light-dark(#356978,#a4dbe3)]"
       data-focused={focused}
-      aria-label="Docker·Kubernetes 시스템 실습"
+      aria-label={view.ariaLabel}
       data-testid="system-lab"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -258,12 +269,25 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
           'flex flex-wrap items-center justify-between gap-x-[18px] gap-y-2.5 px-[18px] py-3.5 group-data-[focused=true]/lab:py-2 max-[540px]:px-2.5',
         )}
       >
-        <div className="min-w-0 flex-[1_1_440px] [&_h2]:m-0 [&_h2]:text-xl [&_h2]:tracking-[-0.02em] [&_p]:mt-[3px] [&_p]:mb-0 [&_p]:break-keep [&_p]:text-ui-muted [&_p]:[overflow-wrap:anywhere] group-data-[focused=true]/lab:[&_p]:hidden">
-          <h2>모델 서빙 실습</h2>
-          <p>
-            이미지는 Kubernetes에, 요청은 내부 Service에 연결하세요. 두 Pod에 모델을 전달하고 각
-            응답을 도착에 연결하세요.
-          </p>
+        <div className="min-w-0 flex-[1_1_440px]">
+          <h2 className="m-0 text-xl tracking-[-0.02em]">{view.title}</h2>
+          <div className="mt-2 max-w-[75ch] rounded-lg bg-ui-accent-wash px-3 py-2.5 group-data-[focused=true]/lab:hidden">
+            <h3 className="m-0 text-xs font-bold text-ui-accent-deep">실습 목표</h3>
+            <p className="mt-1 mb-0 leading-relaxed break-keep text-ui-ink [overflow-wrap:anywhere]">
+              {view.description.split(/`([^`]+)`/g).map((part, index) =>
+                index % 2 ? (
+                  <code
+                    key={index}
+                    className="box-decoration-clone rounded bg-ui-paper px-1 py-px font-(family-name:--font-outlier) text-[0.93em] font-semibold text-ui-accent-deep"
+                  >
+                    {part}
+                  </code>
+                ) : (
+                  part
+                ),
+              )}
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
@@ -440,6 +464,40 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                       ))}
                     </ol>
                   )}
+                  {done && active.result.metrics.length > 0 && (
+                    <dl
+                      className="m-0 grid gap-1 [&_dd]:m-0 [&_dd]:font-semibold [&_dt]:text-xs [&_dt]:text-ui-muted"
+                      aria-label="결과 지표"
+                    >
+                      {active.result.metrics.map((metric) => (
+                        <div key={metric.label}>
+                          <dt>{metric.label}</dt>
+                          <dd>{metric.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                  {lab.requiredObservations.length > 0 && (
+                    <section aria-label="관찰할 조건" className="grid gap-1">
+                      <strong>관찰할 조건</strong>
+                      <ul className="m-0 list-none p-0 text-[13px] [&_li]:flex [&_li]:gap-1.5">
+                        {lab.requiredObservations.map((tag) => {
+                          const seen = saved.observed.includes(tag);
+                          return (
+                            <li key={tag} data-observed={seen}>
+                              <span aria-hidden>{seen ? '✓' : '○'}</span>
+                              <span>
+                                {lab.observationLabels[tag] ?? tag}
+                                <span className="sr-only">
+                                  {seen ? ' · 관찰함' : ' · 아직 관찰하지 않음'}
+                                </span>
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
                   {done && active.result.responses.length > 0 && (
                     <details>
                       <summary>요청별 응답 {active.result.responses.length}건</summary>
@@ -472,7 +530,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                           <input
                             type="radio"
                             name="system-lab-quiz"
-                            checked={(answer ?? (saved.quiz ? 0 : null)) === i}
+                            checked={(answer ?? (saved.quiz ? correctAnswer : null)) === i}
                             onChange={() => {
                               setAnswer(i);
                               setChecked(false);
@@ -486,7 +544,7 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                         type="button"
                         disabled={answer === null}
                         onClick={() => {
-                          quiz(answer === 0);
+                          quiz(answer === correctAnswer);
                           setChecked(true);
                         }}
                       >
@@ -494,7 +552,13 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                       </Button>
                       {(checked || completed) && (
                         <p role="status">
-                          {completed ? '실습 완료. ' : '다시 생각해 보세요. '}
+                          {completed
+                            ? '실습 완료. '
+                            : saved.quiz && missing.length
+                              ? '이해 확인은 맞았습니다. 남은 관찰: ' +
+                                missing.map((tag) => lab.observationLabels[tag] ?? tag).join(', ') +
+                                '. '
+                              : '다시 생각해 보세요. '}
                           {question.explanation}
                         </p>
                       )}
@@ -516,30 +580,30 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
                 <strong>{parent?.name} 도구</strong>
               </div>
               {parent?.type === 'system' &&
-                tools[parent.kind].map((kind) => (
+                lab.tools[parent.kind].map((kind) => (
                   <Button
                     key={kind}
                     data-kind={kind}
                     className={cn(
-                      kindColor[kind],
+                      kindClass(view, kind),
                       'border-[color:color-mix(in_srgb,var(--kind-color)_32%,var(--color-rule))] bg-[color-mix(in_srgb,var(--kind-color)_10%,var(--color-paper))] enabled:hover:bg-[color-mix(in_srgb,var(--kind-color)_18%,var(--color-paper))]',
                     )}
                     type="button"
                     disabled={busy}
-                    title={labels[kind] + ' 추가'}
-                    aria-label={labels[kind] + ' 추가'}
+                    title={lab.labels[kind] + ' 추가'}
+                    aria-label={lab.labels[kind] + ' 추가'}
                     onClick={() => {
                       const id = crypto.randomUUID();
                       if (dispatch({ type: 'add', id, kind, parent: parent.id })) select(id);
                     }}
                   >
-                    <KindIcon kind={kind} /> {labels[kind]} <Plus size={14} />
+                    <KindIcon kind={kind} /> {lab.labels[kind]} <Plus size={14} />
                   </Button>
                 ))}
               {chosenWire && chosenMaterial && (
                 <span role="status">
                   {name(chosenWire.from.node)} → {name(chosenWire.to.node)} ·{' '}
-                  {materials[chosenMaterial]}
+                  {lab.materials[chosenMaterial]}
                   {delivered && ' · ' + delivered.description}
                 </span>
               )}

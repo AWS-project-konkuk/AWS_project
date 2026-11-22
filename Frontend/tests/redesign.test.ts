@@ -13,7 +13,10 @@ describe('설명 중심 학습과 과거 기록의 경계', () => {
     for (const lesson of lessons) {
       expect(lesson.assessment || lesson.workflow).toBeTruthy();
       expect(lesson.mapStages?.length).toBeGreaterThan(0);
-      expect(lesson.references[0].url).toMatch(/^https:\/\/www.notion.so\/[a-f0-9]{32}$/);
+      expect(lesson.references.length).toBeGreaterThan(0);
+      for (const reference of lesson.references) {
+        expect(new URL(reference.url).protocol).toBe('https:');
+      }
     }
   });
   it('노드와 활동이 없는 강의도 정답과 해설 판단으로 완료·복원한다', () => {

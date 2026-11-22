@@ -1,41 +1,4 @@
 import { defineMdxLesson } from '../../defineLesson';
-import { createChoiceActivity } from './git-large.lesson';
-
-export const Activity = createChoiceActivity({
-  title: '큰 모델 파일은 어디에 있을까요?',
-  context: '1GB 모델 파일 하나를 팀원에게 전달하는 상황입니다.',
-  note: '크기는 설명을 위한 예시입니다. LFS 저장소에도 실제 파일과 접근 권한이 필요합니다.',
-  choices: [
-    {
-      label: '일반 Git',
-      result: 'Git이 모델 파일 내용까지 보관합니다.',
-      cards: [
-        { title: 'Git 이력', value: '모델 내용', detail: '큰 파일도 Git 객체로 저장' },
-        { title: '팀원 작업 폴더', value: '모델 파일', detail: '받은 내용을 사용' },
-      ],
-      reason: '큰 파일이 자주 바뀌면 Git 이력과 전송 부담이 커집니다.',
-    },
-    {
-      label: 'Git LFS',
-      result: 'Git에는 이름표, LFS에는 실제 모델이 있습니다.',
-      cards: [
-        { title: 'Git 이력', value: '작은 포인터', detail: '어떤 파일인지 적은 이름표' },
-        { title: 'LFS 저장소', value: '1GB 모델', detail: '실제 파일을 별도로 보관' },
-        { title: '팀원 작업 폴더', value: '모델 파일', detail: 'LFS에서 가져와 사용' },
-      ],
-      reason: '포인터는 파일을 찾는 정보입니다. 실제 파일의 저장 공간은 여전히 필요합니다.',
-    },
-    {
-      label: '파일 다운로드 실패',
-      result: '이름표만으로 모델을 실행할 수는 없습니다.',
-      cards: [
-        { title: 'Git 이력', value: '포인터 있음', detail: '찾아야 할 파일은 알 수 있음' },
-        { title: '작업 폴더', value: '실제 모델 없음', detail: '다운로드와 권한 확인 필요' },
-      ],
-      reason: 'Git 코드를 받았더라도 LFS 파일을 받지 못하면 모델을 사용할 수 없습니다.',
-    },
-  ],
-});
 
 // 강의 설정과 실습 구성입니다. 본문은 같은 이름의 .mdx에서 작성합니다.
 export default defineMdxLesson({
@@ -160,4 +123,51 @@ export default defineMdxLesson({
     ['n0', 'n1'],
     ['n1', 'n2'],
   ],
+  activityView: {
+    type: 'structure',
+    title: '큰 모델 파일은 어디에 있을까요?',
+    instruction: '1GB 모델 파일 하나를 팀원에게 전달하는 상황입니다.',
+    note: '크기는 설명을 위한 예시입니다. LFS 저장소에도 실제 파일과 접근 권한이 필요합니다.',
+    cases: [
+      {
+        label: '일반 Git',
+        flow: ['Git 이력에서 모델 내용 받기', '작업 폴더에서 모델 파일 사용'],
+        result: 'Git이 모델 파일 내용까지 보관합니다.',
+        cards: [
+          { title: 'Git 이력', value: '모델 내용', detail: '큰 파일도 Git 객체로 저장' },
+          { title: '팀원 작업 폴더', value: '모델 파일', detail: '받은 내용을 사용' },
+        ],
+        reason: '큰 파일이 자주 바뀌면 Git 이력과 전송 부담이 커집니다.',
+      },
+      {
+        label: 'Git LFS',
+        flow: [
+          'Git 이력에서 포인터 받기',
+          'LFS 저장소에서 실제 모델 받기',
+          '작업 폴더에서 모델 파일 사용',
+        ],
+        result: 'Git에는 이름표, LFS에는 실제 모델이 있습니다.',
+        cards: [
+          { title: 'Git 이력', value: '작은 포인터', detail: '어떤 파일인지 적은 이름표' },
+          { title: 'LFS 저장소', value: '1GB 모델', detail: '실제 파일을 별도로 보관' },
+          { title: '팀원 작업 폴더', value: '모델 파일', detail: 'LFS에서 가져와 사용' },
+        ],
+        reason: '포인터는 파일을 찾는 정보입니다. 실제 파일의 저장 공간은 여전히 필요합니다.',
+      },
+      {
+        label: '파일 다운로드 실패',
+        flow: [
+          'Git 이력에서 포인터 받기',
+          'LFS 저장소에서 다운로드 실패',
+          '작업 폴더에 실제 모델 없음',
+        ],
+        result: '이름표만으로 모델을 실행할 수는 없습니다.',
+        cards: [
+          { title: 'Git 이력', value: '포인터 있음', detail: '찾아야 할 파일은 알 수 있음' },
+          { title: '작업 폴더', value: '실제 모델 없음', detail: '다운로드와 권한 확인 필요' },
+        ],
+        reason: 'Git 코드를 받았더라도 LFS 파일을 받지 못하면 모델을 사용할 수 없습니다.',
+      },
+    ],
+  },
 });
