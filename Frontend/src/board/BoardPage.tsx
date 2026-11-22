@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { ClipboardCopy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ClipboardCopy, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { readWorkflow } from '../api/posts/getPosts';
@@ -115,48 +115,79 @@ function PostDetails({ post }: { post: Post }) {
       cache.removeQueries({ queryKey: postQuery(post.id).queryKey });
     },
   });
+  const posted = new Date(post.createdAt);
+  const section = 'overflow-hidden rounded-lg border border-solid border-ui-rule-2 bg-ui-paper';
+  const sectionHead =
+    'flex flex-wrap items-center justify-between gap-2 border-0 border-b border-solid border-ui-rule-2 bg-ui-paper-2 px-4 py-2.5';
   return (
-    <>
-      <Link to="/board" className="text-sm text-ui-accent">
-        게시판 목록
-      </Link>
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="m-0 break-words text-3xl font-bold">{post.title}</h1>
-          <p className="mt-2 mb-0 break-words text-ui-muted">{post.author}</p>
-        </div>
-        {post.workflow != null && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(post.id);
-                  setCopyStatus('워크플로우 ID를 복사했습니다.');
-                } catch {
-                  setCopyStatus('복사할 수 없습니다. ID ' + post.id);
-                }
-              }}
-            >
-              <ClipboardCopy size={16} /> 워크플로우 ID 복사
-            </Button>
-            <Button asChild variant="default" className="no-underline">
-              <Link to={'/playground?workflow=' + post.id}>Playground에서 열기</Link>
-            </Button>
-          </div>
-        )}
-      </header>
-      {copyStatus && (
-        <p role="status" className="break-all text-sm text-ui-muted">
-          {copyStatus}
-        </p>
-      )}
-      {post.body && (
-        <p className="my-6 break-words whitespace-pre-wrap text-ui-ink-2">{post.body}</p>
-      )}
-      <div className="mt-6 overflow-hidden rounded-lg border border-solid border-ui-rule-2">
-        <WorkflowPreview workflow={workflow} detailed />
+    <div className="grid gap-5">
+      <div>
+        <Button onClick={() => void navigate('/board')}>
+          <ArrowLeft size={16} /> 게시판 목록
+        </Button>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
+      <section aria-label="게시글 정보" className={section + ' grid gap-3 p-5'}>
+        <h1 className="m-0 break-words text-3xl font-bold">{post.title}</h1>
+        <dl className="m-0 flex flex-wrap gap-x-6 gap-y-1 text-sm text-ui-muted">
+          <div className="flex gap-1.5">
+            <dt className="font-bold text-ui-ink-2">작성자</dt>
+            <dd className="m-0 break-words">{post.author}</dd>
+          </div>
+          {!Number.isNaN(posted.getTime()) && (
+            <div className="flex gap-1.5">
+              <dt className="font-bold text-ui-ink-2">작성일</dt>
+              <dd className="m-0">
+                <time dateTime={post.createdAt}>{posted.toLocaleDateString('ko-KR')}</time>
+              </dd>
+            </div>
+          )}
+        </dl>
+      </section>
+      {post.body && (
+        <section className={section}>
+          <div className={sectionHead}>
+            <h2 className="m-0 text-sm font-bold">내용</h2>
+          </div>
+          <p className="m-0 break-words whitespace-pre-wrap p-5 leading-relaxed text-ui-ink-2">
+            {post.body}
+          </p>
+        </section>
+      )}
+      <section className={section}>
+        <div className={sectionHead}>
+          <h2 className="m-0 text-sm font-bold">워크플로우</h2>
+          {post.workflow != null && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="small"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(post.id);
+                    setCopyStatus('워크플로우 ID를 복사했습니다.');
+                  } catch {
+                    setCopyStatus('복사할 수 없습니다. ID ' + post.id);
+                  }
+                }}
+              >
+                <ClipboardCopy size={14} /> 워크플로우 ID 복사
+              </Button>
+              <Button asChild size="small" variant="default" className="no-underline">
+                <Link to={'/playground?workflow=' + post.id}>Playground에서 열기</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+        <WorkflowPreview workflow={workflow} detailed />
+        {copyStatus && (
+          <p
+            role="status"
+            className="m-0 break-all border-0 border-t border-solid border-ui-rule-2 px-4 py-2 text-sm text-ui-muted"
+          >
+            {copyStatus}
+          </p>
+        )}
+      </section>
+      <div className="flex flex-wrap gap-2">
         <Button asChild className="no-underline">
           <Link to={'/board/' + post.id + '/edit'}>수정</Link>
         </Button>
@@ -191,7 +222,7 @@ function PostDetails({ post }: { post: Post }) {
           {postError(remove.error)}
         </p>
       )}
-    </>
+    </div>
   );
 }
 
