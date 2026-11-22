@@ -374,6 +374,38 @@ describe('MLOps 예시 5단계', () => {
   });
 });
 
+describe('MLOps 5단계의 순환', () => {
+  const graph = examplePipeline();
+
+  it('재학습 모델을 현재 모델로 돌려보내는 순환을 3번 반복한다', () => {
+    const result = run(graph);
+    expect(result.success).toBe(true);
+    expect(result.metrics.find((m) => m.label === '순환 반복')?.value).toBe('3회');
+    expect(result.cycle).toEqual([]);
+    // 첫 반복은 처음 배포한 model-v1, 이후에는 순환으로 돌아온 재학습 모델을 현재 모델로 쓴다.
+    expect(result.steps.find((s) => s.node === 'diagnose')?.message).toContain(
+      '현재 모델 feature-fix-v2',
+    );
+  });
+
+  it('순환 입력을 끊으면 한 번만 실행하고 처음 모델을 쓴다', () => {
+    const cut = applyCommand(
+      graph,
+      { type: 'disconnect', ids: ['deploy2:out-model>diagnose:in-current'] },
+      lab,
+    );
+    const result = run(cut);
+    expect(result.metrics.some((m) => m.label === '순환 반복')).toBe(false);
+    expect(result.steps.find((s) => s.node === 'diagnose')?.message).toContain('현재 모델 model-v');
+  });
+
+  it('현재 모델 입력만 여러 선을 받고 다른 입력은 하나만 받는다', () => {
+    const ports = graph.entities.find((e) => e.id === 'diagnose');
+    const multiple = (ports?.ports ?? []).filter((p) => p.multiple).map((p) => p.id);
+    expect(multiple).toEqual(['in-current']);
+  });
+});
+
 describe('MLOps 예시 파이프라인', () => {
   const graph = examplePipeline();
   const result = run(graph);

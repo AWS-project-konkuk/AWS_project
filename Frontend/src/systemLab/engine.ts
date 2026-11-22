@@ -100,7 +100,7 @@ function cycleEdges(graph: Graph) {
   return [...cycle];
 }
 /** 순환을 닫는 연결. 이 선의 값은 다음 반복에서 전달된다. */
-function backEdges(graph: Graph) {
+export function backEdges(graph: Graph) {
   const visited = new Set<string>();
   const active = new Set<string>();
   const back = new Set<string>();

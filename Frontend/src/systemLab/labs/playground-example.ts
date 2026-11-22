@@ -5,7 +5,7 @@ import { playgroundLab as lab } from './playground';
 
 /**
  * 플레이그라운드의 MLOps 예시 5단계. 쉬운 구성에서 시작해 단계마다 노드와 연결을 더한다.
- * 1 데이터 검증 → 2 학습·저장 → 3 평가·등록 → 4 배포·서빙·관측 → 5 개선 루프와 피처·버전 재현까지 전체.
+ * 1 데이터 검증 → 2 학습·저장 → 3 평가·등록 → 4 배포·서빙·관측 → 5 순환하는 개선 루프와 피처·버전 재현까지 전체.
  */
 type Node = {
   id: string;
@@ -148,10 +148,24 @@ const nodes: Node[] = [
     settings: { action: 'register-production' },
   },
   {
+    id: 'register2',
+    kind: 'publish',
+    parent: 'registry',
+    name: '재학습 모델 등록',
+    settings: { action: 'register-production' },
+  },
+  {
     id: 'deploy',
     kind: 'publish',
     parent: 'gateway',
     name: '모델 배포',
+    settings: { action: 'deploy' },
+  },
+  {
+    id: 'deploy2',
+    kind: 'publish',
+    parent: 'gateway',
+    name: '재학습 모델 배포',
     settings: { action: 'deploy' },
   },
   { id: 'serve', kind: 'serve', parent: 'gateway', name: '모델 서빙', settings: { mode: 'infer' } },
@@ -205,6 +219,10 @@ const fullWires = [
   wired('diagnose', 'job', 'retrain', 'job'),
   wired('retrain', 'result', 'reeval', 'checkpoint'),
   wired('diagnose', 'evaluation', 'reeval', 'dataset'),
+  // 재학습 모델을 등록·배포해 다시 현재 모델로 돌려보내는 순환. 첫 반복에는 처음 배포한 모델을 쓴다.
+  wired('reeval', 'approval', 'register2', 'approval'),
+  wired('register2', 'model', 'deploy2', 'model'),
+  wired('deploy2', 'model', 'diagnose', 'current'),
   // 학습·추론 피처 일치
   wired('clicks', 'events', 'define', 'events'),
   wired('define', 'definition', 'lookTrain', 'definition'),
@@ -340,7 +358,7 @@ export const exampleWorkflows: ExampleWorkflow[] = [
   },
   {
     id: 'level-5',
-    title: '5단계 · 개선 루프와 재현까지 전체 MLOps',
+    title: '5단계 · 순환하는 개선 루프까지 전체 MLOps',
     build: () =>
       buildExample(
         nodes.map((node) => node.id),

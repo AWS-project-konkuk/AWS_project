@@ -1,7 +1,8 @@
 import { rootId, type Graph, type LabConfig } from '../lab';
 import { fromCatalog } from './catalog';
 import { mergedKind, syncVariantPorts, type MergedSpec } from './catalog/merged';
-import { defineLab, layout } from './kit';
+import { operationKinds } from './catalog/operations';
+import { defineLab, keepNewestModel, layout, received } from './kit';
 
 /**
  * 플레이그라운드 · 0~9단원 실습에서 범용적인 서비스와 노드를 모아 자유롭게 구성한다.
@@ -209,13 +210,33 @@ const kinds = [
   ),
 ];
 
+/**
+ * 원인 판단의 현재 모델 입력은 선을 여러 개 받는다. 처음 배포한 모델과 순환으로 돌아온 재학습 모델을
+ * 함께 연결하면, 첫 반복에는 처음 모델을 쓰고 이후에는 버전이 더 높은 재학습 모델을 쓴다.
+ */
+const diagnose = {
+  ...operationKinds.diagnose,
+  ports: operationKinds.diagnose.ports.map((p) =>
+    p.id === 'in-current' ? { ...p, multiple: true } : p,
+  ),
+  run: (ctx: Parameters<typeof operationKinds.diagnose.run>[0]) => {
+    const inputs = keepNewestModel(ctx.inputs);
+    const current = received(inputs, 'deployed-model')[0]?.data.modelId;
+    const message = operationKinds.diagnose.run({ ...ctx, inputs });
+    return current ? message + ' · 현재 모델 ' + current : message;
+  },
+};
+
 const common = fromCatalog({
   kinds,
   tools: playgroundTools,
   vectorDb: true,
-  custom: Object.fromEntries(
-    Object.entries(mergedSpecs).map(([kind, spec]) => [kind, mergedKind(spec)]),
-  ),
+  custom: {
+    ...Object.fromEntries(
+      Object.entries(mergedSpecs).map(([kind, spec]) => [kind, mergedKind(spec)]),
+    ),
+    diagnose,
+  },
 });
 
 // 서비스 영역의 격자 배치. 새 노드는 2열 격자로 놓이므로 노드 수에 맞춰 높이를 잡는다.

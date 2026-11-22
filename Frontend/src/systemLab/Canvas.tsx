@@ -21,7 +21,7 @@ import {
 } from '@xyflow/react';
 import { ChevronDown, ChevronRight, Maximize } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
-import type { RunResult } from './engine';
+import { backEdges, type RunResult } from './engine';
 import {
   absolute,
   connection,
@@ -432,6 +432,8 @@ export function Canvas({
   const transfers = new Set(shownSteps.flatMap((step) => step.transfers.map((t) => t.edge)));
   const generated = lab.routes(graph);
   const derived = new Set(generated.map((edge) => edge.id));
+  // 자유 구성에서 순환을 닫는 선은 점선과 "순환" 표시로 구분한다.
+  const loops = lab.freeform ? backEdges(graph) : new Set<string>();
   const connections = [...graph.connections, ...generated];
   const connected = new Map<string, Set<string>>();
   for (const { from, to } of connections) {
@@ -576,10 +578,15 @@ export function Canvas({
       markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color },
       style: {
         stroke: color,
-        strokeDasharray: derived.has(e.id) ? '5 4' : undefined,
+        strokeDasharray: derived.has(e.id) ? '5 4' : loops.has(e.id) ? '9 5' : undefined,
         strokeWidth: cycle || transfers.has(e.id) || selectedEdge === e.id ? 3 : 2.4,
       },
       animated: !!active && transfers.has(e.id),
+      ...(loops.has(e.id) && {
+        label: '순환',
+        labelStyle: { fill: 'var(--color-ink)', fontSize: 12 },
+        labelBgStyle: { fill: 'var(--color-paper)' },
+      }),
       ariaLabel:
         entityMap.get(source)?.name +
         ' → ' +
