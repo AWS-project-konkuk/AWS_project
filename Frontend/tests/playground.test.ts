@@ -10,7 +10,7 @@ import {
 } from '../src/systemLab/lab';
 import { labFor, playgroundLab as lab } from '../src/systemLab/labs';
 import { datum, wired } from '../src/systemLab/labs/kit';
-import { examplePipeline } from '../src/systemLab/labs/playground-example';
+import { exampleWorkflows, examplePipeline } from '../src/systemLab/labs/playground-example';
 import { mergedSpecs, playgroundTools } from '../src/systemLab/labs/playground';
 import { playgroundView } from '../src/systemLab/labs/playground-view';
 import { buildHintRequest, canRequestHint } from '../src/systemLab/hint';
@@ -330,6 +330,47 @@ describe('입출력 포트 조절과 노드 통합', () => {
       expect(covered, kind).toContain(kind);
     const nodeKinds = Object.values(playgroundTools).flat();
     expect(new Set(nodeKinds).size).toBeLessThan(25);
+  });
+});
+
+describe('MLOps 예시 5단계', () => {
+  const levels = exampleWorkflows.map((example) => ({ example, graph: example.build() }));
+  const nodeCount = (graph: Graph) => graph.entities.filter((e) => e.type === 'resource').length;
+
+  it('5개이며 단계가 올라갈수록 노드와 연결이 늘어난다', () => {
+    expect(levels.map(({ example }) => example.id)).toEqual([
+      'level-1',
+      'level-2',
+      'level-3',
+      'level-4',
+      'level-5',
+    ]);
+    for (let i = 1; i < levels.length; i++) {
+      expect(nodeCount(levels[i].graph)).toBeGreaterThan(nodeCount(levels[i - 1].graph));
+      expect(levels[i].graph.connections.length).toBeGreaterThan(
+        levels[i - 1].graph.connections.length,
+      );
+    }
+  });
+
+  it('모든 단계가 오류 없이 끝까지 실행된다', () => {
+    for (const { example, graph } of levels) {
+      const result = run(graph);
+      const failed = result.steps.filter((s) => s.status !== 'success');
+      expect(
+        failed.map((s) => s.node + ': ' + s.message),
+        example.title,
+      ).toEqual([]);
+      expect(result.success, example.title).toBe(true);
+      expect(result.steps, example.title).toHaveLength(nodeCount(graph));
+    }
+  });
+
+  it('저장 형식으로 다시 읽을 수 있다', () => {
+    for (const { graph } of levels) {
+      const raw = JSON.stringify({ version: 1, graph, quiz: false, proof: null, observed: [] });
+      expect(signature(parseSaved(raw, lab).graph)).toBe(signature(graph));
+    }
   });
 });
 

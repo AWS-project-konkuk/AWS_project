@@ -1,13 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
-import { Download, Workflow } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { getPostWorkflow } from '../api/posts/getPosts';
 import { isPostId, postError } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { NativeSelect } from '../components/ui/native-select';
 import { playgroundLab } from '../systemLab/labs';
-import { examplePipeline } from '../systemLab/labs/playground-example';
+import { exampleWorkflows } from '../systemLab/labs/playground-example';
 import { labStore } from '../systemLab/store';
 import { PlaygroundLab } from '../systemLab/SystemLab';
 import { usePlaygroundLibrary } from './library';
@@ -63,24 +64,32 @@ function ImportWorkflow() {
   );
 }
 
-/** 입력부터 서빙·재학습까지 이어진 MLOps 예시 구성을 불러온다. */
+/** 쉬운 구성부터 전체 MLOps까지 5단계 예시 중 하나를 불러온다. 현재 구성은 확인 뒤에 바꾼다. */
 function LoadExample() {
   const store = labStore(playgroundLab);
   return (
-    <Button
-      type="button"
-      onClick={() => {
+    <NativeSelect
+      aria-label="MLOps 예시"
+      value=""
+      onChange={(event) => {
+        const example = exampleWorkflows.find((item) => item.id === event.target.value);
+        if (!example) return;
         if (
           hasNodes(store.getState().saved.graph) &&
-          !window.confirm('현재 구성을 MLOps 예시로 바꿀까요?')
+          !window.confirm('현재 구성을 "' + example.title + '"으로 바꿀까요?')
         )
           return;
-        store.getState().load(examplePipeline());
+        store.getState().load(example.build());
         usePlaygroundLibrary.getState().open(null);
       }}
     >
-      <Workflow size={15} /> MLOps 예시
-    </Button>
+      <option value="">MLOps 예시 (1~5단계)</option>
+      {exampleWorkflows.map((item) => (
+        <option key={item.id} value={item.id}>
+          {item.title}
+        </option>
+      ))}
+    </NativeSelect>
   );
 }
 

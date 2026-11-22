@@ -23,7 +23,7 @@ test('내 Playground를 저장하고 복제·이름 변경·삭제하며 새로�
   );
   await page.goto('/#/playground');
   const playground = page.getByTestId('playground');
-  await playground.getByRole('button', { name: 'MLOps 예시' }).click();
+  await playground.getByLabel('MLOps 예시', { exact: true }).selectOption('level-5');
   await playground.getByRole('button', { name: /^내 Playground/ }).click();
   const panel = playground.getByRole('region', { name: '내 Playground', exact: true });
   await expect(panel.getByText('저장한 Playground가 없습니다.')).toBeVisible();
@@ -48,7 +48,7 @@ test('내 Playground를 저장하고 복제·이름 변경·삭제하며 새로�
 test('저장한 구성을 게시판 글쓰기로 바로 올릴 수 있다', async ({ page }) => {
   await page.goto('/#/playground');
   const playground = page.getByTestId('playground');
-  await playground.getByRole('button', { name: 'MLOps 예시' }).click();
+  await playground.getByLabel('MLOps 예시', { exact: true }).selectOption('level-5');
   await playground.getByRole('button', { name: /^내 Playground/ }).click();
   const panel = playground.getByRole('region', { name: '내 Playground', exact: true });
   await panel.getByLabel('저장할 이름').fill('올릴 구성');

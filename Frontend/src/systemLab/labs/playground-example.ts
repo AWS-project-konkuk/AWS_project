@@ -1,12 +1,11 @@
 import { applyCommand } from '../commands';
-import { rootId, type Graph, type SettingValue } from '../lab';
+import { rootId, type Connection, type Graph, type SettingValue } from '../lab';
 import { wired } from './kit';
 import { playgroundLab as lab } from './playground';
 
 /**
- * 플레이그라운드의 MLOps 예시 파이프라인.
- * 입력 → 검증 → 분할·배치 → 학습 → 실험 기록 → 평가 → 등록 → 배포 → 서빙 → 관측,
- * 그리고 운영 지표가 재학습을 시작하는 개선 루프와 피처·버전 재현 경로를 함께 담았다.
+ * 플레이그라운드의 MLOps 예시 5단계. 쉬운 구성에서 시작해 단계마다 노드와 연결을 더한다.
+ * 1 데이터 검증 → 2 학습·저장 → 3 평가·등록 → 4 배포·서빙·관측 → 5 개선 루프와 피처·버전 재현까지 전체.
  */
 type Node = {
   id: string;
@@ -179,7 +178,7 @@ const nodes: Node[] = [
     settings: { correction: 'fresh' },
   },
 ];
-const wires = [
+const fullWires = [
   // 데이터 준비 → 학습 → 평가
   wired('raw', 'objects', 'read', 'objects'),
   wired('read', 'dataset', 'validate', 'dataset'),
@@ -227,12 +226,12 @@ const columns = [
 const GAP = 40;
 const WIDTH = 520;
 
-export function examplePipeline(): Graph {
+function buildExample(ids: string[], wires: Connection[]): Graph {
   let graph = lab.initial();
   const apply = (command: Parameters<typeof applyCommand>[1]) => {
     graph = applyCommand(graph, command, lab);
   };
-  for (const node of nodes) {
+  for (const node of nodes.filter((item) => ids.includes(item.id))) {
     apply({ type: 'add', id: node.id, kind: node.kind, parent: node.parent });
     apply({ type: 'settings', id: node.id, name: node.name });
     for (const [key, value] of Object.entries(node.settings ?? {}))
@@ -261,3 +260,98 @@ export function examplePipeline(): Graph {
     }),
   };
 }
+
+const dataWires = [
+  wired('raw', 'objects', 'read', 'objects'),
+  wired('read', 'dataset', 'validate', 'dataset'),
+  wired('validate', 'dataset', 'partition', 'dataset'),
+];
+const trainWires = [
+  ...dataWires,
+  wired('partition', 'job', 'train', 'job'),
+  wired('train', 'result', 'save', 'checkpoint'),
+];
+const registerWires = [
+  ...dataWires,
+  wired('partition', 'job', 'train', 'job'),
+  wired('train', 'result', 'track', 'checkpoint'),
+  wired('track', 'checkpoint', 'evaluate', 'checkpoint'),
+  wired('partition', 'eval', 'evaluate', 'dataset'),
+  wired('track', 'checkpoint', 'save', 'checkpoint'),
+  wired('evaluate', 'approval', 'register', 'approval'),
+];
+const serveWires = [
+  ...registerWires,
+  wired('register', 'model', 'deploy', 'model'),
+  wired('deploy', 'model', 'serve', 'model'),
+  wired('reqs', 'request', 'serve', 'request'),
+  wired('serve', 'prediction', 'observe', 'prediction'),
+];
+
+export interface ExampleWorkflow {
+  id: string;
+  title: string;
+  build: () => Graph;
+}
+/** 플레이그라운드에서 고를 수 있는 MLOps 예시. 위에서 아래로 갈수록 복잡하다. */
+export const exampleWorkflows: ExampleWorkflow[] = [
+  {
+    id: 'level-1',
+    title: '1단계 · 데이터 읽고 검증하기',
+    build: () => buildExample(['raw', 'read', 'validate'], dataWires.slice(0, 2)),
+  },
+  {
+    id: 'level-2',
+    title: '2단계 · 모델 학습하고 저장하기',
+    build: () =>
+      buildExample(['raw', 'read', 'validate', 'partition', 'train', 'save'], trainWires),
+  },
+  {
+    id: 'level-3',
+    title: '3단계 · 평가하고 모델 등록하기',
+    build: () =>
+      buildExample(
+        ['raw', 'read', 'save', 'validate', 'partition', 'train', 'track', 'evaluate', 'register'],
+        registerWires,
+      ),
+  },
+  {
+    id: 'level-4',
+    title: '4단계 · 배포하고 서빙·관측하기',
+    build: () =>
+      buildExample(
+        [
+          'raw',
+          'reqs',
+          'read',
+          'save',
+          'validate',
+          'partition',
+          'train',
+          'track',
+          'evaluate',
+          'register',
+          'deploy',
+          'serve',
+          'observe',
+        ],
+        serveWires,
+      ),
+  },
+  {
+    id: 'level-5',
+    title: '5단계 · 개선 루프와 재현까지 전체 MLOps',
+    build: () =>
+      buildExample(
+        nodes.map((node) => node.id),
+        fullWires,
+      ),
+  },
+];
+
+/** 가장 복잡한 5단계 예시. */
+export const examplePipeline = (): Graph =>
+  buildExample(
+    nodes.map((node) => node.id),
+    fullWires,
+  );
