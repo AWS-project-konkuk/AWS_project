@@ -14,7 +14,8 @@ import { BoardPagination } from './BoardPagination';
 import { PostForm } from './PostForm';
 import { WorkflowPreview } from './WorkflowPreview';
 
-const pageSize = 30;
+/** 한 화면에서 워크플로우가 읽히도록 적게 보여 준다. 1·2·3열로 나눠 떨어지는 값이다. */
+const pageSize = 12;
 
 function previewData(post: PostSummary) {
   if (post.workflow == null) return null;
@@ -75,7 +76,7 @@ export function BoardPage() {
       )}
       {pagination && pagination.content.length > 0 && (
         <>
-          <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
             {pagination.content.map((post) => (
               <li key={post.id} className="min-w-0">
                 <Link

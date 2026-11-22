@@ -29,7 +29,7 @@ const first = {
 function postPage(url: URL, posts: PostSummary[]): PageResponse<PostSummary> {
   const page = Number(url.searchParams.get('page'));
   const size = Number(url.searchParams.get('size'));
-  expect(size).toBe(30);
+  expect(size).toBe(12);
   const totalPages = Math.ceil(posts.length / size);
   return {
     content: posts.slice(page * size, (page + 1) * size),
@@ -50,13 +50,13 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져오기를 지원한다', async ({ page }) => {
+test('게시글을 12개씩 표시하고 새로고침과 워크플로우 가져오기를 지원한다', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   const requestedPages: string[] = [];
   let detailRequests = 0;
   const posts = [
     first,
-    ...Array.from({ length: 30 }, (_, index) => ({
+    ...Array.from({ length: 12 }, (_, index) => ({
       ...first,
       id: '33333333-3333-4333-8333-' + String(index).padStart(12, '0'),
       title: '게시글 ' + (index + 1),
@@ -83,23 +83,23 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
   const cards = main.locator(':scope > ul > li');
   const pagination = main.getByRole('navigation', { name: '게시판 페이지' });
   const pageNumbers = pagination.getByRole('link', { name: /^\d+페이지$/ });
-  await expect(cards).toHaveCount(30);
+  await expect(cards).toHaveCount(12);
   await expect(pageNumbers).toHaveText(['1', '2']);
   await expect(pagination.getByRole('link', { name: '1페이지' })).toHaveAttribute(
     'aria-current',
     'page',
   );
   await expect(main.getByRole('img', { name: '워크플로우 미리보기' })).toBeVisible();
-  await expect(main.getByText('31개 게시글')).toBeVisible();
+  await expect(main.getByText('13개 게시글')).toBeVisible();
   expect(requestedPages).toEqual(['0']);
   await page.screenshot({ path: 'test-results/board-desktop.png' });
   await pagination.getByRole('link', { name: '다음', exact: true }).click();
   await expect(cards).toHaveCount(1);
-  await expect(main.getByRole('link', { name: /게시글 30/ })).toBeVisible();
+  await expect(main.getByRole('link', { name: /게시글 12/ })).toBeVisible();
   await expect(main.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
   expect(requestedPages).toEqual(['0', '1']);
   await pagination.getByRole('link', { name: '이전', exact: true }).click();
-  await expect(cards).toHaveCount(30);
+  await expect(cards).toHaveCount(12);
   expect(requestedPages).toEqual(['0', '1']);
   await main.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect.poll(() => requestedPages).toEqual(['0', '1', '0']);
@@ -126,7 +126,7 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
 });
 
 test('페이지 번호를 최대 10개 표시하고 첫 페이지와 마지막 페이지로 이동한다', async ({ page }) => {
-  const posts = Array.from({ length: 361 }, (_, index) => ({
+  const posts = Array.from({ length: 145 }, (_, index) => ({
     ...first,
     id: '33333333-3333-4333-8333-' + String(index).padStart(12, '0'),
     title: '게시글 ' + (index + 1),

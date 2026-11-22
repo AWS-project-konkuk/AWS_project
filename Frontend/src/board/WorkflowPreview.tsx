@@ -9,7 +9,7 @@ export function WorkflowPreview({
   workflow: PlaygroundWorkflow | null;
   detailed?: boolean;
 }) {
-  const height = detailed ? 'h-[clamp(19rem,52vh,34rem)]' : 'aspect-[16/10]';
+  const height = detailed ? 'h-[clamp(19rem,52vh,34rem)]' : 'aspect-[4/3]';
   const shown = workflow && hasNodes(workflow.graph) ? workflow : null;
   return (
     <div
