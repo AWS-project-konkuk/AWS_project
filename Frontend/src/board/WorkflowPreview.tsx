@@ -1,18 +1,20 @@
 import { useEffect, useRef } from 'react';
-import { serviceById } from '../console/resources';
-import type { PlaygroundData } from '../playground/model';
+import { playgroundLab } from '../systemLab/labs';
+import { previewOf, type PlaygroundWorkflow } from '../playground/workflow';
 
 export function WorkflowPreview({
   workflow,
   detailed = false,
 }: {
-  workflow: PlaygroundData | null;
+  workflow: PlaygroundWorkflow | null;
   detailed?: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const element = canvas.current;
     if (!element || !workflow) return;
+    const preview = previewOf(workflow);
+    if (!preview.nodes.length) return;
     const draw = () => {
       const ctx = element.getContext('2d');
       const { clientWidth: width, clientHeight: height } = element;
@@ -22,12 +24,12 @@ export function WorkflowPreview({
       element.height = height * pixelRatio;
       const styles = getComputedStyle(element);
       const color = (name: string) => styles.getPropertyValue('--color-' + name).trim();
-      const nodes = workflow.resources;
-      const byId = new Map(nodes.map((node) => [node.id, node.position]));
-      const left = Math.min(...nodes.map((node) => node.position.x));
-      const top = Math.min(...nodes.map((node) => node.position.y));
-      const spanX = Math.max(...nodes.map((node) => node.position.x)) - left + 148;
-      const spanY = Math.max(...nodes.map((node) => node.position.y)) - top + 52;
+      const nodes = preview.nodes;
+      const byId = new Map(nodes.map((node) => [node.id, node]));
+      const left = Math.min(...nodes.map((node) => node.x));
+      const top = Math.min(...nodes.map((node) => node.y));
+      const spanX = Math.max(...nodes.map((node) => node.x)) - left + 148;
+      const spanY = Math.max(...nodes.map((node) => node.y)) - top + 52;
       const padding = detailed ? 28 : 12;
       const scale = Math.min(1.2, (width - 2 * padding) / spanX, (height - 2 * padding) / spanY);
       if (!Number.isFinite(scale) || scale <= 0) return;
@@ -37,7 +39,7 @@ export function WorkflowPreview({
       ctx.translate(-left, -top);
       ctx.lineWidth = 1.7;
       ctx.strokeStyle = color('accent');
-      for (const edge of workflow.edges) {
+      for (const edge of preview.edges) {
         const source = byId.get(edge.source);
         const target = byId.get(edge.target);
         if (!source || !target) continue;
@@ -45,17 +47,12 @@ export function WorkflowPreview({
         const x1 = source.x + (backwards ? 0 : 148);
         const x2 = target.x + (backwards ? 148 : 0);
         const bend = (x1 + x2) / 2;
-        ctx.setLineDash(edge.relation === 'feedback' ? [5, 4] : []);
         ctx.beginPath();
         ctx.moveTo(x1, source.y + 26);
         ctx.bezierCurveTo(bend, source.y + 26, bend, target.y + 26, x2, target.y + 26);
         ctx.stroke();
       }
-      ctx.setLineDash([]);
-      for (const {
-        position: { x, y },
-        config,
-      } of nodes) {
+      for (const { x, y, name, kind } of nodes) {
         ctx.beginPath();
         ctx.roundRect(x, y, 148, 52, 7);
         ctx.fillStyle = color('paper');
@@ -64,10 +61,10 @@ export function WorkflowPreview({
         ctx.stroke();
         ctx.fillStyle = color('ink');
         ctx.font = '600 14px Pretendard, sans-serif';
-        ctx.fillText(config.name, x + 10, y + 21, 128);
+        ctx.fillText(name, x + 10, y + 21, 128);
         ctx.fillStyle = color('muted');
         ctx.font = '12px Pretendard, sans-serif';
-        ctx.fillText(serviceById[config.service].name, x + 10, y + 39, 128);
+        ctx.fillText(playgroundLab.labels[kind] ?? kind, x + 10, y + 39, 128);
       }
     };
     const size = new ResizeObserver(draw);
@@ -86,14 +83,16 @@ export function WorkflowPreview({
     <div
       className={height + ' relative grid w-full place-items-center overflow-hidden bg-ui-paper-2'}
     >
-      {workflow?.resources.length ? (
+      {workflow && previewOf(workflow).nodes.length ? (
         <canvas
           ref={canvas}
           className="absolute inset-0 h-full w-full"
           role="img"
           aria-label={
             detailed
-              ? workflow.resources.map((node) => node.config.name).join(', ')
+              ? previewOf(workflow)
+                  .nodes.map((node) => node.name)
+                  .join(', ')
               : '워크플로우 미리보기'
           }
         />

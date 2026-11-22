@@ -137,6 +137,13 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
         queue.push(edge.from.node);
       }
   }
+  if (lab.freeform) {
+    relevant.clear();
+    for (const wire of graph.connections) {
+      relevant.add(wire.from.node);
+      relevant.add(wire.to.node);
+    }
+  }
   const pending = graph.entities.filter(
     (e): e is ResourceEntity => e.type === 'resource' && relevant.has(e.id),
   );
@@ -220,8 +227,26 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
       });
     }
   }
-  const last = steps.find((step) => step.node === end?.id);
   const nameOf = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
+  if (lab.freeform) {
+    const failed = steps.filter((step) => step.status === 'failed');
+    const first = failed[0] ?? steps.find((step) => step.status !== 'success');
+    return {
+      id,
+      steps,
+      cycle,
+      responses,
+      metrics,
+      observations: [...observations],
+      success: steps.length > 0 && !first,
+      message: !steps.length
+        ? '노드를 연결한 뒤 실행하세요. 연결이 없는 노드는 실행하지 않습니다.'
+        : first
+          ? nameOf(first.node) + ': ' + first.message
+          : '연결된 노드 ' + steps.length + '개가 모두 실행됐습니다.',
+    };
+  }
+  const last = steps.find((step) => step.node === end?.id);
   /** 도착이 입력을 받지 못했을 때, 상류에서 처음 실패한 노드를 찾는다. */
   const rootCause = (id: string, seen = new Set<string>()): RunStep | undefined => {
     if (seen.has(id)) return undefined;

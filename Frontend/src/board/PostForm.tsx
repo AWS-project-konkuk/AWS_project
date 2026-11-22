@@ -7,13 +7,16 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
 import { Textarea } from '../components/ui/textarea';
-import { usePlaygroundStore } from '../playground/usePlayground';
+import { hasNodes, toWorkflow } from '../playground/workflow';
+import { playgroundLab } from '../systemLab/labs';
+import { labStore } from '../systemLab/store';
 import { postListKey, postQuery } from './boardQuery';
 
 export function PostForm({ post }: { post?: Post }) {
   const navigate = useNavigate();
   const cache = useQueryClient();
-  const { data, blocked } = usePlaygroundStore();
+  const { saved, blocked } = labStore(playgroundLab)();
+  const attachable = !blocked && hasNodes(saved.graph);
   const [attachment, setAttachment] = useState('keep');
   const back = post ? '/board/' + post.id : '/board';
   const save = useMutation({
@@ -25,7 +28,8 @@ export function PostForm({ post }: { post?: Post }) {
       if (!title || !password.trim() || (!post && (!author || !body)) || (post?.body && !body)) {
         throw new Error('필수 항목을 입력해 주세요.');
       }
-      const workflow = attachment === 'current' ? data : (post?.workflow ?? null);
+      const workflow =
+        attachment === 'current' ? toWorkflow(saved.graph) : (post?.workflow ?? null);
       if (post) {
         await updatePost(post.id, { title, body: body || undefined, password, workflow });
         return post.id;
@@ -82,7 +86,7 @@ export function PostForm({ post }: { post?: Post }) {
         워크플로우
         <NativeSelect value={attachment} onChange={(event) => setAttachment(event.target.value)}>
           <option value="keep">{post ? '현재 첨부 유지' : '첨부하지 않음'}</option>
-          <option value="current" disabled={blocked || !data.resources.length}>
+          <option value="current" disabled={!attachable}>
             내 Playground 첨부
           </option>
         </NativeSelect>

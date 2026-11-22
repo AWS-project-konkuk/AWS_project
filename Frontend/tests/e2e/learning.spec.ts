@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { units as chapters } from '../../src/content/course';
 import { readLessons } from './readCurriculum';
-import { resourceDefaults } from '../../src/console/resources';
-const pg = 'flow-lab:playground:v1';
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() =>
     localStorage.setItem(
@@ -140,24 +138,23 @@ test('손상 저장은 원본을 보존하며 학습을 허용한다', async ({ 
   await expect(page.getByRole('alert')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('blockml:learning:v5'))).toBe('broken');
 });
-test('이전 AWS Playground 그래프 복원과 잘못된 주소', async ({ page }) => {
-  const data = {
-    version: 1,
-    resources: [
-      { id: 'old', position: { x: 10, y: 20 }, config: resourceDefaults('s3', '이전 데이터') },
-    ],
-    edges: [],
-  };
-  await page.addInitScript(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), {
-    key: pg,
-    data,
-  });
+test('Playground는 서비스와 노드를 추가·연결해 실행하고 새로고침 뒤에도 구성을 보존한다', async ({
+  page,
+}) => {
   await page.goto('/#/playground');
-  await expect(page.getByTestId('resource-old')).toContainText('이전 데이터');
-  await page.getByRole('button', { name: '이전 데이터 노드 설정', exact: true }).click();
-  await page.getByLabel('노드 이름', { exact: true }).fill('보존된 노드');
-  await page.getByRole('button', { name: '설정 저장', exact: true }).click();
-  await expect(page.getByTestId('resource-old')).toContainText('보존된 노드');
+  const lab = page.getByTestId('system-lab');
+  await expect(lab.getByRole('heading', { name: 'MLOps 플레이그라운드' })).toBeVisible();
+  await expect(page.getByTestId('system-sources')).toBeVisible();
+  await expect(page.getByTestId('system-registry')).toBeVisible();
+  await page.getByTestId('system-sources').click({ position: { x: 20, y: 10 } });
+  await lab.getByRole('button', { name: '원본 데이터 추가' }).click();
+  await expect(page.getByTestId(/^node-/)).toHaveCount(1);
+  await lab.getByRole('button', { name: '실행', exact: true }).click();
+  await expect(lab.getByRole('status').first()).toContainText('연결');
+  await page.reload();
+  await expect(page.getByTestId(/^node-/)).toHaveCount(1);
+});
+test('없는 강의 주소는 404를 표시하고 학습 과정으로 돌아갈 수 있다', async ({ page }) => {
   await page.goto('/#/learn/no-such-lesson');
   await expect(page.getByRole('heading', { name: '404', exact: true })).toBeVisible();
   await expect(page.getByText('강의를 찾을 수 없습니다.', { exact: true })).toBeVisible();

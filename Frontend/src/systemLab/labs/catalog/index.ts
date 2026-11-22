@@ -11,6 +11,7 @@ import {
 import { choice, datum, josa, need, port, setting } from '../kit';
 import { dataKinds } from './data';
 import { featureKinds } from './features';
+import { mlopsKinds } from './mlops';
 import { operationKinds } from './operations';
 import { servingKinds } from './serving';
 
@@ -63,6 +64,7 @@ export const materials: Record<string, string> = {
   labels: '정답 표본',
   'quality-signal': '품질 조사 자료',
   approval: '평가 승인',
+  'registered-model': '등록된 모델',
 };
 
 export const GPU_MEMORY = 16;
@@ -354,6 +356,7 @@ export const catalog: Record<string, CatalogKind> = {
   ...featureKinds,
   ...operationKinds,
   ...servingKinds,
+  ...mlopsKinds,
   root: { label: '전체 서비스' },
   ec2: { label: 'EC2', service: true },
   storage: {

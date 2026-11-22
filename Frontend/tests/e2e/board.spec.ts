@@ -1,16 +1,22 @@
 import { expect, test } from '@playwright/test';
 import type { PageResponse, Post, PostSummary } from '../../src/api/posts/posts';
-import { resourceDefaults } from '../../src/console/resources';
+import { applyCommand } from '../../src/systemLab/commands';
+import { playgroundLab } from '../../src/systemLab/labs';
+import { toWorkflow } from '../../src/playground/workflow';
 
 const firstId = '11111111-1111-4111-8111-111111111111';
 const newId = '22222222-2222-4222-8222-222222222222';
-const workflow = {
-  version: 1,
-  resources: [
-    { id: 'shared', position: { x: 0, y: 0 }, config: resourceDefaults('s3', '공유 버킷') },
-  ],
-  edges: [],
-};
+const workflow = toWorkflow(
+  applyCommand(
+    applyCommand(
+      playgroundLab.initial(),
+      { type: 'add', id: 'shared', kind: 'rawData', parent: 'sources' },
+      playgroundLab,
+    ),
+    { type: 'settings', id: 'shared', name: '공유 버킷' },
+    playgroundLab,
+  ),
+);
 const first = {
   id: firstId,
   author: '작성자',
@@ -110,9 +116,9 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
   await expect(main.getByRole('img', { name: '공유 버킷' })).toBeVisible();
   await page.screenshot({ path: 'test-results/board-mobile.png' });
   await main.getByRole('link', { name: 'Playground에서 열기' }).click();
-  await expect(page.getByRole('textbox', { name: '워크플로우 ID' })).toHaveValue(firstId);
+  await expect(page.getByRole('textbox', { name: '게시판 워크플로우 ID' })).toHaveValue(firstId);
   await page.getByRole('button', { name: '불러오기', exact: true }).click();
-  await expect(page.getByTestId('resource-shared')).toContainText('공유 버킷');
+  await expect(page.getByTestId('node-shared')).toContainText('공유 버킷');
 
   await page.goto('/#/board?page=3');
   await expect(page).toHaveURL(/#\/board\?page=2$/);

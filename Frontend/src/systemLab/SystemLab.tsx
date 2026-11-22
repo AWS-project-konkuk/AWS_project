@@ -11,7 +11,7 @@ import {
   Square,
   Undo2,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { resolveScenario } from '../weekly/scenarios';
 import { quizzes } from './labs/quizzes';
 import { Canvas, KindIcon, type MenuItem } from './Canvas';
@@ -20,8 +20,9 @@ import { runLab, type RunResult } from './engine';
 import { Inspector } from './Inspector';
 import { findPort, isComplete, rootId, signature, type LabConfig } from './lab';
 import { LabProvider, kindClass, type LabView } from './labContext';
-import { labFor } from './labs';
+import { labFor, playgroundLab } from './labs';
 import { labViews } from './labs/views';
+import { playgroundView } from './labs/playground-view';
 import { labStore } from './store';
 import { Button } from '../components/ui/button';
 import { cn } from '../components/ui/styles';
@@ -79,6 +80,14 @@ interface Menu {
   y: number;
   items: MenuItem[];
 }
+/** AI 조언 요청과 이해 확인에 쓰는 강의 정보. 플레이그라운드는 이해 확인 없이 정보만 채운다. */
+type LabLesson = Pick<Lesson, 'id' | 'title' | 'scenario' | 'summary' | 'assessment'>;
+const playgroundLesson: LabLesson = {
+  id: playgroundLab.id,
+  title: 'MLOps 플레이그라운드',
+  scenario: '서비스와 노드를 자유롭게 연결해 MLOps 파이프라인을 구성한다.',
+  summary: '입력 소스부터 학습·평가·등록·서빙·모니터링까지 직접 연결해 실행한다.',
+};
 export function SystemLab({ lesson }: { lesson: Lesson }) {
   const lab = labFor(lesson.id);
   const view = labViews[lesson.id];
@@ -89,9 +98,35 @@ export function SystemLab({ lesson }: { lesson: Lesson }) {
     </LabProvider>
   );
 }
-function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; view: LabView }) {
-  const fixedQuiz = lesson.assessment ?? quizzes[lab.id];
-  const question = fixedQuiz ?? resolveScenario(lab.id, {});
+/** 단원 실습과 같은 캔버스에서 서비스·노드를 자유롭게 구성하는 플레이그라운드. */
+export function PlaygroundLab({ actions }: { actions?: ReactNode }) {
+  return (
+    <LabProvider value={{ lab: playgroundLab, view: playgroundView }}>
+      <SystemLabBody
+        lesson={playgroundLesson}
+        lab={playgroundLab}
+        view={playgroundView}
+        playground
+        actions={actions}
+      />
+    </LabProvider>
+  );
+}
+function SystemLabBody({
+  lesson,
+  lab,
+  view,
+  playground = false,
+  actions,
+}: {
+  lesson: LabLesson;
+  lab: LabConfig;
+  view: LabView;
+  playground?: boolean;
+  actions?: ReactNode;
+}) {
+  const fixedQuiz = playground ? undefined : (lesson.assessment ?? quizzes[lab.id]);
+  const question = playground ? null : (fixedQuiz ?? resolveScenario(lab.id, {}));
   const correctAnswer = fixedQuiz?.correct ?? 0;
   const useStore = labStore(lab);
   const {
@@ -292,8 +327,9 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" aria-pressed={focused} onClick={() => setFocused(!focused)}>
             {focused ? <Minimize size={15} /> : <Maximize size={15} />}
-            {focused ? '전체 화면 나가기' : '실습 전체 화면'}
+            {focused ? '전체 화면 나가기' : playground ? '전체 화면' : '실습 전체 화면'}
           </Button>
+          {actions}
           {busy ? (
             <Button
               type="button"
@@ -308,7 +344,7 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
             </Button>
           ) : (
             <Button type="button" variant="default" onClick={start}>
-              <Play size={16} /> 실습 실행
+              <Play size={16} /> {playground ? '실행' : '실습 실행'}
             </Button>
           )}
           <Button
@@ -515,10 +551,11 @@ function SystemLabBody({ lesson, lab, view }: { lesson: Lesson; lab: LabConfig; 
                   )}
                   {!active && !saved.proof && (
                     <p className={hint}>
-                      실습을 실행하면 자료가 어디에서 처리됐는지 확인할 수 있습니다.
+                      {playground ? '연결한 구성을' : '실습을'} 실행하면 자료가 어디에서 처리됐는지
+                      확인할 수 있습니다.
                     </p>
                   )}
-                  {saved.proof && (
+                  {saved.proof && question && (
                     <fieldset
                       className="m-0 grid min-w-0 gap-[7px] border-0 border-t border-solid border-ui-rule p-0 pt-[7px] [&_legend]:font-bold [&_p]:my-1 [&_label]:leading-normal [&_button]:justify-self-start"
                       disabled={busy}
