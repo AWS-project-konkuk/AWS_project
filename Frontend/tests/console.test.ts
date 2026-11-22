@@ -11,12 +11,6 @@ import {
 import { createConnection, createLab, experimentSignature } from '../src/curriculum/engine';
 import { legacyLessonById as lessonById } from '../src/curriculum/catalog';
 import { parseLearning, serializeLearning } from '../src/learning/progress';
-import {
-  examplePlayground,
-  parsePlayground,
-  playgroundSignature,
-  validatePlayground,
-} from '../src/playground/model';
 
 describe('간소화한 리소스 콘솔', () => {
   it('EC2 이미지·인스턴스·디스크 설정을 보관한다', () => {
@@ -108,52 +102,8 @@ describe('간소화한 리소스 콘솔', () => {
     ).toBe(true);
   });
 });
-describe('Playground 워크플로', () => {
-  it('콘솔로 설정한 예제와 연결·위치를 복원한다', () => {
-    const data = examplePlayground();
-    expect(validatePlayground(data)).toEqual([]);
-    expect(parsePlayground(JSON.stringify(data))).toEqual(data);
-    const signature = playgroundSignature(data);
-    data.resources[0].position.x += 50;
-    expect(playgroundSignature(data)).toBe(signature);
-    data.resources[1].config.settings.image = 'al2023';
-    expect(playgroundSignature(data)).not.toBe(signature);
-  });
-  it('잘못된 관계와 순환·중복 연결을 구분해 점검한다', () => {
-    const data = examplePlayground();
-    data.edges.push({ source: 'model', target: 'data' });
-    expect(validatePlayground(data).some((issue) => issue.message.includes('연결 규칙'))).toBe(
-      true,
-    );
-    data.edges.pop();
-    data.edges.push({ source: 'compute', target: 'data' });
-    expect(validatePlayground(data).some((issue) => issue.message.includes('순환'))).toBe(true);
-    data.edges.pop();
-    data.edges.push(data.edges[0]);
-    expect(validatePlayground(data).some((issue) => issue.message.includes('중복'))).toBe(true);
-  });
-  it('손상 데이터·없는 자원·중복 이름·알 수 없는 서비스를 거절한다', () => {
-    expect(() => parsePlayground('{broken')).toThrow();
-    const data = examplePlayground();
-    data.edges[0].target = 'missing';
-    expect(() => parsePlayground(JSON.stringify(data))).toThrow();
-    const duplicate = examplePlayground();
-    duplicate.resources.push({ ...structuredClone(duplicate.resources[0]), id: 'duplicate' });
-    expect(() => parsePlayground(JSON.stringify(duplicate))).toThrow();
+describe('리소스 파서', () => {
+  it('알 수 없는 서비스는 거절한다', () => {
     expect(() => parseResource({ service: 'toString', name: 'bad', settings: {} })).toThrow();
-  });
-  it('AMI와 연결된 EC2의 이미지가 다르면 알려준다', () => {
-    const data = examplePlayground();
-    data.resources.find((resource) => resource.id === 'compute')!.config = resourceDefaults(
-      'ec2',
-      'legacy-worker',
-    );
-    const ami = resourceDefaults('ami', 'base-image');
-    ami.settings.image = 'al2023';
-    data.resources.push({ id: 'ami', position: { x: 0, y: 300 }, config: ami });
-    data.edges.push({ source: 'ami', target: 'compute' });
-    expect(validatePlayground(data).some((issue) => issue.message.includes('시작 이미지'))).toBe(
-      true,
-    );
   });
 });

@@ -203,3 +203,14 @@ export function numbers(data: Record<string, unknown>, key: string): number[] {
 }
 
 export { josa } from '../josa';
+
+const versionOf = (id: unknown) => Number(/v(\d+)\s*$/.exec(String(id))?.[1] ?? 0);
+/** 같은 종류의 모델이 여럿 들어오면 버전이 가장 높은 것만 남긴다. 순환으로 돌아온 새 모델이 처음 모델보다 우선한다. */
+export function keepNewestModel(inputs: Artifact[]): Artifact[] {
+  const models = received(inputs, 'deployed-model');
+  if (models.length < 2) return inputs;
+  const newest = models.reduce((best, item) =>
+    versionOf(item.data.modelId) >= versionOf(best.data.modelId) ? item : best,
+  );
+  return inputs.filter((item) => item === newest || !models.includes(item as DataArtifact));
+}

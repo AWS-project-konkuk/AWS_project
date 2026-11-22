@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { chatErrorMessage } from '../api/chat';
 import { requestHint, type HintResponse } from '../api/hint';
-import type { Lesson } from '../curriculum/types';
 import { buildHintRequest, canRequestHint, type HintRun } from './hint';
 import { signature, type Graph } from './model';
 
-export function useSystemLabHint(lesson: Lesson, graph: Graph, run: HintRun | null) {
+export function useSystemLabHint(
+  lesson: Parameters<typeof buildHintRequest>[0],
+  graph: Graph,
+  run: HintRun | null,
+) {
   const canRequest = canRequestHint(lesson.id, graph, run);
   const key = JSON.stringify([lesson.id, run?.result.id, signature(graph), canRequest]);
   const active = useRef<AbortController | null>(null);

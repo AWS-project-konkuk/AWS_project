@@ -99,6 +99,27 @@ function cycleEdges(graph: Graph) {
   graph.entities.forEach((node) => visit(node.id));
   return [...cycle];
 }
+/** 순환을 닫는 연결. 이 선의 값은 다음 반복에서 전달된다. */
+export function backEdges(graph: Graph) {
+  const visited = new Set<string>();
+  const active = new Set<string>();
+  const back = new Set<string>();
+  function visit(id: string) {
+    if (visited.has(id)) return;
+    active.add(id);
+    for (const e of graph.connections) {
+      if (e.from.node !== id) continue;
+      if (active.has(e.to.node)) back.add(e.id);
+      else visit(e.to.node);
+    }
+    active.delete(id);
+    visited.add(id);
+  }
+  graph.entities.forEach((node) => visit(node.id));
+  return back;
+}
+/** 순환이 있는 자유 구성은 이 횟수만큼 반복해 실행한다. */
+export const LOOP_ROUNDS = 3;
 function describe(lab: LabConfig, a: Artifact, material: Material) {
   if (a.type === 'request') return lab.materials[material] + ' ' + a.requests.length + '건';
   if (a.type === 'prediction') return lab.materials[material] + ' ' + a.responses.length + '건';
@@ -108,7 +129,9 @@ function describe(lab: LabConfig, a: Artifact, material: Material) {
 
 export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): RunResult {
   graph = { ...graph, connections: [...graph.connections, ...lab.routes(graph)] };
-  const cycle = cycleEdges(graph);
+  // 자유 구성(Playground)은 순환을 허용하고 반복 실행한다.
+  const cycle = lab.freeform ? [] : cycleEdges(graph);
+  const loopEdges = lab.freeform ? backEdges(graph) : new Set<string>();
   if (cycle.length)
     return {
       id,
@@ -137,91 +160,135 @@ export function runLab(graph: Graph, id: string, lab: LabConfig = week2Lab): Run
         queue.push(edge.from.node);
       }
   }
-  const pending = graph.entities.filter(
+  if (lab.freeform) {
+    relevant.clear();
+    for (const wire of graph.connections) {
+      relevant.add(wire.from.node);
+      relevant.add(wire.to.node);
+    }
+  }
+  const nodesToRun = graph.entities.filter(
     (e): e is ResourceEntity => e.type === 'resource' && relevant.has(e.id),
   );
-  const steps: RunStep[] = [];
-  const done = new Set<string>();
-  const values = new Map<string, Artifact>();
+  let steps: RunStep[] = [];
   let responses: Response[] = [];
   let metrics: Metric[] = [];
   const observations = new Set<string>();
-  while (pending.length) {
-    const index = pending.findIndex((e) =>
-      graph.connections.every((wire) => wire.to.node !== e.id || done.has(wire.from.node)),
-    );
-    if (index === -1) break;
-    const [node] = pending.splice(index, 1);
-    done.add(node.id);
-    const incoming = graph.connections.filter((e) => e.to.node === node.id);
-    const inputs = incoming.flatMap((e) => {
-      const value = values.get(e.id);
-      return value ? [value] : [];
-    });
-    const byPort: Record<string, Artifact[]> = {};
-    for (const e of incoming) {
-      const value = values.get(e.id);
-      if (value) (byPort[e.to.port] ??= []).push(value);
-    }
-    const outgoing = graph.connections.filter((e) => e.from.node === node.id);
-    const transfers: Transfer[] = [];
-    const send = (edge: (typeof outgoing)[number], value: Artifact) => {
-      values.set(edge.id, value);
-      transfers.push({
-        edge: edge.id,
-        from: edge.from.node,
-        to: edge.to.node,
-        description: describe(lab, value, value.type === 'data' ? value.material : value.type),
-        artifact: value,
-      });
-    };
-    try {
-      const message = lab.strategies[node.kind]({
-        lab,
-        node,
-        graph,
-        inputs,
-        byPort,
-        observe: (tag) => observations.add(tag),
-        report: (next) => {
-          metrics = next;
-        },
-        emit: (artifact, portId) => {
-          const material = artifact.type === 'data' ? artifact.material : artifact.type;
-          const ports = node.ports.filter(
-            (p) => p.direction === 'out' && p.material === material && (!portId || p.id === portId),
-          );
-          if (!ports.length) throw new Error(lab.materials[material] + ' 출력 포트가 없습니다.');
-          for (const e of outgoing) if (ports.some((p) => p.id === e.from.port)) send(e, artifact);
-        },
-        distribute: (batch) => {
-          const routes = [...new Map(outgoing.map((e) => [e.to.node, e])).values()];
-          const groups = routes.map((): Request[] => []);
-          batch.forEach((request, i) => groups[i % routes.length]?.push(request));
-          routes.forEach((e, i) => {
-            if (groups[i].length) send(e, { type: 'request', requests: groups[i] });
-          });
-          return routes.length;
-        },
-        finish: (received) => {
-          responses = received;
-        },
-      });
-      steps.push({ node: node.id, status: 'success', message, transfers });
-    } catch (error) {
-      const blockedInput = incoming.some((e) =>
-        steps.some((step) => step.node === e.from.node && step.status !== 'success'),
+  const rounds = loopEdges.size ? LOOP_ROUNDS : 1;
+  // 순환을 닫는 연결의 값은 앞선 반복에서 가져온다.
+  let carry = new Map<string, Artifact>();
+  for (let round = 1; round <= rounds; round++) {
+    const pending = [...nodesToRun];
+    steps = [];
+    responses = [];
+    metrics = [];
+    const done = new Set<string>();
+    const values = new Map<string, Artifact>(carry);
+    while (pending.length) {
+      const index = pending.findIndex((e) =>
+        graph.connections.every(
+          (wire) => wire.to.node !== e.id || loopEdges.has(wire.id) || done.has(wire.from.node),
+        ),
       );
-      steps.push({
-        node: node.id,
-        status: node.kind !== 'end' && blockedInput ? 'blocked' : 'failed',
-        message: (error as Error).message,
-        transfers,
+      if (index === -1) break;
+      const [node] = pending.splice(index, 1);
+      done.add(node.id);
+      const incoming = graph.connections.filter((e) => e.to.node === node.id);
+      const inputs = incoming.flatMap((e) => {
+        const value = values.get(e.id);
+        return value ? [value] : [];
       });
+      const byPort: Record<string, Artifact[]> = {};
+      for (const e of incoming) {
+        const value = values.get(e.id);
+        if (value) (byPort[e.to.port] ??= []).push(value);
+      }
+      const outgoing = graph.connections.filter((e) => e.from.node === node.id);
+      const transfers: Transfer[] = [];
+      const send = (edge: (typeof outgoing)[number], value: Artifact) => {
+        values.set(edge.id, value);
+        transfers.push({
+          edge: edge.id,
+          from: edge.from.node,
+          to: edge.to.node,
+          description: describe(lab, value, value.type === 'data' ? value.material : value.type),
+          artifact: value,
+        });
+      };
+      try {
+        const message = lab.strategies[node.kind]({
+          lab,
+          node,
+          graph,
+          inputs,
+          byPort,
+          observe: (tag) => observations.add(tag),
+          report: (next) => {
+            metrics = next;
+          },
+          emit: (artifact, portId) => {
+            const material = artifact.type === 'data' ? artifact.material : artifact.type;
+            const ports = node.ports.filter(
+              (p) =>
+                p.direction === 'out' && p.material === material && (!portId || p.id === portId),
+            );
+            if (!ports.length) throw new Error(lab.materials[material] + ' 출력 포트가 없습니다.');
+            for (const e of outgoing)
+              if (ports.some((p) => p.id === e.from.port)) send(e, artifact);
+          },
+          distribute: (batch) => {
+            const routes = [...new Map(outgoing.map((e) => [e.to.node, e])).values()];
+            const groups = routes.map((): Request[] => []);
+            batch.forEach((request, i) => groups[i % routes.length]?.push(request));
+            routes.forEach((e, i) => {
+              if (groups[i].length) send(e, { type: 'request', requests: groups[i] });
+            });
+            return routes.length;
+          },
+          finish: (received) => {
+            responses = received;
+          },
+        });
+        steps.push({ node: node.id, status: 'success', message, transfers });
+      } catch (error) {
+        const blockedInput = incoming.some((e) =>
+          steps.some((step) => step.node === e.from.node && step.status !== 'success'),
+        );
+        steps.push({
+          node: node.id,
+          status: node.kind !== 'end' && blockedInput ? 'blocked' : 'failed',
+          message: (error as Error).message,
+          transfers,
+        });
+      }
     }
+    carry = new Map([...values].filter(([edge]) => loopEdges.has(edge)));
+  }
+  const nameOf = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
+  if (lab.freeform) {
+    const failed = steps.filter((step) => step.status === 'failed');
+    const first = failed[0] ?? steps.find((step) => step.status !== 'success');
+    return {
+      id,
+      steps,
+      cycle,
+      responses,
+      metrics: loopEdges.size
+        ? [{ label: '순환 반복', value: rounds + '회' }, ...metrics]
+        : metrics,
+      observations: [...observations],
+      success: steps.length > 0 && !first,
+      message: !steps.length
+        ? '노드를 연결한 뒤 실행하세요. 연결이 없는 노드는 실행하지 않습니다.'
+        : first
+          ? nameOf(first.node) + ': ' + first.message
+          : (loopEdges.size ? '순환 연결을 ' + rounds + '번 반복해 ' : '') +
+            '연결된 노드 ' +
+            steps.length +
+            '개가 모두 실행됐습니다.',
+    };
   }
   const last = steps.find((step) => step.node === end?.id);
-  const nameOf = (id: string) => graph.entities.find((e) => e.id === id)?.name ?? id;
   /** 도착이 입력을 받지 못했을 때, 상류에서 처음 실패한 노드를 찾는다. */
   const rootCause = (id: string, seen = new Set<string>()): RunStep | undefined => {
     if (seen.has(id)) return undefined;
