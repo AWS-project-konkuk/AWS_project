@@ -160,6 +160,8 @@ test('Playground는 서비스와 노드를 추가·연결해 실행하고 새로
     .click();
   await expect(page.getByTestId(/^node-/)).toHaveCount(0);
   await page.getByLabel('MLOps 예시', { exact: true }).selectOption('level-5');
+  // 5단계 예시는 노드가 많아 기본 속도로는 오래 걸린다.
+  await page.getByLabel('실행 속도').selectOption('fast');
   await lab.getByRole('button', { name: '실행', exact: true }).click();
   await expect(lab.getByRole('status').first()).toContainText('모두 실행됐습니다', {
     timeout: 20_000,

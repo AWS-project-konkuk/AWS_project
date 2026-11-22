@@ -25,6 +25,8 @@ import { labViews } from './labs/views';
 import { playgroundView } from './labs/playground-view';
 import { labStore } from './store';
 import { Button } from '../components/ui/button';
+import { NativeSelect } from '../components/ui/native-select';
+import { runSpeeds, usePreferences, type RunSpeed } from '../settings/preferences';
 import { cn } from '../components/ui/styles';
 import { divider, hint, panel, panelBody } from './appearance';
 import type { Lesson } from '../curriculum/types';
@@ -166,6 +168,8 @@ function SystemLabBody({
     cursor: number;
     stopped: boolean;
   } | null>(null);
+  const runSpeed = usePreferences((state) => state.runSpeed);
+  const setRunSpeed = usePreferences((state) => state.setRunSpeed);
   const [answer, setAnswer] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const menuBox = useRef<HTMLDivElement>(null);
@@ -198,10 +202,10 @@ function SystemLabBody({
           if (active.result.success) prove(active.stamp);
         }
       },
-      reduced ? 25 : 270,
+      reduced ? 25 : runSpeeds[runSpeed].ms,
     );
     return () => clearTimeout(timer);
-  }, [active, busy, prove, observe]);
+  }, [active, busy, prove, observe, runSpeed]);
   useEffect(() => {
     if (!menu) return;
     menuBox.current?.querySelector('button')?.focus();
@@ -330,6 +334,19 @@ function SystemLabBody({
             {focused ? '전체 화면 나가기' : playground ? '전체 화면' : '실습 전체 화면'}
           </Button>
           {actions}
+          <label className="flex items-center gap-1.5 text-sm text-ui-muted">
+            실행 속도
+            <NativeSelect
+              value={runSpeed}
+              onChange={(event) => setRunSpeed(event.target.value as RunSpeed)}
+            >
+              {Object.entries(runSpeeds).map(([value, { label }]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
           {busy ? (
             <Button
               type="button"
