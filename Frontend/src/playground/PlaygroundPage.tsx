@@ -10,6 +10,8 @@ import { playgroundLab } from '../systemLab/labs';
 import { examplePipeline } from '../systemLab/labs/playground-example';
 import { labStore } from '../systemLab/store';
 import { PlaygroundLab } from '../systemLab/SystemLab';
+import { usePlaygroundLibrary } from './library';
+import { PlaygroundLibrary } from './PlaygroundLibrary';
 import { hasNodes } from './workflow';
 
 /** 게시판에 올린 워크플로우를 ID로 불러온다. 현재 구성은 확인 뒤에 바꾼다. */
@@ -22,7 +24,10 @@ function ImportWorkflow() {
       if (!isPostId(id)) throw new Error('게시판에서 복사한 워크플로우 ID를 입력해 주세요.');
       return getPostWorkflow(id);
     },
-    onSuccess: ({ graph }) => store.getState().load(graph),
+    onSuccess: ({ graph }) => {
+      store.getState().load(graph);
+      usePlaygroundLibrary.getState().open(null);
+    },
   });
   return (
     <form
@@ -71,6 +76,7 @@ function LoadExample() {
         )
           return;
         store.getState().load(examplePipeline());
+        usePlaygroundLibrary.getState().open(null);
       }}
     >
       <Workflow size={15} /> MLOps 예시
@@ -84,6 +90,7 @@ export function PlaygroundPage() {
       <PlaygroundLab
         actions={
           <>
+            <PlaygroundLibrary />
             <LoadExample />
             <ImportWorkflow />
           </>

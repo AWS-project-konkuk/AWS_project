@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { createPost, updatePost } from '../api/posts/postPosts';
 import { postError, type Post } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
 import { Textarea } from '../components/ui/textarea';
+import { usePlaygroundLibrary } from '../playground/library';
 import { hasNodes, toWorkflow } from '../playground/workflow';
 import { playgroundLab } from '../systemLab/labs';
 import { labStore } from '../systemLab/store';
@@ -17,7 +18,18 @@ export function PostForm({ post }: { post?: Post }) {
   const cache = useQueryClient();
   const { saved, blocked } = labStore(playgroundLab)();
   const attachable = !blocked && hasNodes(saved.graph);
-  const [attachment, setAttachment] = useState('keep');
+  const library = usePlaygroundLibrary((state) => state.items);
+  const [search] = useSearchParams();
+  const requested = search.get('attach');
+  const [attachment, setAttachment] = useState(() =>
+    post
+      ? 'keep'
+      : requested === 'current'
+        ? 'current'
+        : library.some((item) => item.id === requested)
+          ? 'saved:' + requested
+          : 'keep',
+  );
   const back = post ? '/board/' + post.id : '/board';
   const save = useMutation({
     mutationFn: async (fields: FormData) => {
@@ -28,8 +40,13 @@ export function PostForm({ post }: { post?: Post }) {
       if (!title || !password.trim() || (!post && (!author || !body)) || (post?.body && !body)) {
         throw new Error('필수 항목을 입력해 주세요.');
       }
+      const savedItem = library.find((item) => 'saved:' + item.id === attachment);
       const workflow =
-        attachment === 'current' ? toWorkflow(saved.graph) : (post?.workflow ?? null);
+        attachment === 'current'
+          ? toWorkflow(saved.graph)
+          : savedItem
+            ? toWorkflow(savedItem.graph)
+            : (post?.workflow ?? null);
       if (post) {
         await updatePost(post.id, { title, body: body || undefined, password, workflow });
         return post.id;
@@ -87,8 +104,13 @@ export function PostForm({ post }: { post?: Post }) {
         <NativeSelect value={attachment} onChange={(event) => setAttachment(event.target.value)}>
           <option value="keep">{post ? '현재 첨부 유지' : '첨부하지 않음'}</option>
           <option value="current" disabled={!attachable}>
-            내 Playground 첨부
+            지금 작업 중인 Playground
           </option>
+          {library.map((item) => (
+            <option key={item.id} value={'saved:' + item.id}>
+              저장한 Playground · {item.name}
+            </option>
+          ))}
         </NativeSelect>
       </label>
       {save.isError && (

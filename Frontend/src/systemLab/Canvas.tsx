@@ -363,6 +363,8 @@ interface Props {
   clearMenu: () => void;
   selectedEdge: string;
   selectEdge: (id: string) => void;
+  /** edit: 편집, detail: 게시글 상세처럼 이동·확대만 가능, thumbnail: 목록 미리보기. */
+  mode?: 'edit' | 'detail' | 'thumbnail';
 }
 export function Canvas({
   graph,
@@ -376,6 +378,7 @@ export function Canvas({
   clearMenu,
   selectedEdge,
   selectEdge,
+  mode = 'edit',
 }: Props) {
   const { lab, view } = useLab();
   const flow = useReactFlow<CanvasNode>();
@@ -610,45 +613,47 @@ export function Canvas({
       className="relative isolate min-h-0 min-w-0 bg-ui-paper-2 group-data-[focused=false]/lab:max-[1023px]:min-h-[360px] max-[540px]:[&_.react-flow]:h-[calc(100%-46px)]! motion-reduce:[&_.react-flow__edge.animated_path]:animate-none! [&_.react-flow__controls]:overflow-hidden [&_.react-flow__controls]:rounded-md [&_.react-flow__controls]:border [&_.react-flow__controls]:border-solid [&_.react-flow__controls]:border-ui-rule-2 [&_.react-flow__controls]:shadow-(--shadow-card) [&_.react-flow__controls-button]:min-h-7 [&_.react-flow__controls-button]:p-[5px]"
       data-testid="system-lab-canvas"
     >
-      <div className="pointer-events-none absolute inset-x-2.5 top-[9px] z-5 flex flex-wrap items-center gap-1.5 [&>*]:pointer-events-auto [&>*]:max-w-full max-[540px]:relative max-[540px]:inset-auto max-[540px]:px-2.5 max-[540px]:pt-2 max-[540px]:pb-1 max-[540px]:[&>button]:text-xs! max-[540px]:[&>select]:text-xs!">
-        <Button
-          type="button"
-          onClick={() => {
-            select(rootId);
-            setFocusId(null);
-            fit();
-          }}
-        >
-          <view.icons.root size={15} /> 전체 서비스
-        </Button>
-        <NativeSelect
-          aria-label="캔버스에서 항목 찾기"
-          value={selected}
-          onChange={(event) => {
-            const id = event.target.value;
-            select(id);
-            setFolded((previous) =>
-              previous.filter((p) => p === id || !descendants(graph, p).has(id)),
-            );
-            setFocusId(id === rootId ? null : id);
-            requestAnimationFrame(() => fit(id === rootId ? undefined : id));
-          }}
-        >
-          <option value={rootId}>항목 찾기</option>
-          {graph.entities
-            .filter((e) => e.id !== rootId)
-            .map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-        </NativeSelect>
-        {focusId && (
-          <span className="rounded bg-ui-paper px-2 py-1 text-ui-ink-2">
-            {entityMap.get(focusId)?.name}
-          </span>
-        )}
-      </div>
+      {mode === 'edit' && (
+        <div className="pointer-events-none absolute inset-x-2.5 top-[9px] z-5 flex flex-wrap items-center gap-1.5 [&>*]:pointer-events-auto [&>*]:max-w-full max-[540px]:relative max-[540px]:inset-auto max-[540px]:px-2.5 max-[540px]:pt-2 max-[540px]:pb-1 max-[540px]:[&>button]:text-xs! max-[540px]:[&>select]:text-xs!">
+          <Button
+            type="button"
+            onClick={() => {
+              select(rootId);
+              setFocusId(null);
+              fit();
+            }}
+          >
+            <view.icons.root size={15} /> 전체 서비스
+          </Button>
+          <NativeSelect
+            aria-label="캔버스에서 항목 찾기"
+            value={selected}
+            onChange={(event) => {
+              const id = event.target.value;
+              select(id);
+              setFolded((previous) =>
+                previous.filter((p) => p === id || !descendants(graph, p).has(id)),
+              );
+              setFocusId(id === rootId ? null : id);
+              requestAnimationFrame(() => fit(id === rootId ? undefined : id));
+            }}
+          >
+            <option value={rootId}>항목 찾기</option>
+            {graph.entities
+              .filter((e) => e.id !== rootId)
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+          </NativeSelect>
+          {focusId && (
+            <span className="rounded bg-ui-paper px-2 py-1 text-ui-ink-2">
+              {entityMap.get(focusId)?.name}
+            </span>
+          )}
+        </div>
+      )}
       <ReactFlow<CanvasNode>
         defaultNodes={nodeList}
         edges={edges}
@@ -659,7 +664,13 @@ export function Canvas({
         deleteKeyCode={null}
         multiSelectionKeyCode={null}
         selectionKeyCode={null}
-        nodesConnectable={editable}
+        nodesConnectable={editable && mode === 'edit'}
+        nodesDraggable={mode === 'edit'}
+        elementsSelectable={mode === 'edit'}
+        panOnDrag={mode !== 'thumbnail'}
+        zoomOnScroll={mode === 'edit'}
+        zoomOnPinch={mode !== 'thumbnail'}
+        zoomOnDoubleClick={mode === 'edit'}
         edgesReconnectable={false}
         elevateNodesOnSelect={false}
         elevateEdgesOnSelect={false}
@@ -772,14 +783,16 @@ export function Canvas({
         }}
       >
         <Background gap={22} size={1} color="var(--color-rule-2)" />
-        <Controls
-          showInteractive={false}
-          onFitView={() => {
-            setFocusId(null);
-            fit();
-          }}
-          aria-label="캔버스 확대·축소"
-        />
+        {mode !== 'thumbnail' && (
+          <Controls
+            showInteractive={false}
+            onFitView={() => {
+              setFocusId(null);
+              fit();
+            }}
+            aria-label="캔버스 확대·축소"
+          />
+        )}
       </ReactFlow>
     </div>
   );
