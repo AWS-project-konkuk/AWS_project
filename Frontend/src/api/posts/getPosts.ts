@@ -15,8 +15,8 @@ function isPostSummary(post: PostSummary) {
 
 export { readWorkflow };
 
-export async function getPostWorkflow(id: string) {
-  const { data } = await api.get<unknown>('/posts/' + id + '/workflow');
+export async function getPostWorkflow(id: string, signal: AbortSignal) {
+  const { data } = await api.get<unknown>('/posts/' + id + '/workflow', { signal });
   return readWorkflow(data);
 }
 
