@@ -57,19 +57,17 @@ export function PlaygroundLibrary() {
                 ? '열어 둔 구성: ' + opened.name + (changed ? ' · 저장하지 않은 변경 있음' : '')
                 : '저장하지 않은 구성입니다.'}
             </p>
-            <div className="flex gap-1.5">
-              <Input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="저장할 이름"
-                aria-label="저장할 이름"
-                maxLength={40}
-              />
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="저장할 이름"
+              aria-label="저장할 이름"
+              maxLength={40}
+            />
+            <div className="flex flex-wrap gap-1.5">
               <Button type="submit" disabled={!filled}>
                 <Save size={15} /> 새로 저장
               </Button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
               {opened && (
                 <Button
                   type="button"

@@ -664,6 +664,7 @@ export function Canvas({
         deleteKeyCode={null}
         multiSelectionKeyCode={null}
         selectionKeyCode={null}
+        proOptions={{ hideAttribution: true }}
         nodesConnectable={editable && mode === 'edit'}
         nodesDraggable={mode === 'edit'}
         elementsSelectable={mode === 'edit'}
