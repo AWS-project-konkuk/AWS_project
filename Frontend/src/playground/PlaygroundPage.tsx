@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, Workflow } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { getPostWorkflow } from '../api/posts/getPosts';
@@ -7,6 +7,7 @@ import { isPostId, postError } from '../api/posts/posts';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { playgroundLab } from '../systemLab/labs';
+import { examplePipeline } from '../systemLab/labs/playground-example';
 import { labStore } from '../systemLab/store';
 import { PlaygroundLab } from '../systemLab/SystemLab';
 import { hasNodes } from './workflow';
@@ -57,10 +58,37 @@ function ImportWorkflow() {
   );
 }
 
+/** 입력부터 서빙·재학습까지 이어진 MLOps 예시 구성을 불러온다. */
+function LoadExample() {
+  const store = labStore(playgroundLab);
+  return (
+    <Button
+      type="button"
+      onClick={() => {
+        if (
+          hasNodes(store.getState().saved.graph) &&
+          !window.confirm('현재 구성을 MLOps 예시로 바꿀까요?')
+        )
+          return;
+        store.getState().load(examplePipeline());
+      }}
+    >
+      <Workflow size={15} /> MLOps 예시
+    </Button>
+  );
+}
+
 export function PlaygroundPage() {
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col" data-testid="playground">
-      <PlaygroundLab actions={<ImportWorkflow />} />
+      <PlaygroundLab
+        actions={
+          <>
+            <LoadExample />
+            <ImportWorkflow />
+          </>
+        }
+      />
     </main>
   );
 }

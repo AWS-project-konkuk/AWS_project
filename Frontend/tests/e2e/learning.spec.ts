@@ -147,12 +147,23 @@ test('Playground는 서비스와 노드를 추가·연결해 실행하고 새로
   await expect(page.getByTestId('system-sources')).toBeVisible();
   await expect(page.getByTestId('system-registry')).toBeVisible();
   await page.getByTestId('system-sources').click({ position: { x: 20, y: 10 } });
-  await lab.getByRole('button', { name: '원본 데이터 추가' }).click();
+  await lab.getByRole('button', { name: '데이터 입력 추가' }).click();
   await expect(page.getByTestId(/^node-/)).toHaveCount(1);
   await lab.getByRole('button', { name: '실행', exact: true }).click();
   await expect(lab.getByRole('status').first()).toContainText('연결');
   await page.reload();
   await expect(page.getByTestId(/^node-/)).toHaveCount(1);
+  await page.getByTestId(/^node-/).click({ button: 'right' });
+  await page
+    .getByRole('group', { name: '연결 작업' })
+    .getByRole('button', { name: /삭제$/ })
+    .click();
+  await expect(page.getByTestId(/^node-/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'MLOps 예시', exact: true }).click();
+  await lab.getByRole('button', { name: '실행', exact: true }).click();
+  await expect(lab.getByRole('status').first()).toContainText('모두 실행됐습니다', {
+    timeout: 20_000,
+  });
 });
 test('없는 강의 주소는 404를 표시하고 학습 과정으로 돌아갈 수 있다', async ({ page }) => {
   await page.goto('/#/learn/no-such-lesson');

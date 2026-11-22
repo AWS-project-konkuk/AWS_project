@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/systemLab/commands';
 import { runLab } from '../src/systemLab/engine';
-import { signature, type Graph, type SettingValue } from '../src/systemLab/lab';
+import {
+  editablePortTypes,
+  findPort,
+  signature,
+  type Graph,
+  type SettingValue,
+} from '../src/systemLab/lab';
 import { labFor, playgroundLab as lab } from '../src/systemLab/labs';
 import { wired } from '../src/systemLab/labs/kit';
-import { playgroundTools } from '../src/systemLab/labs/playground';
+import { examplePipeline } from '../src/systemLab/labs/playground-example';
+import { mergedSpecs, playgroundTools } from '../src/systemLab/labs/playground';
 import { playgroundView } from '../src/systemLab/labs/playground-view';
 import { buildHintRequest, canRequestHint } from '../src/systemLab/hint';
 import { parseSaved } from '../src/systemLab/store';
@@ -22,18 +29,18 @@ function build(nodes: Node[], wires: ReturnType<typeof wired>[] = []): Graph {
 const run = (graph: Graph) => runLab(graph, 'test', lab);
 
 const pipeline: Node[] = [
-  ['raw', 'rawData', 'sources'],
-  ['reqs', 'requestStream', 'sources', { count: '10' }],
-  ['read', 'readObjects', 'storage'],
+  ['raw', 'input', 'sources', { source: 'raw' }],
+  ['reqs', 'input', 'sources', { source: 'req-10' }],
+  ['read', 'storageOp', 'storage', { operation: 'read' }],
   ['validate', 'validateData', 'ec2'],
   ['partition', 'partition', 'ec2'],
   ['train', 'train', 'ec2'],
   ['track', 'trackExperiment', 'ec2'],
   ['evaluate', 'evaluate', 'ec2', { threshold: 0.8 }],
-  ['register', 'registerModel', 'registry', { stage: 'production' }],
-  ['deploy', 'deployModel', 'gateway'],
-  ['serve', 'infer', 'gateway'],
-  ['observe', 'observeResponses', 'monitoring'],
+  ['register', 'publish', 'registry', { action: 'register-production' }],
+  ['deploy', 'publish', 'gateway', { action: 'deploy' }],
+  ['serve', 'serve', 'gateway', { mode: 'infer' }],
+  ['observe', 'observe', 'monitoring', { target: 'responses' }],
 ];
 const pipelineWires = [
   wired('raw', 'objects', 'read', 'objects'),
@@ -83,7 +90,7 @@ describe('플레이그라운드 구성', () => {
 
 describe('플레이그라운드 실행', () => {
   it('연결이 없으면 실행하지 않고 안내한다', () => {
-    const result = run(build([['raw', 'rawData', 'sources']]));
+    const result = run(build([['raw', 'input', 'sources', { source: 'raw' }]]));
     expect(result.success).toBe(false);
     expect(result.steps).toHaveLength(0);
     expect(result.message).toContain('연결');
@@ -99,7 +106,9 @@ describe('플레이그라운드 실행', () => {
   });
 
   it('연결하지 않은 노드는 실행 대상에서 빠진다', () => {
-    const result = run(build([...pipeline, ['spare', 'trainJob', 'sources']], pipelineWires));
+    const result = run(
+      build([...pipeline, ['spare', 'input', 'sources', { source: 'job-8' }]], pipelineWires),
+    );
     expect(result.success).toBe(true);
     expect(result.steps.some((s) => s.node === 'spare')).toBe(false);
   });
@@ -114,7 +123,7 @@ describe('플레이그라운드 실행', () => {
 
   it('Staging 단계로 등록한 모델은 배포되지 않는다', () => {
     const nodes = pipeline.map((n): Node =>
-      n[0] === 'register' ? [n[0], n[1], n[2], { stage: 'staging' }] : n,
+      n[0] === 'register' ? [n[0], n[1], n[2], { action: 'register-staging' }] : n,
     );
     const result = run(build(nodes, pipelineWires));
     expect(result.success).toBe(false);
@@ -134,8 +143,8 @@ describe('플레이그라운드 실행', () => {
 
   it('재학습 트리거는 품질이 낮을 때만 신호를 보낸다', () => {
     const nodes = (quality: string): Node[] => [
-      ['ops', 'opsLog', 'sources', { quality }],
-      ['collect', 'collectMetrics', 'monitoring'],
+      ['ops', 'input', 'sources', { source: quality === 'low' ? 'ops-low' : 'ops-good' }],
+      ['collect', 'observe', 'monitoring', { target: 'metrics' }],
       ['trigger', 'trigger', 'monitoring'],
     ];
     const wires = [
@@ -153,13 +162,13 @@ describe('플레이그라운드 실행', () => {
 
   it('RAG 질문 응답을 입력 소스에서 이어 만들 수 있다', () => {
     const nodes: Node[] = [
-      ['docs', 'textInput', 'sources', { role: 'document' }],
-      ['question', 'textInput', 'sources', { role: 'question' }],
+      ['docs', 'input', 'sources', { source: 'doc' }],
+      ['question', 'input', 'sources', { source: 'question' }],
       ['doc-embed', 'embed', 'ec2', { space: 'A' }],
       ['q-embed', 'embed', 'ec2', { space: 'A' }],
-      ['index', 'index', 'storage'],
-      ['search', 'search', 'storage'],
-      ['api', 'api', 'gateway'],
+      ['index', 'storageOp', 'storage', { operation: 'index' }],
+      ['search', 'storageOp', 'storage', { operation: 'search' }],
+      ['api', 'serve', 'gateway', { mode: 'api' }],
     ];
     const wires = [
       wired('docs', 'text', 'doc-embed', 'text'),
@@ -202,7 +211,7 @@ describe('플레이그라운드 실행', () => {
 describe('플레이그라운드 AI 조언', () => {
   it('실패한 실행에서만 요청할 수 있고 요청에 구성이 담긴다', () => {
     const nodes = pipeline.map((n): Node =>
-      n[0] === 'register' ? [n[0], n[1], n[2], { stage: 'staging' }] : n,
+      n[0] === 'register' ? [n[0], n[1], n[2], { action: 'register-staging' }] : n,
     );
     const graph = build(nodes, pipelineWires);
     const result = run(graph);
@@ -219,6 +228,117 @@ describe('플레이그라운드 AI 조언', () => {
     );
     expect(request.lessonId).toBe('playground');
     expect(request.ruleCheck.issues.join(' ')).toContain('Production');
-    expect(request.nodes.some((node) => node.kind === 'deployModel')).toBe(true);
+    expect(request.nodes.some((node) => node.kind === 'publish' && node.id === 'deploy')).toBe(
+      true,
+    );
+  });
+});
+
+describe('입출력 포트 조절과 노드 통합', () => {
+  it('모든 노드의 포트를 추가·삭제·타입 변경할 수 있다', () => {
+    const graph = build([['v', 'validateData', 'ec2']]);
+    expect(lab.managedPorts).toEqual({});
+    expect(editablePortTypes(lab, 'validateData', 'in')).toEqual(['dataset']);
+    expect(editablePortTypes(lab, 'train', 'out')).toEqual([
+      'checkpoint',
+      'gradient',
+      'activation',
+      'partial',
+    ]);
+    const added = applyCommand(
+      graph,
+      { type: 'port-add', id: 'v', port: 'extra', direction: 'in', material: 'dataset' },
+      lab,
+    );
+    expect(findPort(added, { node: 'v', port: 'extra' })?.material).toBe('dataset');
+    const removed = applyCommand(added, { type: 'port-remove', id: 'v', port: 'extra' }, lab);
+    expect(findPort(removed, { node: 'v', port: 'extra' })).toBeUndefined();
+    expect(() =>
+      applyCommand(
+        graph,
+        { type: 'port-add', id: 'v', port: 'x', direction: 'in', material: 'request' },
+        lab,
+      ),
+    ).toThrow('처리할 수 없는');
+  });
+
+  it('통합 노드는 설정으로 변형을 고르면 포트가 바뀌고 맞지 않는 연결은 지워진다', () => {
+    let graph = build(
+      [
+        ['in', 'input', 'sources', { source: 'raw' }],
+        ['store', 'storageOp', 'storage', { operation: 'read' }],
+      ],
+      [wired('in', 'objects', 'store', 'objects')],
+    );
+    expect(graph.connections).toHaveLength(1);
+    expect(findPort(graph, { node: 'in', port: 'out-objects' })).toBeDefined();
+    graph = applyCommand(graph, { type: 'setting', id: 'in', key: 'source', value: 'req-10' }, lab);
+    expect(findPort(graph, { node: 'in', port: 'out-objects' })).toBeUndefined();
+    expect(findPort(graph, { node: 'in', port: 'out-request' })?.material).toBe('request');
+    expect(graph.connections).toHaveLength(0);
+  });
+
+  it('합쳐도 원래 노드가 하던 일을 모두 고를 수 있다', () => {
+    const covered = Object.values(mergedSpecs).flatMap((spec) => spec.variants.map((v) => v.from));
+    for (const kind of [
+      'rawData',
+      'trainJob',
+      'textInput',
+      'requestStream',
+      'clickLog',
+      'featureQuery',
+      'workspace',
+      'opsLog',
+      'repo',
+      'file',
+      'readObjects',
+      'saveModel',
+      'index',
+      'search',
+      'defineFeature',
+      'lookupFeature',
+      'registerModel',
+      'deployModel',
+      'infer',
+      'api',
+      'observeResponses',
+      'collectMetrics',
+    ])
+      expect(covered, kind).toContain(kind);
+    const nodeKinds = Object.values(playgroundTools).flat();
+    expect(new Set(nodeKinds).size).toBeLessThan(25);
+  });
+});
+
+describe('MLOps 예시 파이프라인', () => {
+  const graph = examplePipeline();
+  const result = run(graph);
+
+  it('입력부터 서빙·관측, 재학습, 피처, 버전 복원까지 모두 성공한다', () => {
+    const failed = result.steps.filter((s) => s.status !== 'success');
+    expect(failed.map((s) => s.node + ': ' + s.message)).toEqual([]);
+    expect(result.success).toBe(true);
+    expect(result.steps).toHaveLength(graph.entities.filter((e) => e.type === 'resource').length);
+  });
+
+  it('운영 지표가 재학습을 시작하고 재학습 모델이 평가 승인을 받는다', () => {
+    expect(result.observations).toContain('retrain-triggered');
+    expect(result.steps.find((s) => s.node === 'reeval')?.message).toContain('평가 승인');
+  });
+
+  it('서비스 영역이 겹치지 않고 저장 형식으로 다시 읽을 수 있다', () => {
+    const areas = graph.entities.filter((e) => e.type === 'system' && e.parent === 'root');
+    for (const a of areas)
+      for (const b of areas) {
+        if (a === b || a.type !== 'system' || b.type !== 'system') continue;
+        const apart =
+          a.position.x + a.width <= b.position.x ||
+          b.position.x + b.width <= a.position.x ||
+          a.position.y + a.height <= b.position.y ||
+          b.position.y + b.height <= a.position.y;
+        expect(apart, a.id + ' / ' + b.id).toBe(true);
+      }
+    const raw = JSON.stringify({ version: 1, graph, quiz: false, proof: null, observed: [] });
+    expect(signature(parseSaved(raw, lab).graph)).toBe(signature(graph));
   });
 });

@@ -27,6 +27,8 @@ import {
   connection,
   manualConnectionIssue,
   descendants,
+  protectedKind,
+  requiredLabEntities,
   findPort,
   portLabel,
   rootId,
@@ -56,7 +58,10 @@ export function KindIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
 }
 export interface MenuItem {
   label: string;
+  /** 끊을 연결. 항목 삭제 메뉴에서는 비어 있다. */
   ids: string[];
+  /** 삭제할 노드·서비스 ID. */
+  remove?: string;
 }
 interface CanvasData extends Record<string, unknown> {
   entity: Entity;
@@ -675,6 +680,24 @@ export function Canvas({
         onEdgeClick={(_, edge) => {
           clearMenu();
           if (edgeLookup.has(edge.id)) selectEdge(edge.id);
+        }}
+        onNodeContextMenu={(event, node) => {
+          const entity = graph.entities.find((e) => e.id === node.id);
+          if (
+            !entity ||
+            protectedKind(lab, entity.kind) ||
+            requiredLabEntities(lab, graph.entities).has(entity.id)
+          )
+            return;
+          select(entity.id);
+          const inside = descendants(graph, entity.id).size - 1;
+          onMenu(event, [
+            {
+              label: entity.name + ' 삭제' + (inside ? ' (안의 노드 ' + inside + '개 포함)' : ''),
+              ids: [],
+              remove: entity.id,
+            },
+          ]);
         }}
         onEdgeContextMenu={(event, edge) => {
           if (edgeLookup.has(edge.id) && !derived.has(edge.id))

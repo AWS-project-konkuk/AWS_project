@@ -736,10 +736,11 @@ function SystemLabBody({
         >
           {menu.items.map((item) => (
             <Button
-              key={item.ids.join(',')}
+              key={item.remove ?? item.ids.join(',')}
               type="button"
               onClick={() => {
-                dispatch({ type: 'disconnect', ids: item.ids });
+                if (item.remove) dispatch({ type: 'remove', id: item.remove });
+                else dispatch({ type: 'disconnect', ids: item.ids });
                 setMenu(null);
                 selectEdge('');
               }}
