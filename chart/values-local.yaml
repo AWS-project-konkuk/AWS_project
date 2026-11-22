@@ -1,13 +1,20 @@
+# ───────── minikube 용 (values.yaml 위에 덮어쓴다) ─────────
 backend:
   image:
-    pullPolicy: IfNotPresent
+    tag: dev
+    # Never: minikube image load 로 직접 넣은 이미지를 쓴다 (인터넷에서 받지 않음)
+    pullPolicy: Never
   vllm:
     model: "qwen3:8b"
   cors:
     allowedOrigins: "http://localhost:8081,http://blockml.local"
 
+frontend:
+  image:
+    tag: dev
+    pullPolicy: Never
+
 ingress:
   enabled: true
+  # minikube 의 ingress 애드온
   className: nginx
-  host: blockml.local
-  path: /

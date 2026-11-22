@@ -1,0 +1,26 @@
+# ───────── EKS 용 (values.yaml 위에 덮어쓴다) ─────────
+backend:
+  image:
+    # GHCR 에 올린 공개 이미지. 태그는 make deploy ENV=eks TAG=1.0.1 처럼 덮어쓸 수 있다
+    repository: ghcr.io/aws-project-konkuk/aws_project/backend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  vllm:
+    model: "qwen3:8b"
+
+frontend:
+  image:
+    repository: ghcr.io/aws-project-konkuk/aws_project/frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+ingress:
+  # 공용 ALB 를 쓴다
+  className: alb
+  enabled: true
+  # 아래 3줄은 5팀 모두 똑같아야 한다 (다르면 배포가 거부된다). 다른 alb annotation 은 쓸 수 없다
+  # healthcheck-path 는 ingress.yaml 템플릿이 자동으로 넣어 주므로 여기에 적지 않는다
+  annotations:
+    alb.ingress.kubernetes.io/group.name: sbg-demo
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
