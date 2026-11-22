@@ -353,6 +353,25 @@ describe('MLOps 예시 5단계', () => {
     }
   });
 
+  it('노드가 없는 서비스는 두지 않고 빠진 서비스는 다시 추가할 수 있다', () => {
+    for (const { example, graph } of levels) {
+      const services = graph.entities.filter((e) => e.type === 'system' && e.parent === 'root');
+      for (const service of services)
+        expect(
+          graph.entities.some((e) => e.type === 'resource' && e.parent === service.id),
+          example.title + ' · ' + service.id,
+        ).toBe(true);
+    }
+    const first = levels[0].graph;
+    expect(first.entities.some((e) => e.id === 'gateway')).toBe(false);
+    const added = applyCommand(
+      first,
+      { type: 'add', id: 'gateway', kind: 'gateway', parent: 'root' },
+      lab,
+    );
+    expect(added.entities.some((e) => e.id === 'gateway')).toBe(true);
+  });
+
   it('모든 단계가 오류 없이 끝까지 실행된다', () => {
     for (const { example, graph } of levels) {
       const result = run(graph);

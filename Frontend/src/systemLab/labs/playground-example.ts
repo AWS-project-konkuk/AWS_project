@@ -260,22 +260,31 @@ function buildExample(ids: string[], wires: Connection[]): Graph {
     const count = graph.entities.filter((e) => e.parent === service).length;
     return 52 + Math.max(1, Math.ceil(count / 2)) * 150 + 24;
   };
+  // 노드가 없는 서비스는 빼고, 남은 서비스를 앞쪽 열부터 채운다.
+  const used = new Set(graph.entities.filter((e) => e.type === 'resource').map((e) => e.parent));
   const places = new Map<string, { x: number; y: number; height: number }>();
-  columns.forEach((services, column) => {
-    let y = 0;
-    for (const service of services) {
-      places.set(service, { x: column * (WIDTH + GAP), y, height: height(service) });
-      y += height(service) + GAP;
-    }
-  });
+  columns
+    .map((services) => services.filter((service) => used.has(service)))
+    .filter((services) => services.length)
+    .forEach((services, column) => {
+      let y = 0;
+      for (const service of services) {
+        places.set(service, { x: column * (WIDTH + GAP), y, height: height(service) });
+        y += height(service) + GAP;
+      }
+    });
   return {
     ...graph,
-    entities: graph.entities.map((entity) => {
-      const place = places.get(entity.id);
-      return place && entity.type === 'system' && entity.parent === rootId
-        ? { ...entity, position: { x: place.x, y: place.y }, width: WIDTH, height: place.height }
-        : entity;
-    }),
+    entities: graph.entities
+      .filter(
+        (entity) => entity.type !== 'system' || entity.parent !== rootId || used.has(entity.id),
+      )
+      .map((entity) => {
+        const place = places.get(entity.id);
+        return place && entity.type === 'system' && entity.parent === rootId
+          ? { ...entity, position: { x: place.x, y: place.y }, width: WIDTH, height: place.height }
+          : entity;
+      }),
   };
 }
 
