@@ -25,8 +25,7 @@ import { labViews } from './labs/views';
 import { playgroundView } from './labs/playground-view';
 import { labStore } from './store';
 import { Button } from '../components/ui/button';
-import { NativeSelect } from '../components/ui/native-select';
-import { runSpeeds, usePreferences, type RunSpeed } from '../settings/preferences';
+import { runSpeedLevels, stepDelay, usePreferences } from '../settings/preferences';
 import { cn } from '../components/ui/styles';
 import { divider, hint, panel, panelBody } from './appearance';
 import type { Lesson } from '../curriculum/types';
@@ -202,7 +201,7 @@ function SystemLabBody({
           if (active.result.success) prove(active.stamp);
         }
       },
-      reduced ? 25 : runSpeeds[runSpeed].ms,
+      reduced ? 25 : stepDelay(runSpeed),
     );
     return () => clearTimeout(timer);
   }, [active, busy, prove, observe, runSpeed]);
@@ -334,18 +333,25 @@ function SystemLabBody({
             {focused ? '전체 화면 나가기' : playground ? '전체 화면' : '실습 전체 화면'}
           </Button>
           {actions}
-          <label className="flex items-center gap-1.5 text-sm text-ui-muted">
+          <label className="flex items-center gap-2 text-sm text-ui-muted">
             실행 속도
-            <NativeSelect
+            <span aria-hidden="true" className="text-xs">
+              느림
+            </span>
+            <input
+              type="range"
+              min={runSpeedLevels.min}
+              max={runSpeedLevels.max}
+              step={1}
               value={runSpeed}
-              onChange={(event) => setRunSpeed(event.target.value as RunSpeed)}
-            >
-              {Object.entries(runSpeeds).map(([value, { label }]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </NativeSelect>
+              aria-valuetext={(stepDelay(runSpeed) / 1000).toFixed(1) + '초마다 한 단계'}
+              onChange={(event) => setRunSpeed(Number(event.target.value))}
+              className="w-28 cursor-pointer"
+              style={{ accentColor: 'var(--color-accent)' }}
+            />
+            <span aria-hidden="true" className="text-xs">
+              빠름
+            </span>
           </label>
           {busy ? (
             <Button

@@ -22,6 +22,8 @@ import {
 import { ChevronDown, ChevronRight, Maximize } from 'lucide-react';
 import { clusterPortHeight, groupMinimum, size, type Command } from './commands';
 import { backEdges, type RunResult } from './engine';
+import { stepDelay, usePreferences } from '../settings/preferences';
+import { TransferEdge } from './TransferEdge';
 import {
   absolute,
   connection,
@@ -350,6 +352,7 @@ function ResizeGrip({
   );
 }
 const nodeTypes = { entity: EntityView };
+const edgeTypes = { transfer: TransferEdge };
 
 interface Props {
   graph: Graph;
@@ -381,6 +384,7 @@ export function Canvas({
   mode = 'edit',
 }: Props) {
   const { lab, view } = useLab();
+  const speed = usePreferences((state) => state.runSpeed);
   const flow = useReactFlow<CanvasNode>();
   const element = useRef<HTMLDivElement>(null);
   const [folded, setFolded] = useState<string[]>([]);
@@ -430,6 +434,11 @@ export function Canvas({
   const active = editable ? undefined : run?.steps[cursor];
   const byNode = new Map(shownSteps.map((step) => [step.node, step]));
   const transfers = new Set(shownSteps.flatMap((step) => step.transfers.map((t) => t.edge)));
+  // 방금 실행한 노드가 내보내는 자료는 선을 따라 움직이는 동그라미로 보여 준다.
+  const sending = new Map<string, string>();
+  if (!editable && cursor > 0)
+    for (const t of run?.steps[cursor - 1]?.transfers ?? []) sending.set(t.edge, t.description);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const generated = lab.routes(graph);
   const derived = new Set(generated.map((edge) => edge.id));
   // 자유 구성에서 순환을 닫는 선은 점선과 "순환" 표시로 구분한다.
@@ -568,7 +577,15 @@ export function Canvas({
       target,
       sourceHandle,
       targetHandle,
-      type: 'smoothstep',
+      type: 'transfer',
+      data: {
+        moving: sending.has(e.id),
+        seconds: (stepDelay(speed) * 0.85) / 1000,
+        still,
+        description: sending.get(e.id) ?? '',
+        step: cursor,
+        color,
+      },
       interactionWidth: 16,
       selected: selectedEdge === e.id,
       deletable: false,
@@ -581,7 +598,6 @@ export function Canvas({
         strokeDasharray: derived.has(e.id) ? '5 4' : loops.has(e.id) ? '9 5' : undefined,
         strokeWidth: cycle || transfers.has(e.id) || selectedEdge === e.id ? 3 : 2.4,
       },
-      animated: !!active && transfers.has(e.id),
       ...(loops.has(e.id) && {
         label: '순환',
         labelStyle: { fill: 'var(--color-ink)', fontSize: 12 },
@@ -665,6 +681,7 @@ export function Canvas({
         defaultNodes={nodeList}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         minZoom={0.12}
         maxZoom={2}
         connectOnClick

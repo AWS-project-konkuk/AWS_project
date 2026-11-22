@@ -1,20 +1,20 @@
 import { create } from 'zustand';
 export type Theme = 'system' | 'light' | 'dark';
-/** 실습 실행에서 노드 하나를 처리하는 데 걸리는 시간. */
-export type RunSpeed = 'fast' | 'normal' | 'slow' | 'slower';
-export const runSpeeds: Record<RunSpeed, { label: string; ms: number }> = {
-  fast: { label: '빠르게', ms: 270 },
-  normal: { label: '보통', ms: 700 },
-  slow: { label: '느리게', ms: 1400 },
-  slower: { label: '아주 느리게', ms: 2500 },
-};
+/** 실습 실행 속도 단계. 1은 가장 느리고 10은 가장 빠르다. */
+export const runSpeedLevels = { min: 1, max: 10, initial: 5 } as const;
+/** 속도 단계를 노드 하나를 처리하는 시간(ms)으로 바꾼다. 3초에서 0.15초까지 지수로 줄어든다. */
+export const stepDelay = (level: number) => Math.round(3000 * 0.05 ** ((level - 1) / 9));
+const validSpeed = (value: unknown): value is number =>
+  Number.isInteger(value) &&
+  (value as number) >= runSpeedLevels.min &&
+  (value as number) <= runSpeedLevels.max;
 interface Preferences {
   theme: Theme;
   tour: 'new' | 'done' | 'skipped';
-  runSpeed: RunSpeed;
+  runSpeed: number;
   warning: string;
   setTheme: (theme: Theme) => void;
-  setRunSpeed: (speed: RunSpeed) => void;
+  setRunSpeed: (speed: number) => void;
   setTour: (tour: Preferences['tour']) => void;
 }
 export const preferencesKey = 'blockml:preferences:v1';
@@ -24,25 +24,34 @@ function load(): Pick<Preferences, 'theme' | 'tour' | 'runSpeed' | 'warning'> {
     return {
       theme: ['light', 'dark', 'system'].includes(saved.theme) ? saved.theme : 'system',
       tour: ['done', 'skipped'].includes(saved.tour) ? saved.tour : 'new',
-      runSpeed: saved.runSpeed in runSpeeds ? saved.runSpeed : 'normal',
+      runSpeed: validSpeed(saved.runSpeed) ? saved.runSpeed : runSpeedLevels.initial,
       warning: '',
     };
   } catch {
     return {
       theme: 'system',
       tour: 'new',
-      runSpeed: 'normal',
+      runSpeed: runSpeedLevels.initial,
       warning: '설정을 읽지 못했습니다. 새 선택 전까지 원본을 유지합니다.',
     };
   }
 }
 export const usePreferences = create<Preferences>()((set) => ({
   ...(typeof localStorage === 'undefined'
-    ? { theme: 'system' as const, tour: 'new' as const, runSpeed: 'normal' as const, warning: '' }
+    ? {
+        theme: 'system' as const,
+        tour: 'new' as const,
+        runSpeed: runSpeedLevels.initial as number,
+        warning: '',
+      }
     : load()),
   setTheme: (theme) => set({ theme, warning: '' }),
   setTour: (tour) => set({ tour, warning: '' }),
-  setRunSpeed: (runSpeed) => set({ runSpeed, warning: '' }),
+  setRunSpeed: (level) =>
+    set({
+      runSpeed: Math.min(runSpeedLevels.max, Math.max(runSpeedLevels.min, Math.round(level))),
+      warning: '',
+    }),
 }));
 usePreferences.subscribe((state, previous) => {
   if (
