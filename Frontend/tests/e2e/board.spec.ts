@@ -116,13 +116,47 @@ test('게시글을 12개씩 표시하고 새로고침과 워크플로우 가져�
   await expect(main.getByRole('img', { name: '공유 버킷' })).toBeVisible();
   await page.screenshot({ path: 'test-results/board-mobile.png' });
   await main.getByRole('link', { name: 'Playground에서 열기' }).click();
-  await expect(page.getByRole('textbox', { name: '게시판 워크플로우 ID' })).toHaveValue(firstId);
-  await page.getByRole('button', { name: '불러오기', exact: true }).click();
   await expect(page.getByTestId('node-shared')).toContainText('공유 버킷');
+  await expect(page).toHaveURL(/#\/playground$/);
 
   await page.goto('/#/board?page=3');
   await expect(page).toHaveURL(/#\/board\?page=2$/);
   await expect(cards).toHaveCount(1);
+});
+
+test('다른 게시글로 바꾸기 전에 확인하고 취소하면 작업 중인 그래프를 보존한다', async ({
+  page,
+}) => {
+  const other = toWorkflow(
+    applyCommand(
+      workflow.graph,
+      { type: 'settings', id: 'shared', name: '두 번째 버킷' },
+      playgroundLab,
+    ),
+  );
+  await page.route('**/api/posts/' + firstId + '/workflow', (route) =>
+    route.fulfill({ json: workflow }),
+  );
+  await page.route('**/api/posts/' + newId + '/workflow', (route) =>
+    route.fulfill({ json: other }),
+  );
+  const node = page.getByTestId('node-shared');
+  await page.goto('/#/playground?workflow=' + firstId);
+  await expect(node).toContainText('공유 버킷');
+  await expect(page).toHaveURL(/#\/playground$/);
+
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.goto('/#/playground?workflow=' + newId);
+  await expect(page).toHaveURL(/#\/playground$/);
+  await expect(node).toContainText('공유 버킷');
+
+  const field = page.getByRole('textbox', { name: '게시판 워크플로우 ID' });
+  await field.fill(newId);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '불러오기', exact: true }).click();
+  await expect(node).toContainText('두 번째 버킷');
+  await page.reload();
+  await expect(node).toContainText('두 번째 버킷');
 });
 
 test('페이지 번호를 최대 10개 표시하고 첫 페이지와 마지막 페이지로 이동한다', async ({ page }) => {
