@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import tools.jackson.databind.JsonNode;
 
+import com.awsproject.backend.post.validation.ValidWorkflow;
+
 public record UpdatePostRequest ( 
     @NotBlank String password,
     @Pattern(
@@ -16,5 +18,5 @@ public record UpdatePostRequest (
         message = "내용은 공백일 수 없습니다."
     ) 
     String body,
-    JsonNode workflow) {
+    @ValidWorkflow JsonNode workflow) {
 }
