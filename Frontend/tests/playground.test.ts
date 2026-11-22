@@ -9,7 +9,7 @@ import {
   type SettingValue,
 } from '../src/systemLab/lab';
 import { labFor, playgroundLab as lab } from '../src/systemLab/labs';
-import { wired } from '../src/systemLab/labs/kit';
+import { datum, wired } from '../src/systemLab/labs/kit';
 import { examplePipeline } from '../src/systemLab/labs/playground-example';
 import { mergedSpecs, playgroundTools } from '../src/systemLab/labs/playground';
 import { playgroundView } from '../src/systemLab/labs/playground-view';
@@ -196,7 +196,16 @@ describe('플레이그라운드 실행', () => {
     expect(mismatch.observations).toContain('space-mismatch');
   });
 
-  it('순환 연결은 실행 전에 알려 준다', () => {
+  it('순환 연결은 3번 반복 실행하고 이전 반복의 값을 다음 반복에 전달한다', () => {
+    const counter = (ctx: Parameters<(typeof lab.strategies)['validateData']>[0]) => {
+      const input = ctx.byPort['in-dataset']?.[0];
+      const before = input?.type === 'data' ? Number(input.data.count) : 0;
+      const count = before + 1;
+      ctx.emit(datum('dataset', '횟수 ' + count, { count }));
+      ctx.report([{ label: ctx.node.id, value: String(count) }]);
+      return '횟수 ' + count;
+    };
+    const counting = { ...lab, strategies: { ...lab.strategies, validateData: counter } };
     const graph = build(
       [
         ['a', 'validateData', 'ec2'],
@@ -204,7 +213,21 @@ describe('플레이그라운드 실행', () => {
       ],
       [wired('a', 'dataset', 'b', 'dataset'), wired('b', 'dataset', 'a', 'dataset')],
     );
-    expect(run(graph).cycle.length).toBeGreaterThan(0);
+    const result = runLab(graph, 'loop', counting);
+    expect(result.success).toBe(true);
+    expect(result.cycle).toEqual([]);
+    expect(result.message).toContain('3번 반복');
+    // 반복마다 a, b가 차례로 1씩 늘어 마지막 반복의 b는 6이 된다.
+    expect(Object.fromEntries(result.metrics.map((m) => [m.label, m.value]))).toMatchObject({
+      b: '6',
+      '순환 반복': '3회',
+    });
+    expect(result.steps.map((step) => step.node)).toEqual(['a', 'b']);
+  });
+
+  it('순환이 없으면 한 번만 실행한다', () => {
+    const result = run(build(pipeline, pipelineWires));
+    expect(result.metrics.some((m) => m.label === '순환 반복')).toBe(false);
   });
 });
 
