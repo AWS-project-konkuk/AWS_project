@@ -60,7 +60,7 @@ deploy: quota secret
 	  -f $(VALUES) \
 	  --set backend.image.tag=$(TAG) --set frontend.image.tag=$(TAG) \
 	  --set-string backend.vllm.baseUrl="$$($(call envval,VLLM_BASE_URL))" \
-	  $(if $(SITE_URL),--set-string frontend.siteUrl="$(SITE_URL)")
+	  --set-string frontend.siteUrl="$(if $(SITE_URL),$(SITE_URL),$$($(call envval,SITE_URL)))"
 	$(KUBECTL) rollout restart deploy/$(RELEASE)-backend -n $(NAMESPACE)
 	$(KUBECTL) rollout status deploy/$(RELEASE)-backend -n $(NAMESPACE) --timeout=300s
 	$(KUBECTL) rollout status deploy/$(RELEASE)-frontend -n $(NAMESPACE) --timeout=120s
