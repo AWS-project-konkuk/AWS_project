@@ -108,8 +108,6 @@ kubectl --context minikube port-forward -n container-3 svc/blockml-frontend 8081
 
 [![팀원](https://contrib.rocks/image?repo=AWS-project-konkuk/AWS_project)](https://github.com/AWS-project-konkuk/AWS_project/graphs/contributors)
 
-사진을 누르면 이름이 있는 전체 기여자 목록으로 이동합니다. `main`에 커밋한 사람이 늘면 자동으로 추가됩니다.
-
 ## 기여 방법
 
 1. **이슈 확인:** 작업할 내용이 이슈에 있는지 확인하고, 없으면 먼저 이슈를 만듭니다.
