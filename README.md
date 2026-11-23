@@ -1,75 +1,129 @@
 # BlockML
 
-Notion MLOps 워크북을 바탕으로 **설명 → 전체 관계 → 선택 활동 → 이해 확인**으로 배우는 한국어 학습 사이트입니다. 0~9단원, 53개 강의를 제공합니다. ML 기초는 알고 인프라는 처음인 학습자를 대상으로 합니다.
+**MLOps를 읽고, 직접 연결하고, 실행해 보며 배우는 학습 사이트입니다.**
 
-## 학습 구성
+모델은 학습해 봤지만 서비스로 내보내는 과정(서버, 컨테이너, 데이터, 배포, 모니터링)은 처음인 사람을 위해 만들었습니다.
+EC2·S3·Git 기초부터 Docker·Kubernetes, GPU 학습, 피처, RAG, 모델 서빙·배포 전략, 모니터링까지 0~9단원, 56개 강의를 제공합니다.
 
-| 단원 | 내용                       |
-| ---- | -------------------------- |
-| 0    | 모델이 서비스가 되기까지   |
-| 1    | 실행할 곳과 접근 권한      |
-| 2    | 같은 환경에서 실행하기     |
-| 3    | 데이터를 보존하고 공급하기 |
-| 4    | 같은 실험으로 돌아가기     |
-| 5    | GPU로 학습하기             |
-| 6    | 학습과 추론의 피처 맞추기  |
-| 7    | 문서를 검색해 답변하기     |
-| 8    | 모델을 제공하고 교체하기   |
-| 9    | 운영 상태를 보고 개선하기  |
-| 10   | 전체 과정 설명하기         |
+![강의 화면](docs/images/lesson.png)
 
-32개 기존 개념 강의의 주소와 계산 모형을 보존하고 13개 설명 강의를 추가했습니다. 기존 8개 워크플로에 피처·RAG 독립 실습을 추가해 총 10개 노드 실습을 제공합니다. 피처·RAG 결합 예제는 마지막 단원의 응용 예제로 배치합니다.
+> 브라우저 실습은 개념을 이해하기 위한 학습용 모형입니다. 실제 AWS, Docker, 모델 학습, LLM을 실행하지 않으며 화면의 수치는 실제 성능이나 비용을 예측하지 않습니다.
 
-전체 지도는 학습 자료·추론 요청·개선 피드백·선택적인 문서 검색을 구분합니다. 개념별 비교 활동은 접힌 선택 활동이며 완료 필수가 아닙니다. 이해 확인 문제에 답하고 해설과 대조한 뒤 완료를 기록합니다. 노드 실습은 본문부터 열리며 예시 추적·잘못된 구성 수정·새 상황 구성을 지원합니다. 완료에는 유효한 연결, 조건 실패와 개선 성공의 관찰, 이유 판단이 필요합니다.
+## 주요 기능
 
-실제 도구 명령과 YAML은 본문 예제 및 Notion 원문 실습으로 제공합니다. 브라우저에서 AWS·Docker·DVC·학습·LLM을 실행하지 않습니다. 비교 수치는 교육용 가정이며 실제 성능·가격 예측이 아닙니다. 방문·완료 기록이 이해도를 입증하지 않으며 실제 학습 효과 측정은 수행하지 않았습니다.
+### 강의와 노드 실습
 
-## 실행·검증
+글을 읽은 뒤 같은 화면에서 바로 실습합니다. 각 단원의 마지막 강의에는 서비스를 고르고 노드를 만들어 연결하는 종합 실습이 있고, 본문 중간에는 개념을 확인하는 짧은 활동이 있습니다.
 
-프런트엔드는 `Frontend/`에서 Node.js 24와 npm으로 실행합니다. Node.js·TypeScript 의존성과 설정은 이 폴더 안에서 관리합니다.
+![노드 실습](docs/images/lab.png)
+
+- 서비스(EC2, 저장소, Gateway 등)에서 노드를 만들고, 같은 자료 타입의 포트끼리 연결해 실행합니다.
+- 일부러 틀린 구성의 실패와 고친 구성의 성공을 비교합니다. 실패하면 처음 실패한 노드의 이유를 보여 줍니다.
+- 이해 확인 문제에 답하면 강의 완료가 기록됩니다. 진도는 브라우저에 저장됩니다.
+- 실행 중에는 자료가 선을 따라 움직이고, 실행 속도는 슬라이더로 조절합니다.
+
+### Playground
+
+단원 실습에서 쓴 서비스와 노드를 자유롭게 연결해 나만의 MLOps 파이프라인을 만듭니다.
+
+![Playground](docs/images/playground.png)
+
+- 1단계(데이터 검증)부터 5단계(순환하는 개선 루프까지 전체 MLOps)까지 예시를 불러올 수 있습니다.
+- 순환 연결을 만들 수 있고, 순환이 있으면 3번 반복해 실행합니다. 반복 학습이 MLOps의 핵심이기 때문입니다.
+- 만든 구성은 "내 Playground"에 이름을 붙여 저장·복제·삭제하고 게시판에 올립니다.
+
+### 워크플로우 게시판
+
+Playground에서 만든 구성을 글과 함께 올려 공유하고, 다른 사람의 구성을 불러와 Playground에서 이어서 실행합니다.
+
+### AI 조언
+
+실습이 실패하면 "AI 조언 받기"로 정답을 알려 주지 않는 질문형 힌트를 받습니다. 이해 확인의 답안 평가와 강의 질문 답변에도 AI를 사용합니다.
+
+## 기술 스택
+
+| 구분        | 사용 기술                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| 프론트엔드  | React 19, TypeScript, Vite, Tailwind CSS 4, React Router, TanStack Query, Zustand, React Flow, MDX |
+| 백엔드      | Java 25, Spring Boot 4 (Web MVC, Validation, Data JPA), PostgreSQL(Supabase)                       |
+| AI          | vLLM(Chat Completions 호환 서버), 응답 형식 테스트셋(`llm/`)                                       |
+| 테스트      | Vitest, Playwright, JUnit                                                                          |
+| 배포·인프라 | Docker, nginx, Kubernetes(minikube), Helm, GitHub Actions                                          |
+
+## 빠른 실행
+
+필요한 것: Node.js 24, JDK 25(백엔드), Docker·minikube·kubectl·Helm(쿠버네티스 배포).
+
+### 프론트엔드만 실행
+
+강의, 노드 실습, Playground는 백엔드 없이 동작합니다. 게시판과 AI 조언은 백엔드가 필요합니다.
 
 ```sh
 cd Frontend
 npm ci
 npm run dev
-npm run typecheck
-npm run lint
-npm run format:check
-npm test
-npm run test:e2e
-npm run build
 ```
 
-학습 목록은 `/#/learn`, 입문은 `/#/learn/mlops-overview`, Playground는 `/#/playground`입니다. Playwright는 전용 포트 5187을 사용합니다. 다른 로컬 실행이 사용 중이면 `BLOCKML_TEST_PORT`로 검사용 포트를 지정합니다.
+터미널에 표시된 주소(`http://127.0.0.1:5173` 등)를 브라우저로 엽니다. 백엔드 주소는 `BACKEND_URL` 환경 변수로 바꿀 수 있고 기본값은 `http://localhost:8080`입니다.
 
-## 구조와 호환성
+```sh
+npm run typecheck   # 타입 검사
+npm run lint        # 린트
+npm test            # 단위 테스트
+npm run test:e2e    # 브라우저 테스트 (Playwright)
+npm run build       # 빌드
+```
 
-Java 백엔드와 프런트엔드를 각각 독립된 폴더에서 관리하는 모노레포 구조입니다. 백엔드는 추후 `Backend/`에 추가합니다.
+### 백엔드 실행
 
-| 경로         | 역할                                                            |
-| ------------ | --------------------------------------------------------------- |
-| `Frontend/`  | React 앱, Node.js 의존성·설정, 테스트·정적 파일·프런트엔드 문서 |
-| `PRODUCT.md` | 프로젝트 공통 제품 요구사항                                     |
-| `.github/`   | 저장소 공통 GitHub 설정                                         |
+`.env.example`을 `.env`로 복사해 값을 채웁니다. 백엔드는 실행한 위치의 `.env`를 읽습니다.
 
-다음 구성은 모두 `Frontend/src/` 기준입니다.
+| 변수              | 설명                           |
+| ----------------- | ------------------------------ |
+| `SUPABASE_DB_URL` | PostgreSQL(Supabase) 접속 주소 |
+| `VLLM_BASE_URL`   | vLLM 서버 주소                 |
+| `VLLM_API_KEY`    | vLLM API 키                    |
 
-| 구성            | 책임                                        |
-| --------------- | ------------------------------------------- |
-| content/lessons | 강의별 본문·이미지·코드·문제·본문 노드 예제 |
-| learning        | 본문·전체 지도·선택 활동·이해 확인·진도     |
-| activities      | 기존 교육용 비교 계산과 시각화              |
-| weekly          | 포트 자료 검증·실행 추적·실패와 개선 비교   |
-| playground      | 별도의 자유 구성과 저장                     |
+```sh
+cd backend
+./gradlew bootRun    # Windows PowerShell: .\gradlew.bat bootRun
+```
 
-강의 문서에 화면용 기본값을 채우는 `defineLesson` 어댑터 구조와 기존 목표 판정의 전략 패턴을 사용합니다. 상세 매핑과 교육용 한계는 [커리큘럼](Frontend/docs/curriculum.md)을 참고하세요.
+### 쿠버네티스(minikube)로 전체 실행
 
-새 학습 저장 키는 `blockml:learning:v5`입니다. v3·v4의 원본 기록과 `flow-lab:playground:v1`은 그대로 보존하며 새 목표의 완료로 자동 승격하지 않습니다. v5 저장이 손상되면 자동 덮어쓰기를 중단하고 사용자 초기화로 복구합니다. 테마와 안내 설정도 별도 보존합니다.
+프로젝트 루트에 `.env`를 만든 뒤 `make up`으로 빌드, 이미지 로드, 배포, 점검을 한 번에 합니다.
+Makefile은 sh 문법이라 Windows에서는 PowerShell이 아니라 **Git Bash**에서 실행해야 합니다.
 
-## 내가 강의를 작성하려면
+```sh
+minikube start
+make up
+kubectl --context minikube port-forward -n container-3 svc/blockml-frontend 8081:80
+```
 
-[강의 문서 작성 안내](Frontend/src/content/README.md)를 참고하세요. 53개 강의를 `Frontend/src/content/lessons/`의 단원별 MDX 본문과 `.lesson.ts` 설정으로 분리했습니다. `templates/new-lesson.mdx`와 `templates/new-lesson.ts`를 함께 복사해 작성하면 목록과 주소에 자동 등록됩니다. [전체 문서 목록](Frontend/src/content/lesson-index.md)에서 수정할 강의를 찾을 수 있습니다.
+이제 `http://localhost:8081`로 접속합니다.
 
-### MDX 강의 작성
+## 팀원과 역할
 
-53개 강의 본문을 MDX로 작성합니다. 같은 이름의 `.lesson.ts`는 제목·순서·실습·평가 설정을 담습니다. [작성 안내](Frontend/src/content/README.md)와 [문법·실습 배치 예제](Frontend/docs/content-authoring.md)를 참고하세요. 기존 주소와 진행 기록은 유지합니다.
+| 팀원                                            | 역할                                           |
+| ----------------------------------------------- | ---------------------------------------------- |
+| [davidpro08](https://github.com/davidpro08)     | 프론트엔드, 강의 콘텐츠, 노드 실습, Playground |
+| [sang-uk-jang](https://github.com/sang-uk-jang) | 백엔드 API, 게시판, 프론트엔드 연동            |
+| [minsk601](https://github.com/minsk601)         | 쿠버네티스·Helm 배포, 백엔드                   |
+| [jishimlee](https://github.com/jishimlee)       | AI 응답 형식 테스트, 평가셋                    |
+
+## 기여 방법
+
+1. **이슈 확인:** 작업할 내용이 이슈에 있는지 확인하고, 없으면 먼저 이슈를 만듭니다.
+2. **브랜치:** `main`에서 `종류/작업-이름` 형식으로 만듭니다. 예) `feat/playground-library`, `fix/post-json-valid`
+3. **작업과 확인:** 프론트엔드는 `npm run typecheck`, `npm run lint`, `npm test`가 통과해야 합니다. 화면을 바꿨다면 `npm run test:e2e`도 돌립니다.
+4. **커밋:** `종류: 제목` 한 줄로 씁니다. 종류는 `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `chore`를 씁니다.
+5. **PR:** `main`으로 올리고 [PR 템플릿](.github/PULL_REQUEST_TEMPLATE.md)(작업 요약, 변경 사항, 확인 방법)을 채웁니다. 제목의 접두사(`feat:` 등)로 라벨이 자동으로 붙고, 작성자가 자동으로 지정됩니다.
+6. **CI와 리뷰:** `Frontend verify`와 `Backend verify`가 통과하고 리뷰를 받으면 머지합니다. 백엔드 테스트는 DB 연결 때문에 가끔 실패할 수 있으니, 코드와 무관해 보이면 실패한 작업만 다시 실행해 보세요.
+
+## 문의와 이슈 제보
+
+버그, 개선 제안, 질문은 [GitHub Issues](https://github.com/AWS-project-konkuk/AWS_project/issues)에 남겨 주세요. 버그는 아래를 적으면 빨리 고칠 수 있습니다.
+
+- 어떤 화면에서 무엇을 했는지(재현 순서)와 기대한 결과, 실제 결과
+- 화면 주소(예: `/#/learn/week2-workflow`)와 브라우저, 화면 크기
+- 스크린샷이나 오류 메시지
