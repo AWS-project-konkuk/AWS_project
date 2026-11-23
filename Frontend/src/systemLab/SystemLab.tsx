@@ -31,6 +31,7 @@ import { divider, hint, panel, panelBody } from './appearance';
 import type { Lesson } from '../curriculum/types';
 import { useSystemLabHint } from './useSystemLabHint';
 import { HintPanel } from './HintPanel';
+import { newId } from '../ids';
 
 const panelSizes = [
   ['small', '작게'],
@@ -259,7 +260,7 @@ function SystemLabBody({
   };
   const start = () => {
     setMenu(null);
-    const result = runLab(graph, crypto.randomUUID(), lab);
+    const result = runLab(graph, newId(), lab);
     setRun({ stamp, result, cursor: 0, stopped: false });
     if (!result.steps.length) {
       showResults(true);
@@ -653,7 +654,7 @@ function SystemLabBody({
                     title={lab.labels[kind] + ' 추가'}
                     aria-label={lab.labels[kind] + ' 추가'}
                     onClick={() => {
-                      const id = crypto.randomUUID();
+                      const id = newId();
                       if (dispatch({ type: 'add', id, kind, parent: parent.id })) select(id);
                     }}
                   >

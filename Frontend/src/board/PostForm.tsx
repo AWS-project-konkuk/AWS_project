@@ -12,6 +12,7 @@ import { hasNodes, toWorkflow } from '../playground/workflow';
 import { playgroundLab } from '../systemLab/labs';
 import { labStore } from '../systemLab/store';
 import { postListKey, postQuery } from './boardQuery';
+import { PasswordNotice } from './PasswordNotice';
 
 export function PostForm({ post }: { post?: Post }) {
   const navigate = useNavigate();
@@ -98,6 +99,7 @@ export function PostForm({ post }: { post?: Post }) {
           autoComplete={post ? 'current-password' : 'new-password'}
           required
         />
+        <PasswordNotice />
       </label>
       <label>
         워크플로우

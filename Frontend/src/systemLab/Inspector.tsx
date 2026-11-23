@@ -20,6 +20,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
 import { hint } from './appearance';
+import { newId } from '../ids';
 
 type Dispatch = (command: Command) => boolean;
 const portControls = 'flex gap-[5px] [&>select]:min-w-0 [&>select]:flex-1 [&>button]:px-1.5';
@@ -163,7 +164,7 @@ function PortList({
             dispatch({
               type: 'port-add',
               id: node.id,
-              port: crypto.randomUUID(),
+              port: newId(),
               direction,
               material: draft,
             })
