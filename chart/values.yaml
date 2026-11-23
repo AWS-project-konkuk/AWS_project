@@ -35,6 +35,9 @@ frontend:
     pullPolicy: IfNotPresent
   port: 80
   replicas: 1
+  # 링크 공유 미리보기(Open Graph)에 쓰는 사이트 주소. 도메인이 바뀌면 이 값만 바꾼다.
+  # 예: http://example.com 또는 http://example.com/container-3
+  siteUrl: ""
   resources:
     requests:
       cpu: 50m

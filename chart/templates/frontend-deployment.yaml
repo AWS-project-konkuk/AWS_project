@@ -30,6 +30,8 @@ spec:
               value: {{ .Release.Name }}-backend
             - name: BACKEND_PORT
               value: {{ .Values.backend.port | quote }}
+            - name: SITE_URL
+              value: {{ .Values.frontend.siteUrl | default "" | trimSuffix "/" | quote }}
           readinessProbe:
             httpGet:
               path: /
