@@ -32,6 +32,8 @@ spec:
               value: {{ .Values.backend.port | quote }}
             - name: BASE_PATH
               value: "/{{ .Release.Namespace }}"
+            - name: SITE_URL
+              value: {{ .Values.frontend.siteUrl | default "" | trimSuffix "/" | quote }}
           readinessProbe:
             httpGet:
               path: "/{{ .Release.Namespace }}/health"
