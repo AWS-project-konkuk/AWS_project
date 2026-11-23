@@ -30,11 +30,13 @@ spec:
               value: {{ .Release.Name }}-backend
             - name: BACKEND_PORT
               value: {{ .Values.backend.port | quote }}
+            - name: BASE_PATH
+              value: "/{{ .Release.Namespace }}"
             - name: SITE_URL
               value: {{ .Values.frontend.siteUrl | default "" | trimSuffix "/" | quote }}
           readinessProbe:
             httpGet:
-              path: /
+              path: "/{{ .Release.Namespace }}/health"
               port: {{ .Values.frontend.port }}
             periodSeconds: 10
           resources:

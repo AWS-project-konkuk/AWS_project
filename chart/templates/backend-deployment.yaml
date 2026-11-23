@@ -25,22 +25,13 @@ spec:
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.backend.port }}
+          {{- with .Values.backend.existingSecret }}
+          # Secret 의 값(.env 전체: SUPABASE_DB_URL, VLLM_API_KEY, VLLM_BASE_URL)을 환경변수로 넣는다
+          envFrom:
+            - secretRef:
+                name: {{ . }}
+          {{- end }}
           env:
-            - name: SUPABASE_DB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.backend.secretName }}
-                  key: SUPABASE_DB_URL
-            - name: VLLM_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.backend.secretName }}
-                  key: VLLM_API_KEY
-                  optional: true
-            {{- with .Values.backend.vllm.baseUrl }}
-            - name: VLLM_BASE_URL
-              value: {{ . | quote }}
-            {{- end }}
             {{- with .Values.backend.vllm.model }}
             - name: VLLM_MODEL
               value: {{ . | quote }}

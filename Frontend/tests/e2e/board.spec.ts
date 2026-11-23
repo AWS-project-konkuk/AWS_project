@@ -1,16 +1,22 @@
 import { expect, test } from '@playwright/test';
 import type { PageResponse, Post, PostSummary } from '../../src/api/posts/posts';
-import { resourceDefaults } from '../../src/console/resources';
+import { applyCommand } from '../../src/systemLab/commands';
+import { playgroundLab } from '../../src/systemLab/labs';
+import { toWorkflow } from '../../src/playground/workflow';
 
 const firstId = '11111111-1111-4111-8111-111111111111';
 const newId = '22222222-2222-4222-8222-222222222222';
-const workflow = {
-  version: 1,
-  resources: [
-    { id: 'shared', position: { x: 0, y: 0 }, config: resourceDefaults('s3', '공유 버킷') },
-  ],
-  edges: [],
-};
+const workflow = toWorkflow(
+  applyCommand(
+    applyCommand(
+      playgroundLab.initial(),
+      { type: 'add', id: 'shared', kind: 'input', parent: 'sources' },
+      playgroundLab,
+    ),
+    { type: 'settings', id: 'shared', name: '공유 버킷' },
+    playgroundLab,
+  ),
+);
 const first = {
   id: firstId,
   author: '작성자',
@@ -23,7 +29,7 @@ const first = {
 function postPage(url: URL, posts: PostSummary[]): PageResponse<PostSummary> {
   const page = Number(url.searchParams.get('page'));
   const size = Number(url.searchParams.get('size'));
-  expect(size).toBe(30);
+  expect(size).toBe(12);
   const totalPages = Math.ceil(posts.length / size);
   return {
     content: posts.slice(page * size, (page + 1) * size),
@@ -44,13 +50,13 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져오기를 지원한다', async ({ page }) => {
+test('게시글을 12개씩 표시하고 새로고침과 워크플로우 가져오기를 지원한다', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   const requestedPages: string[] = [];
   let detailRequests = 0;
   const posts = [
     first,
-    ...Array.from({ length: 30 }, (_, index) => ({
+    ...Array.from({ length: 12 }, (_, index) => ({
       ...first,
       id: '33333333-3333-4333-8333-' + String(index).padStart(12, '0'),
       title: '게시글 ' + (index + 1),
@@ -77,23 +83,23 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
   const cards = main.locator(':scope > ul > li');
   const pagination = main.getByRole('navigation', { name: '게시판 페이지' });
   const pageNumbers = pagination.getByRole('link', { name: /^\d+페이지$/ });
-  await expect(cards).toHaveCount(30);
+  await expect(cards).toHaveCount(12);
   await expect(pageNumbers).toHaveText(['1', '2']);
   await expect(pagination.getByRole('link', { name: '1페이지' })).toHaveAttribute(
     'aria-current',
     'page',
   );
   await expect(main.getByRole('img', { name: '워크플로우 미리보기' })).toBeVisible();
-  await expect(main.getByText('31개 게시글')).toBeVisible();
+  await expect(main.getByText('13개 게시글')).toBeVisible();
   expect(requestedPages).toEqual(['0']);
   await page.screenshot({ path: 'test-results/board-desktop.png' });
   await pagination.getByRole('link', { name: '다음', exact: true }).click();
   await expect(cards).toHaveCount(1);
-  await expect(main.getByRole('link', { name: /게시글 30/ })).toBeVisible();
+  await expect(main.getByRole('link', { name: /게시글 12/ })).toBeVisible();
   await expect(main.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
   expect(requestedPages).toEqual(['0', '1']);
   await pagination.getByRole('link', { name: '이전', exact: true }).click();
-  await expect(cards).toHaveCount(30);
+  await expect(cards).toHaveCount(12);
   expect(requestedPages).toEqual(['0', '1']);
   await main.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect.poll(() => requestedPages).toEqual(['0', '1', '0']);
@@ -110,17 +116,51 @@ test('게시글을 30개씩 표시하고 새로고침과 워크플로우 가져�
   await expect(main.getByRole('img', { name: '공유 버킷' })).toBeVisible();
   await page.screenshot({ path: 'test-results/board-mobile.png' });
   await main.getByRole('link', { name: 'Playground에서 열기' }).click();
-  await expect(page.getByRole('textbox', { name: '워크플로우 ID' })).toHaveValue(firstId);
-  await page.getByRole('button', { name: '불러오기', exact: true }).click();
-  await expect(page.getByTestId('resource-shared')).toContainText('공유 버킷');
+  await expect(page.getByTestId('node-shared')).toContainText('공유 버킷');
+  await expect(page).toHaveURL(/#\/playground$/);
 
   await page.goto('/#/board?page=3');
   await expect(page).toHaveURL(/#\/board\?page=2$/);
   await expect(cards).toHaveCount(1);
 });
 
+test('다른 게시글로 바꾸기 전에 확인하고 취소하면 작업 중인 그래프를 보존한다', async ({
+  page,
+}) => {
+  const other = toWorkflow(
+    applyCommand(
+      workflow.graph,
+      { type: 'settings', id: 'shared', name: '두 번째 버킷' },
+      playgroundLab,
+    ),
+  );
+  await page.route('**/api/posts/' + firstId + '/workflow', (route) =>
+    route.fulfill({ json: workflow }),
+  );
+  await page.route('**/api/posts/' + newId + '/workflow', (route) =>
+    route.fulfill({ json: other }),
+  );
+  const node = page.getByTestId('node-shared');
+  await page.goto('/#/playground?workflow=' + firstId);
+  await expect(node).toContainText('공유 버킷');
+  await expect(page).toHaveURL(/#\/playground$/);
+
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.goto('/#/playground?workflow=' + newId);
+  await expect(page).toHaveURL(/#\/playground$/);
+  await expect(node).toContainText('공유 버킷');
+
+  const field = page.getByRole('textbox', { name: '게시판 워크플로우 ID' });
+  await field.fill(newId);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '불러오기', exact: true }).click();
+  await expect(node).toContainText('두 번째 버킷');
+  await page.reload();
+  await expect(node).toContainText('두 번째 버킷');
+});
+
 test('페이지 번호를 최대 10개 표시하고 첫 페이지와 마지막 페이지로 이동한다', async ({ page }) => {
-  const posts = Array.from({ length: 361 }, (_, index) => ({
+  const posts = Array.from({ length: 145 }, (_, index) => ({
     ...first,
     id: '33333333-3333-4333-8333-' + String(index).padStart(12, '0'),
     title: '게시글 ' + (index + 1),

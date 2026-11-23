@@ -5,8 +5,19 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    location /api/ {
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+    absolute_redirect off;
+
+    rewrite ^${BASE_PATH}$ ${BASE_PATH}/ permanent;
+
+    # ALB 헬스체크
+    location = ${BASE_PATH}/health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location ${BASE_PATH}/api/ {
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT}/api/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -18,11 +29,12 @@ server {
         proxy_read_timeout 130s;
     }
 
-    location / {
+    location ${BASE_PATH}/ {
+        alias /usr/share/nginx/html/;
+        index index.html;
         # 빌드한 index.html의 __SITE_URL__을 실행할 때 정한 SITE_URL로 바꾼다.
         sub_filter_once off;
         sub_filter_types text/html;
         sub_filter '__SITE_URL__' '${SITE_URL}';
-        try_files $uri $uri/ /index.html;
     }
 }

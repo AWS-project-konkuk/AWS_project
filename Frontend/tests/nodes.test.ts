@@ -14,7 +14,6 @@ import {
   nodeCanvas,
 } from '../src/nodes/lessonNodes';
 import { parseLearning, serializeLearning } from '../src/learning/progress';
-import { examplePlayground, parsePlayground, validatePlayground } from '../src/playground/model';
 import { resourceDefaults } from '../src/console/resources';
 
 describe('폼 없이 추가하는 학습 노드', () => {
@@ -79,26 +78,5 @@ describe('폼 없이 추가하는 학습 노드', () => {
         lesson.id
       ].answers.versioning,
     ).toBe('off');
-  });
-});
-describe('MLOps 노드 Playground', () => {
-  it('기본 예제는 7개 학습 노드와 평가 데이터 경로를 포함한다', () => {
-    const data = examplePlayground();
-    expect(data.resources).toHaveLength(7);
-    expect(validatePlayground(data)).toEqual([]);
-    expect(data.edges).toContainEqual({ source: 'preprocess', target: 'evaluate' });
-    expect(parsePlayground(JSON.stringify(data))).toEqual(data);
-  });
-  it('이름은 AWS 자원 이름 대신 학습용 레이블로 사용한다', () => {
-    const legacy = {
-      version: 1,
-      resources: [
-        { id: 'old', position: { x: 5, y: 8 }, config: resourceDefaults('s3', '한글 데이터 노드') },
-      ],
-      edges: [],
-    };
-    expect(parsePlayground(JSON.stringify(legacy)).resources[0].config.name).toBe(
-      '한글 데이터 노드',
-    );
   });
 });
