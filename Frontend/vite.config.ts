@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
   });
   const target = process.env.BACKEND_URL || env.BACKEND_URL || 'http://localhost:8080';
   const targetOrigin = new URL(target).origin;
-  // 공유 미리보기 이미지 주소에 쓰는 사이트 주소. 비어 있으면 같은 도메인의 루트 경로를 쓴다.
+  // 공유 미리보기 이미지 주소에 쓰는 사이트 주소. 빌드할 때 정하지 않으면 컨테이너 실행 시 SITE_URL로 채운다.
   const siteUrl = (process.env.SITE_URL || env.SITE_URL || '').replace(/\/+$/, '');
   const proxy: Record<string, ProxyOptions> = {
     '^/api(?:/|$)': {
@@ -41,7 +41,9 @@ export default defineConfig(({ mode }) => {
         name: 'site-url',
         transformIndexHtml: {
           order: 'post',
-          handler: (html: string) => html.replaceAll('__SITE_URL__', siteUrl),
+          // 개발 서버는 바로 채우고, 빌드 결과는 nginx가 실행할 때 SITE_URL로 채우도록 남겨 둔다.
+          handler: (html: string, ctx: { server?: unknown }) =>
+            ctx.server || siteUrl ? html.replaceAll('__SITE_URL__', siteUrl) : html,
         },
       },
       mdx({

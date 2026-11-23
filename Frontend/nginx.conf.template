@@ -19,6 +19,10 @@ server {
     }
 
     location / {
+        # 빌드한 index.html의 __SITE_URL__을 실행할 때 정한 SITE_URL로 바꾼다.
+        sub_filter_once off;
+        sub_filter_types text/html;
+        sub_filter '__SITE_URL__' '${SITE_URL}';
         try_files $uri $uri/ /index.html;
     }
 }
