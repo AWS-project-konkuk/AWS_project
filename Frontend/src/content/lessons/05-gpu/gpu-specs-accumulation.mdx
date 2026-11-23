@@ -3,7 +3,7 @@
 배치 8로는 잘 돌던 실험을 32로 바꿨더니 첫 단계도 끝나기 전에 GPU 메모리 오류가 났습니다. 배치를 다시 8로 바꾸면 실행은 되지만, 이번엔 샘플 32개를 모아 한 번만 모델을 갱신하고 싶습니다. 계산은 네 번 나눠 하고 갱신은 한 번만 할 수 있을까요?
 
 <Figure
-  src="/images/lessons/05-gpu/gpu-specs-accumulation/intro.svg"
+  src="images/lessons/05-gpu/gpu-specs-accumulation/intro.svg"
   alt="마이크로배치, 기울기 누적, 모델 갱신의 관계를 나타낸 그림"
   caption="마이크로배치 · 기울기 누적 · 모델 갱신"
 />
@@ -20,7 +20,7 @@ GPU 사양은 숫자를 외우기보다, 각 수치가 어떤 문제와 이어�
 | GPU 간 연결        | 기울기 · 파라미터를 주고받는 속도 (NVLink, PCIe)         | 병렬화에서의 통신 비용                                      |
 
 <Figure
-  src="/images/lessons/05-gpu/gpu-specs-accumulation/mechanism.svg"
+  src="images/lessons/05-gpu/gpu-specs-accumulation/mechanism.svg"
   alt="GPU 사양 네 가지를 질문으로 정리한 그림. VRAM 용량은 들어가는가, 메모리 대역폭은 얼마나 빨리 읽는가, 정밀도별 연산 성능은 얼마나 빨리 계산하는가, GPU 간 연결은 나누면 얼마나 드는가에 대응합니다."
   caption="네 가지 사양은 서로 다른 병목에 대응합니다. 수치는 대표 구성의 대략값입니다."
 />
@@ -43,7 +43,7 @@ H100과 H200은 같은 Hopper 칩을 쓰고, H200은 메모리 용량과 대역�
 활성값은 backward propagation이 끝나면 해제되므로, 동시에 메모리에 있는 활성값은 마이크로배치 한 개의 몫입니다.
 
 <Figure
-  src="/images/lessons/05-gpu/gpu-specs-accumulation/accumulation.svg"
+  src="images/lessons/05-gpu/gpu-specs-accumulation/accumulation.svg"
   alt="마이크로배치 네 개를 차례로 forward와 backward한 뒤 step을 한 번 수행하는 타임라인. 활성값 메모리는 마이크로배치마다 올라갔다 내려가 최고점이 배치 32를 한 번에 처리할 때보다 낮고, 기울기 버퍼는 4분의 1씩 누적됩니다."
   caption="활성값의 최고점은 마이크로배치 하나 몫이고, 기울기 버퍼는 파라미터 크기 그대로 누적됩니다."
 />

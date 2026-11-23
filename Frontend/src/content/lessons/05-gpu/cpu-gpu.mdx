@@ -3,7 +3,7 @@
 집 컴퓨터에서 사진 수천 장을 분류하려니 CPU로는 한참 걸려 GPU로 옮겼습니다. 전체 사진을 돌릴 땐 빨라졌는데, 테스트용 사진 한 장만 넣었더니 오히려 CPU가 먼저 끝납니다. 방금까지 빠르던 GPU가 사진 한 장 앞에서 왜 뒤처질까요?
 
 <Figure
-  src="/images/lessons/05-gpu/cpu-gpu/intro.svg"
+  src="images/lessons/05-gpu/cpu-gpu/intro.svg"
   alt="CPU에서 작업을 처리하는 경우와 데이터를 전송한 뒤 GPU에서 병렬로 처리하는 경우의 비교"
   caption="CPU 작업 · GPU 병렬 작업 · 전송 비용"
 />
@@ -21,7 +21,7 @@ CPU는 적은 수의 강력한 코어로 복잡하고 다양한 작업을 처리
 | 고려 사항   | 병렬 처리량의 한계                | 준비 및 데이터 전송 비용             |
 
 <Figure
-  src="/images/lessons/05-gpu/cpu-gpu/architecture.svg"
+  src="images/lessons/05-gpu/cpu-gpu/architecture.svg"
   alt="CPU는 제어 장치, 큰 캐시, 소수의 큰 코어로 구성되고, GPU는 작은 코어가 많이 들어 있는 SM 여러 개와 VRAM으로 구성된 구조 비교 그림"
   caption="CPU는 칩 면적을 제어·캐시에, GPU는 연산 유닛에 더 많이 씁니다. 구조를 단순화한 그림입니다."
 />
@@ -39,7 +39,7 @@ GPU는 **SM(Streaming Multiprocessor)** 여러 개로 이루어집니다. SM 하
 딥러닝 계산의 대부분은 행렬 곱셈입니다. 행렬 곱셈은 서로 독립적인 "곱하고 더하기"를 엄청나게 많이 반복하므로, **같은 명령을 여러 데이터에 동시에 적용**할 수 있으면 빨라집니다.
 
 <Figure
-  src="/images/lessons/05-gpu/cpu-gpu/simd-simt.svg"
+  src="images/lessons/05-gpu/cpu-gpu/simd-simt.svg"
   alt="스칼라 실행은 ADD 명령을 네 번 실행하고, SIMD는 벡터 레지스터의 값 네 개를 ADD 명령 한 번으로 처리하며, SIMT는 32개 스레드로 이루어진 워프가 FMA 명령 하나를 동시에 실행하는 비교 그림"
   caption="SIMD는 CPU의 벡터 명령, SIMT는 GPU가 워프 단위로 스레드를 실행하는 방식입니다."
 />

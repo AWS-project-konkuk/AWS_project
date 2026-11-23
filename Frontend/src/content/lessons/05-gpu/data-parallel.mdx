@@ -3,7 +3,7 @@
 사진 묶음을 절반씩 나눠 GPU 두 장에 맡겼습니다. 계산만 보면 두 장이 각자 빨리 끝냈는데, 다음 학습 단계로 넘어가기 전에 둘 다 멈춰 기다립니다. 사진은 이미 나눠 줬는데, 두 GPU는 이제 무엇을 주고받는 걸까요?
 
 <Figure
-  src="/images/lessons/05-gpu/data-parallel/intro.svg"
+  src="images/lessons/05-gpu/data-parallel/intro.svg"
   alt="두 GPU에서 모델 복제본이 서로 다른 데이터를 처리하고 기울기를 동기화하는 구성"
   caption="모델 복제본 A · 모델 복제본 B · 기울기 동기화"
 />
@@ -28,7 +28,7 @@
 연결을 따라가며 확인한 자료는 **기울기 g1 · 기울기 g2**입니다. 처리량을 높이는 목적과 모델을 여러 장치에 나눠 담는 목적을 구분합니다. 동기화 비용과 데이터 공급이 커지면 GPU를 추가해도 선형으로 빨라지지 않습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/data-parallel/mechanism.svg"
+  src="images/lessons/05-gpu/data-parallel/mechanism.svg"
   alt="배치 64를 32개씩 GPU 0과 GPU 1에 나누고, 각 GPU의 전체 모델 복제본이 기울기 g0과 g1을 계산한 뒤, NCCL All-Reduce로 평균 기울기를 구해 두 GPU가 같은 optimizer step을 수행하는 흐름"
   caption="화살표는 데이터 묶음과 기울기가 이동하는 방향입니다."
 />

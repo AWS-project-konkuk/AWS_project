@@ -3,7 +3,7 @@
 학습 Pod를 교체하고 다시 실행했더니 첫 배치가 늦게 들어옵니다. 바로 전 실행에서 만들어 둔 `cache.bin`은 새 Pod에서 보이지 않고, 원본부터 읽자니 GPU가 다음 배치를 한참 기다립니다. 파일을 살려야 하는 문제와 공급을 빠르게 해야 하는 문제를 어디서부터 풀까요?
 
 <Figure
-  src="/images/lessons/03-storage/io-starvation/data_loading_cpu_gpu_editable.svg"
+  src="images/lessons/03-storage/io-starvation/data_loading_cpu_gpu_editable.svg"
   alt="원본 데이터를 저장소에서 읽어 배치로 준비한 뒤 GPU 학습에 공급하는 흐름"
   caption="저장소 → 데이터 로더 → GPU 학습"
 />

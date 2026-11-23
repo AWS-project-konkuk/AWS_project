@@ -3,7 +3,7 @@
 학습 시간을 줄이려고 더 빠른 GPU를 달았습니다. 그런데 모니터를 보니 GPU가 잠깐 계산하고는 자꾸 쉽니다. 계산기보다 비싸게 샀는데 하는 일은 대기입니다. 다음 배치는 저장소에서 GPU까지 오는 길의 어디에서 늦어지는 걸까요?
 
 <Figure
-  src="/images/lessons/03-storage/io-starvation/gpu_pipeline_numbers_adjusted.svg"
+  src="images/lessons/03-storage/io-starvation/gpu_pipeline_numbers_adjusted.svg"
   alt="저장소 읽기, CPU 전처리, GPU 계산으로 이어지는 데이터 공급 과정"
   caption="저장소 읽기 · 전처리 로더 · GPU 계산"
 />
@@ -26,7 +26,7 @@
 이 단계들은 하나의 공급 사슬처럼 이어집니다. 어느 한 단계라도 느리면 뒤의 단계는 기다리게 됩니다.
 
 <Figure
-  src="/images/lessons/03-storage/io-starvation/data_loading_cpu_gpu_editable.svg"
+  src="images/lessons/03-storage/io-starvation/data_loading_cpu_gpu_editable.svg"
   alt="저장소와 데이터 로더를 거쳐 GPU로 배치가 전달되는 과정"
   caption="가장 느린 단계가 전체 데이터 공급 속도를 제한합니다."
 />
