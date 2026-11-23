@@ -1,36 +1,24 @@
 # BlockML
 
+![강의 화면](docs/images/og-image.png)
+
 **MLOps를 읽고, 직접 연결하고, 실행해 보며 배우는 학습 사이트입니다.**
 
-모델은 학습해 봤지만 서비스로 내보내는 과정(서버, 컨테이너, 데이터, 배포, 모니터링)은 처음인 사람을 위해 만들었습니다.
-EC2·S3·Git 기초부터 Docker·Kubernetes, GPU 학습, 피처, RAG, 모델 서빙·배포 전략, 모니터링까지 0~9단원, 56개 강의를 제공합니다.
-
-![강의 화면](docs/images/lesson.png)
-
-> 브라우저 실습은 개념을 이해하기 위한 학습용 모형입니다. 실제 AWS, Docker, 모델 학습, LLM을 실행하지 않으며 화면의 수치는 실제 성능이나 비용을 예측하지 않습니다.
+모델은 학습해 봤지만, 인프라와 연계해서 서비스로 내보내는 과정(서버, 컨테이너, 데이터, 배포, 모니터링)은 어렵다고 생각하는 사람이 많습니다. 노드 기반의 학습으로 MLops 과정을 쉽게 이해할 수 있도록 만든 학습 플랫폼입니다.
 
 ## 주요 기능
 
 ### 강의와 노드 실습
 
-글을 읽은 뒤 같은 화면에서 바로 실습합니다. 각 단원의 마지막 강의에는 서비스를 고르고 노드를 만들어 연결하는 종합 실습이 있고, 본문 중간에는 개념을 확인하는 짧은 활동이 있습니다.
+단순히 글을 읽고 학습하는 것에서 끝나지 않습니다. 노드를 만들어보고, 연결해보며, 설정을 바꾸면서 최종 목표를 달성하기 위해 여러 실습을 수행합니다.
 
 ![노드 실습](docs/images/lab.png)
-
-- 서비스(EC2, 저장소, Gateway 등)에서 노드를 만들고, 같은 자료 타입의 포트끼리 연결해 실행합니다.
-- 일부러 틀린 구성의 실패와 고친 구성의 성공을 비교합니다. 실패하면 처음 실패한 노드의 이유를 보여 줍니다.
-- 이해 확인 문제에 답하면 강의 완료가 기록됩니다. 진도는 브라우저에 저장됩니다.
-- 실행 중에는 자료가 선을 따라 움직이고, 실행 속도는 슬라이더로 조절합니다.
 
 ### Playground
 
 단원 실습에서 쓴 서비스와 노드를 자유롭게 연결해 나만의 MLOps 파이프라인을 만듭니다.
 
 ![Playground](docs/images/playground.png)
-
-- 1단계(데이터 검증)부터 5단계(순환하는 개선 루프까지 전체 MLOps)까지 예시를 불러올 수 있습니다.
-- 순환 연결을 만들 수 있고, 순환이 있으면 3번 반복해 실행합니다. 반복 학습이 MLOps의 핵심이기 때문입니다.
-- 만든 구성은 "내 Playground"에 이름을 붙여 저장·복제·삭제하고 게시판에 올립니다.
 
 ### 워크플로우 게시판
 
@@ -42,13 +30,27 @@ Playground에서 만든 구성을 글과 함께 올려 공유하고, 다른 사�
 
 ## 기술 스택
 
-| 구분        | 사용 기술                                                                                          |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| 프론트엔드  | React 19, TypeScript, Vite, Tailwind CSS 4, React Router, TanStack Query, Zustand, React Flow, MDX |
-| 백엔드      | Java 25, Spring Boot 4 (Web MVC, Validation, Data JPA), PostgreSQL(Supabase)                       |
-| AI          | vLLM(Chat Completions 호환 서버), 응답 형식 테스트셋(`llm/`)                                       |
-| 테스트      | Vitest, Playwright, JUnit                                                                          |
-| 배포·인프라 | Docker, nginx, Kubernetes(minikube), Helm, GitHub Actions                                          |
+**프론트엔드**
+
+![React 19](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white) ![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white) ![React Router](https://img.shields.io/badge/React_Router-CA4245?style=flat-square&logo=reactrouter&logoColor=white) ![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&logoColor=white) ![Zustand](https://img.shields.io/badge/Zustand-433E38?style=flat-square) ![React Flow](https://img.shields.io/badge/React_Flow-FF0072?style=flat-square) ![MDX](https://img.shields.io/badge/MDX-1B1F24?style=flat-square&logo=mdx&logoColor=white)
+
+**백엔드**
+
+![Java 25](https://img.shields.io/badge/Java_25-ED8B00?style=flat-square&logo=openjdk&logoColor=white) ![Spring Boot 4](https://img.shields.io/badge/Spring_Boot_4-6DB33F?style=flat-square&logo=springboot&logoColor=white) ![Gradle](https://img.shields.io/badge/Gradle-02303A?style=flat-square&logo=gradle&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=black)
+
+**AI**
+
+![vLLM](https://img.shields.io/badge/vLLM-30A2FF?style=flat-square&logo=vllm&logoColor=white)
+
+**테스트**
+
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat-square) ![JUnit 5](https://img.shields.io/badge/JUnit_5-25A162?style=flat-square&logo=junit5&logoColor=white)
+
+**배포·인프라**
+
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?style=flat-square&logo=nginx&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![Helm](https://img.shields.io/badge/Helm-0F1689?style=flat-square&logo=helm&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
+
+AI는 Chat Completions 호환 vLLM 서버를 쓰고, 응답 형식 테스트셋은 `llm/`에 있습니다.
 
 ## 빠른 실행
 
