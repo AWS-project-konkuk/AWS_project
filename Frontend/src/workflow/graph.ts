@@ -1,3 +1,4 @@
+import { newId } from '../ids';
 import { stages } from '../content/lesson';
 import type { Graph, NodeKind, WorkflowEdge, WorkflowNode } from './types';
 
@@ -11,7 +12,7 @@ function defaultPosition(kind: NodeKind) {
 
 export function createNode(kind: NodeKind): WorkflowNode {
   return {
-    id: `${kind}-${crypto.randomUUID()}`,
+    id: `${kind}-${newId()}`,
     type: 'stage',
     position: defaultPosition(kind),
     data: { kind, threshold: kind === 'evaluation' ? 0.8 : null },

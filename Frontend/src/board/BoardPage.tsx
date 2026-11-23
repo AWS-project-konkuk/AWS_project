@@ -12,6 +12,7 @@ import { Input } from '../components/ui/input';
 import { postListKey, postQuery, postsQuery } from './boardQuery';
 import { BoardPagination } from './BoardPagination';
 import { PostForm } from './PostForm';
+import { PasswordNotice } from './PasswordNotice';
 import { WorkflowPreview } from './WorkflowPreview';
 
 /** 한 화면에서 워크플로우가 읽히도록 적게 보여 준다. 1·2·3열로 나눠 떨어지는 값이다. */
@@ -212,6 +213,7 @@ function PostDetails({ post }: { post: Post }) {
             비밀번호
             <Input type="password" name="password" autoComplete="current-password" required />
           </label>
+          <PasswordNotice className="basis-full" />
           <Button type="submit" variant="destructive" disabled={remove.isPending}>
             삭제 확인
           </Button>
