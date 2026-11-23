@@ -3,7 +3,7 @@
 학습을 시작하자 모델 전체가 GPU 한 장에 들어가지 않습니다. 옆에는 빈 GPU가 있지만 같은 모델을 복사하기에는 그쪽도 작습니다. 앞쪽 레이어와 뒤쪽 레이어를 각각 맡긴다면, 두 GPU는 어디서 계산을 이어받아야 할까요?
 
 <Figure
-  src="/images/lessons/05-gpu/model-parallel/intro.svg"
+  src="images/lessons/05-gpu/model-parallel/intro.svg"
   alt="앞쪽 레이어를 실행한 GPU가 중간 활성값을 뒤쪽 레이어를 실행하는 GPU에 전달하는 구성"
   caption="앞쪽 레이어 · 중간 활성값 · 뒤쪽 레이어"
 />
@@ -22,7 +22,7 @@
 이 강의에서는 앞 레이어와 뒤 레이어를 나누는 방식을 다룹니다.
 
 <Figure
-  src="/images/lessons/05-gpu/model-parallel/mechanism.svg"
+  src="images/lessons/05-gpu/model-parallel/mechanism.svg"
   alt="GPU 1에 레이어 L1부터 L4, GPU 2에 L5부터 L8을 배치하고, 순전파에서는 활성값이 GPU 1에서 GPU 2로, 역전파에서는 기울기가 GPU 2에서 GPU 1로 이동하는 그림"
   caption="경계를 넘는 것은 경계 레이어의 활성값(순전파)과 그 기울기(역전파)입니다."
 />
@@ -50,7 +50,7 @@ GPU 수와 통신 비용을 바꿔 메모리 분할과 대기를 관찰하세요
 메모리를 나눠 쓸 수 있어도 단순한 레이어 분할만으로 GPU들이 동시에 일하지는 않습니다. 이 대기를 줄이는 것이 **파이프라인 병렬**입니다. 배치를 여러 마이크로배치로 나누어, GPU 1이 두 번째 마이크로배치를 계산하는 동안 GPU 2가 첫 번째를 계산하게 합니다.
 
 <Figure
-  src="/images/lessons/05-gpu/model-parallel/pipeline.svg"
+  src="images/lessons/05-gpu/model-parallel/pipeline.svg"
   alt="단순 레이어 분할에서는 GPU 1과 GPU 2가 번갈아 기다려 16칸이 걸리고, 배치를 마이크로배치 네 개로 나눈 GPipe 방식에서는 forward와 backward가 겹쳐 10칸으로 줄어드는 타임라인"
   caption="빨간 점선 구간이 대기(파이프라인 버블)입니다. 설명용 단순 모형입니다."
 />

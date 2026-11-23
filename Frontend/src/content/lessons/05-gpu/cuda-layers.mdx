@@ -3,7 +3,7 @@
 새 GPU가 잘 꽂혔는지 `nvidia-smi`를 실행했습니다. GPU 이름이 멀쩡히 뜹니다. 안심하고 학습을 눌렀더니 이번엔 PyTorch가 GPU를 쓸 수 없다고 합니다. 한 화면에서는 보이고 다른 화면에서는 안 보이는 GPU, 어디부터 확인해야 할까요?
 
 <Figure
-  src="/images/lessons/05-gpu/cuda-layers/intro.svg"
+  src="images/lessons/05-gpu/cuda-layers/intro.svg"
   alt="프레임워크의 연산 요청이 CUDA 계층을 거쳐 GPU 장치에 전달되는 흐름"
   caption="프레임워크 · CUDA 계층 · GPU 장치"
 />
@@ -15,7 +15,7 @@
 딥러닝 엔지니어가 CUDA 코드를 직접 쓰는 일은 드뭅니다. 대신 PyTorch 같은 프레임워크가 CUDA 위에서 동작하므로, CUDA의 계층을 알면 "GPU가 인식되지 않는다", "버전이 맞지 않는다" 같은 문제를 어디서 찾아야 할지 알 수 있습니다. 다른 제조사의 가속기에는 AMD ROCm처럼 별도의 소프트웨어 생태계가 있습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/cuda-layers/mechanism.svg"
+  src="images/lessons/05-gpu/cuda-layers/mechanism.svg"
   alt="torch.matmul 호출이 ML 프레임워크, cuBLAS 같은 CUDA 라이브러리, CUDA Runtime, CUDA Driver를 거쳐 GPU 하드웨어에 도달하는 다섯 계층 그림"
   caption="위에서 아래로 호출이 내려갑니다. 오른쪽은 각 계층에서 보이는 대표 함수나 확인 방법입니다."
 />
@@ -52,7 +52,7 @@ python -c "import torch; print(torch.version.cuda, torch.cuda.is_available())"
 소프트웨어 호출 경로와는 별개로, CUDA에는 **실행 조직**과 **메모리 계층**이라는 분류가 있습니다. 이 둘은 위의 계층과 같은 분류가 아니므로 섞지 않습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/cuda-layers/execution-hierarchy.svg"
+  src="images/lessons/05-gpu/cuda-layers/execution-hierarchy.svg"
   alt="소프트웨어의 Grid, Block, Thread가 하드웨어의 SM과 Warp에 배정되는 관계와, Register, Shared Memory와 L1, L2 캐시, Global Memory인 VRAM으로 이어지는 메모리 계층 그림"
   caption="Block은 SM 하나에 배정되고, 스레드는 32개씩 Warp로 묶여 실행됩니다."
 />

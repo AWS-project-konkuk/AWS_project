@@ -9,7 +9,7 @@
 
 먼저 문제를 설명합니다. **중요한 내용**을 강조할 수 있습니다.
 
-![계층 비교](/images/container-layers.svg)
+![계층 비교](images/container-layers.svg)
 
 이미지를 해석하는 설명을 이어 씁니다.
 
@@ -18,13 +18,13 @@ print("checkpoint loaded")
 ```
 
 <Figure
-  src="/images/container-layers.svg"
+  src="images/container-layers.svg"
   alt="가상 머신과 컨테이너의 계층 비교"
   caption="이미지 아래에 표시할 설명"
 />
 ````
 
-사진·그림은 `public/images/`에 넣고 `/images/파일명`으로 참조합니다. PNG·JPG·WebP·SVG 또는 지속적으로 접근 가능한 HTTPS 이미지 주소를 사용합니다. 출처가 필요하면 Figure에 `sourceTitle`, `sourceUrl`을 함께 지정합니다. 이미지는 원본 보기와 로딩 실패 안내를 제공하고 코드 블록은 복사 버튼을 제공합니다.
+사진·그림은 `public/images/`에 넣고 `images/파일명`으로 참조합니다. PNG·JPG·WebP·SVG 또는 지속적으로 접근 가능한 HTTPS 이미지 주소를 사용합니다. 출처가 필요하면 Figure에 `sourceTitle`, `sourceUrl`을 함께 지정합니다. 이미지는 원본 보기와 로딩 실패 안내를 제공하고 코드 블록은 복사 버튼을 제공합니다.
 
 코드 블록을 여는 백틱 세 개 뒤에 `python`, `yaml`, `bash`, `dockerfile`, `sql`, `promql`처럼 언어를 지정하면 빌드에서 문법을 강조합니다. 도식이나 명령 출력처럼 그대로 읽을 내용에는 `text`를 사용합니다.
 

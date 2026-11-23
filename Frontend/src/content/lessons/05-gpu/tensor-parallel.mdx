@@ -3,7 +3,7 @@
 모델을 레이어별로 나눠 GPU 두 장에 배치했습니다. 그런데 유독 큰 레이어 하나가 두 GPU 어디에도 들어가지 않습니다. 장치를 나누는 데는 성공했는데 학습은 그 한 층에서 멈춥니다. 레이어의 계산을 둘로 나눠서 각 GPU가 처리한다면, 부분 결과를 어떻게 다시 하나로 합칠까요?
 
 <Figure
-  src="/images/lessons/05-gpu/tensor-parallel/intro.svg"
+  src="images/lessons/05-gpu/tensor-parallel/intro.svg"
   alt="한 레이어의 행렬을 두 GPU로 나눠 계산한 뒤 부분 결과를 결합하는 구성"
   caption="행렬 조각 A · 행렬 조각 B · 결합 결과"
 />
@@ -22,7 +22,7 @@
 Megatron-LM은 Transformer의 MLP 블록에 이 두 방식을 이어 붙였습니다.
 
 <Figure
-  src="/images/lessons/05-gpu/tensor-parallel/mechanism.svg"
+  src="images/lessons/05-gpu/tensor-parallel/mechanism.svg"
   alt="입력 X를 두 GPU가 모두 가지고, 첫 번째 가중치 A를 열 방향으로 A1과 A2로 나누어 Y1과 Y2를 계산하고 GeLU를 적용한 뒤, 두 번째 가중치 B를 행 방향으로 B1과 B2로 나누어 부분합 Z1과 Z2를 만들고 All-Reduce로 더하는 흐름"
   caption="층 중간에는 통신이 없고, 끝에서 All-Reduce 한 번으로 부분합을 더합니다."
 />
@@ -42,7 +42,7 @@ Megatron-LM은 Transformer의 MLP 블록에 이 두 방식을 이어 붙였습�
 텐서 병렬은 메모리와 연산을 모두 나눌 수 있지만, **레이어마다** 통신이 반복됩니다. 그래서 통신 비용이 큰 환경에서 GPU만 추가하면 오히려 느려질 수 있습니다. 실제로는 NVLink로 묶인 한 노드 안의 GPU(보통 8장 이하)끼리만 텐서 병렬을 쓰고, 노드 사이는 파이프라인·데이터 병렬로 확장합니다.
 
 <Figure
-  src="/images/lessons/05-gpu/tensor-parallel/strategies.svg"
+  src="images/lessons/05-gpu/tensor-parallel/strategies.svg"
   alt="데이터 병렬, 파이프라인 병렬, 텐서 병렬을 나누는 것, GPU마다 가진 모델, 주고받는 것, 통신 빈도, 해결하는 문제로 비교한 표"
   caption="세 전략은 나누는 대상과 통신 빈도가 다르며, 대규모 학습에서는 함께 조합합니다."
 />

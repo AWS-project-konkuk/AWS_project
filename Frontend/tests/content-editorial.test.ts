@@ -39,8 +39,8 @@ describe('레슨 편집 기준', () => {
       const opening = source.slice(0, secondHeading);
       expect(opening, path).toMatch(/<Figure\s/);
       expect(opening, path).toMatch(/alt="[^"]{10,}"/);
-      for (const image of source.matchAll(/src="(\/images\/[^"\s]+)"/g)) {
-        const file = resolve('public', image[1].slice(1));
+      for (const image of source.matchAll(/src="(images\/[^"\s]+)"/g)) {
+        const file = resolve('public', image[1]);
         expect(existsSync(file), `${path}: ${image[1]}`).toBe(true);
         expect(readFileSync(file).length).toBeGreaterThan(0);
       }

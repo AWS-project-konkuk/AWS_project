@@ -3,7 +3,7 @@
 학습에 24GiB가 필요하고, GPU는 16GiB짜리 두 장입니다. 합계가 32GiB라 넉넉하다고 생각했는데 첫 실행에서 메모리 오류가 뜹니다. 두 장을 꽂았는데 왜 한 장의 한도를 넘지 못했을까요?
 
 <Figure
-  src="/images/lessons/05-gpu/week1-workflow/intro.svg"
+  src="images/lessons/05-gpu/week1-workflow/intro.svg"
   alt="모델 학습 상태와 사용할 수 있는 두 GPU를 나란히 보여 주는 그림"
   caption="모델 학습 상태 · GPU A · GPU B"
 />
@@ -13,7 +13,7 @@
 학습 상태(가중치·기울기·옵티마이저 상태)가 24GiB인 모델을 16GiB GPU 두 장에서 학습하려 합니다. 처음에는 데이터 병렬로 나누었는데 OOM이 발생합니다. VRAM 합계는 32GiB로 충분해 보이는데 왜 실패할까요?
 
 <Figure
-  src="/images/lessons/05-gpu/week1-workflow/memory-fit.svg"
+  src="images/lessons/05-gpu/week1-workflow/memory-fit.svg"
   alt="데이터 병렬은 GPU A와 B가 각각 24GiB를 요구해 16GiB 한도를 넘고, 모델 병렬과 텐서 병렬은 각 GPU가 12GiB씩 맡아 한도 안에 들어가는 막대 그래프"
   caption="합계가 아니라 장치 한 장이 요구하는 메모리가 한도 안에 있어야 합니다."
 />
