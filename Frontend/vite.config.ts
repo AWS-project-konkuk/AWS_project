@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => {
   });
   const target = process.env.BACKEND_URL || env.BACKEND_URL || 'http://localhost:8080';
   const targetOrigin = new URL(target).origin;
+  // 공유 미리보기 이미지 주소에 쓰는 사이트 주소. 비어 있으면 같은 도메인의 루트 경로를 쓴다.
+  const siteUrl = (process.env.SITE_URL || env.SITE_URL || '').replace(/\/+$/, '');
   const proxy: Record<string, ProxyOptions> = {
     '^/api(?:/|$)': {
       target,
@@ -35,6 +37,13 @@ export default defineConfig(({ mode }) => {
   };
   return {
     plugins: [
+      {
+        name: 'site-url',
+        transformIndexHtml: {
+          order: 'post',
+          handler: (html: string) => html.replaceAll('__SITE_URL__', siteUrl),
+        },
+      },
       mdx({
         remarkPlugins: [remarkGfm, mdxIndexPlugin],
         rehypePlugins: [rehypeCodeHighlight],
