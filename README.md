@@ -104,14 +104,11 @@ kubectl --context minikube port-forward -n container-3 svc/blockml-frontend 8081
 
 이제 `http://localhost:8081`로 접속합니다.
 
-## 팀원과 역할
+## 팀원
 
-| 팀원                                            | 역할                                           |
-| ----------------------------------------------- | ---------------------------------------------- |
-| [davidpro08](https://github.com/davidpro08)     | 프론트엔드, 강의 콘텐츠, 노드 실습, Playground |
-| [sang-uk-jang](https://github.com/sang-uk-jang) | 백엔드 API, 게시판, 프론트엔드 연동            |
-| [minsk601](https://github.com/minsk601)         | 쿠버네티스·Helm 배포, 백엔드                   |
-| [jishimlee](https://github.com/jishimlee)       | AI 응답 형식 테스트, 평가셋                    |
+[![팀원](https://contrib.rocks/image?repo=AWS-project-konkuk/AWS_project)](https://github.com/AWS-project-konkuk/AWS_project/graphs/contributors)
+
+사진을 누르면 이름이 있는 전체 기여자 목록으로 이동합니다. `main`에 커밋한 사람이 늘면 자동으로 추가됩니다.
 
 ## 기여 방법
 
