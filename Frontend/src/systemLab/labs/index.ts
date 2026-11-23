@@ -5,6 +5,7 @@ import { gpuLab } from './gpu';
 import { improvementLab } from './model-improvement';
 import { introWorkflowLab } from './intro-workflow';
 import { pipelineLab } from './pipeline';
+import { playgroundLab } from './playground';
 import { ragLab } from './rag';
 import { reproduceLab } from './reproduce';
 import { transitionLab } from './transition';
@@ -23,8 +24,14 @@ export const labConfigs: Readonly<Record<string, LabConfig>> = {
   [improvementLab.id]: improvementLab,
   [pipelineLab.id]: pipelineLab,
 };
+/** 강의 ID에 속하지 않는 자유 구성 실습. 강의 완료 집계(`labConfigs`)에는 넣지 않는다. */
+export { playgroundLab };
 export const labFor = (lessonId: string): LabConfig | undefined =>
-  Object.hasOwn(labConfigs, lessonId) ? labConfigs[lessonId] : undefined;
+  Object.hasOwn(labConfigs, lessonId)
+    ? labConfigs[lessonId]
+    : lessonId === playgroundLab.id
+      ? playgroundLab
+      : undefined;
 
 export const hasNodePractice = (lesson: { id: string; workflow?: string }): boolean =>
   Boolean(lesson.workflow || labFor(lesson.id));

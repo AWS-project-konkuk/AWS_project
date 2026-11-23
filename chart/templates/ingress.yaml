@@ -1,0 +1,33 @@
+{{- /* values 에서 ingress.enabled 가 true 일 때만 이 파일을 만든다 */}}
+{{- if .Values.ingress.enabled }}
+# Ingress: 외부 접속 규칙. "/container-N 으로 오는 요청은 우리 frontend Service 로"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-frontend
+  annotations:
+    {{- /* values 에 적은 annotation 을 그대로 붙인다 (EKS 면 group.name / scheme / target-type 3줄) */}}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- /* EKS(alb)일 때만 ALB 헬스체크 경로를 자동으로 추가한다 → "/container-N/health" */}}
+    {{- if eq .Values.ingress.className "alb" }}
+    alb.ingress.kubernetes.io/healthcheck-path: "/{{ .Release.Namespace }}/health"
+    {{- end }}
+spec:
+  # 로컬은 nginx, EKS 는 alb (values 에서 정한다)
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - http:
+        paths:
+          # 경로 = "/" + 네임스페이스 이름. 3팀이면 "/container-3" 이 자동으로 들어간다
+          # Prefix: "/container-3" 로 시작하는 주소를 전부 받는다
+          - path: "/{{ .Release.Namespace }}"
+            pathType: Prefix
+            # 보낼 곳: frontend Service (nginx 가 /api 를 backend 로 다시 넘긴다)
+            backend:
+              service:
+                name: {{ .Release.Name }}-frontend
+                port:
+                  number: {{ .Values.frontend.port }}
+{{- end }}

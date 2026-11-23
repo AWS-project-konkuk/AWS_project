@@ -237,6 +237,8 @@ interface Store {
   quiz: (correct: boolean) => void;
   observe: (tags: string[]) => void;
   recover: () => void;
+  /** 다른 곳에서 가져온 구성으로 바꾼다. 편집 기록은 비운다. */
+  load: (graph: Graph) => void;
 }
 const update = (saved: Saved, graph: Graph, proven: string | null): Saved => {
   const now = signature(graph);
@@ -317,6 +319,16 @@ export function createLabStore(lab: LabConfig) {
       const { saved } = get();
       const observed = [...new Set([...saved.observed, ...tags])];
       if (observed.length !== saved.observed.length) set({ saved: { ...saved, observed } });
+    },
+    load(graph) {
+      set({
+        saved: { version: 1, graph, quiz: false, proof: null, observed: [] },
+        proven: null,
+        blocked: false,
+        past: [],
+        future: [],
+        warning: '',
+      });
     },
     recover() {
       set({ blocked: false, saved: fresh(lab), proven: null, past: [], future: [], warning: '' });

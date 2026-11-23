@@ -11,6 +11,7 @@ import {
 import { choice, datum, josa, need, port, setting } from '../kit';
 import { dataKinds } from './data';
 import { featureKinds } from './features';
+import { mlopsKinds } from './mlops';
 import { operationKinds } from './operations';
 import { servingKinds } from './serving';
 
@@ -63,6 +64,7 @@ export const materials: Record<string, string> = {
   labels: '정답 표본',
   'quality-signal': '품질 조사 자료',
   approval: '평가 승인',
+  'registered-model': '등록된 모델',
 };
 
 export const GPU_MEMORY = 16;
@@ -354,6 +356,7 @@ export const catalog: Record<string, CatalogKind> = {
   ...featureKinds,
   ...operationKinds,
   ...servingKinds,
+  ...mlopsKinds,
   root: { label: '전체 서비스' },
   ec2: { label: 'EC2', service: true },
   storage: {
@@ -550,6 +553,8 @@ type Pick = {
   defaults?: Record<string, Record<string, SettingValue>>;
   /** 이번 실습에서 쓰지 않는 포트 ID. */
   omitPorts?: Record<string, readonly string[]>;
+  /** 저장소 유형에 Vector DB를 보일지. 기본은 색인·검색 노드를 쓸 때만 보인다. */
+  vectorDb?: boolean;
 };
 /** 선택한 종류에서 LabConfig의 공통 부분을 만든다. */
 export function fromCatalog(pick: Pick) {
@@ -564,7 +569,7 @@ export function fromCatalog(pick: Pick) {
   const strategies: Record<Kind, Strategy> = {};
   const defaults: Record<Kind, PortSpec[]> = {};
   // Vector DB 유형은 색인·검색을 쓰는 실습에서만 보여 준다.
-  const usesVectorSearch = pick.kinds.some((k) => k === 'index' || k === 'search');
+  const usesVectorSearch = pick.vectorDb ?? pick.kinds.some((k) => k === 'index' || k === 'search');
   for (const [kind, def] of Object.entries(all)) {
     labels[kind] = def.label;
     const ports = def.ports?.filter((port) => !pick.omitPorts?.[kind]?.includes(port.id));

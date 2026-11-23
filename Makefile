@@ -1,106 +1,41 @@
-NAMESPACE 	?= container-3
-RELEASE	  	?= blockml
-ENV_FILE 	?= .env
-VALUES		?= chart/values-local.yaml
-QUOTA		?= quota.yaml
-TEST_PORT	?= 18081
+# 우리 팀 번호 (이 줄만 바꾼다)
+TEAM  ?= 3
+NS    := container-$(TEAM)
+# local | eks
+ENV   ?= local
+TAG   ?= 1.0.0
+IMAGE ?= ghcr.io/aws-project-konkuk/aws_project
+ALB   ?= k8s-sbgdemo-efa2aa8cf7-2001705629.ap-northeast-2.elb.amazonaws.com
+# 백엔드 이미지 빌드(테스트 단계)에 필요한 DB 주소를 .env 에서 읽는다
+DB_URL = $(shell grep '^SUPABASE_DB_URL=' .env | cut -d= -f2-)
 
-BACKEND_IMAGE	?= blockml-backend
-FRONTEND_IMAGE	?= blockml-frontend
-TAG				?= $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
-
-# Minikube 컨텍스트로 실행 설정 (실수로 EKS에 배포를 방지)
-KUBECTL := kubectl --context minikube
-HELM	:= helm --kube-context minikube
-
-# .env 에서 값 읽기
-envval = grep '^$(1)=' $(ENV_FILE) | cut -d= -f2-
-
-.DEFAULT_GOAL := lint
-.PHONY: up build build-be build-fe load lint check-env namespace quota secret deploy test test-ai clean
-
-up: build load deploy test
-
-check-env:
-	@test -f $(ENV_FILE) || { echo "$(ENV_FILE)이 없습니다. cp .env.example .env 후 값을 채워주세요"; exit 1; }
-	@for k in SUPABASE_DB_URL VLLM_API_KEY VLLM_BASE_URL; do \
-		v=$$(grep "^$$k=" $(ENV_FILE) | cut -d= -f2-); \
-		[ -n "$$v" ] || { echo "$$k 값이 비어 있습니다 ($(ENV_FILE))"; exit 1; }; \
-	done
-
-build: build-be build-fe
-
-build-be: check-env
-	@SUPABASE_DB_URL="$$($(call envval,SUPABASE_DB_URL))" \
-	  docker build --secret id=SUPABASE_DB_URL,env=SUPABASE_DB_URL -t $(BACKEND_IMAGE):$(TAG) ./backend
-
-build-fe:
-	@docker build -t $(FRONTEND_IMAGE):$(TAG) ./Frontend
-
+build:
+	@SUPABASE_DB_URL='$(DB_URL)' docker build --secret id=SUPABASE_DB_URL,env=SUPABASE_DB_URL -t blockml-backend:dev ./backend
+	docker build -t blockml-frontend:dev ./Frontend
 load:
-	minikube image load $(BACKEND_IMAGE):$(TAG)
-	minikube image load $(FRONTEND_IMAGE):$(TAG)
-
+	minikube image load blockml-backend:dev
+	minikube image load blockml-frontend:dev
+push:
+	@SUPABASE_DB_URL='$(DB_URL)' docker buildx build --platform linux/amd64 --secret id=SUPABASE_DB_URL,env=SUPABASE_DB_URL -t $(IMAGE)/backend:$(TAG) --push ./backend
+	docker buildx build --platform linux/amd64 -t $(IMAGE)/frontend:$(TAG) --push ./Frontend
 lint:
-	helm lint chart/ -f $(VALUES) --set backend.image.tag=$(TAG) --set frontend.image.tag=$(TAG)
-	@helm template $(RELEASE) chart/ -f $(VALUES) --set backend.image.tag=$(TAG) --set frontend.image.tag=$(TAG) >/dev/null && echo "OK helm template 렌더링 성공"
-
-namespace:
-	@$(KUBECTL) create namespace $(NAMESPACE) --dry-run=client -o yaml | $(KUBECTL) apply -f - >/dev/null
-
-quota: namespace
-	@test -f $(QUOTA) || { echo "$(QUOTA) 파일이 존재하지 않습니다."; exit 1; }
-	$(KUBECTL) apply -n $(NAMESPACE) -f $(QUOTA)
-
-secret: namespace check-env
-	@$(KUBECTL) create secret generic backend-secret -n $(NAMESPACE) --from-env-file=$(ENV_FILE) --dry-run=client -o yaml | $(KUBECTL) apply -f -
-
-deploy: quota secret
-	$(HELM) upgrade --install $(RELEASE) chart/ -n $(NAMESPACE) \
-	  -f $(VALUES) \
-	  --set backend.image.tag=$(TAG) --set frontend.image.tag=$(TAG) \
-	  --set-string backend.vllm.baseUrl="$$($(call envval,VLLM_BASE_URL))"
-	$(KUBECTL) rollout restart deploy/$(RELEASE)-backend -n $(NAMESPACE)
-	$(KUBECTL) rollout status deploy/$(RELEASE)-backend -n $(NAMESPACE) --timeout=300s
-	$(KUBECTL) rollout status deploy/$(RELEASE)-frontend -n $(NAMESPACE) --timeout=120s
-
+	helm lint ./chart -f chart/values.yaml -f chart/values-$(ENV).yaml
+deploy:
+ifeq ($(ENV),local)
+	kubectl apply -n $(NS) -f quota.yaml
+	helm upgrade --install app ./chart -n $(NS) -f chart/values.yaml -f chart/values-local.yaml
+else
+	helm upgrade --install app ./chart -n $(NS) -f chart/values.yaml -f chart/values-eks.yaml --set backend.image.tag=$(TAG) --set frontend.image.tag=$(TAG)
+endif
 test:
-	@$(KUBECTL) wait --for=condition=available deploy/$(RELEASE)-backend deploy/$(RELEASE)-frontend -n $(NAMESPACE) --timeout=120s
-	@$(KUBECTL) port-forward -n $(NAMESPACE) svc/$(RELEASE)-frontend $(TEST_PORT):80 >/dev/null 2>&1 & \
-	PF=$$!; trap 'kill $$PF 2>/dev/null' EXIT; \
-	base=http://localhost:$(TEST_PORT); fail=0; \
-	for i in $$(seq 1 30); do curl -s -o /dev/null $$base/ && break; sleep 1; done; \
-	code=$$(curl -s -o /dev/null -w '%{http_code}' $$base/); \
-	if [ "$$code" = 200 ]; then echo "OK   1) FE 화면          GET  /           -> $$code"; else echo "FAIL 1) FE 화면          GET  /           -> $$code"; fail=1; fi; \
-	code=$$(curl -s -o /dev/null -w '%{http_code}' $$base/api/posts); \
-	if [ "$$code" = 200 ]; then echo "OK   2) 게시글 목록      GET  /api/posts  -> $$code (nginx -> BE -> DB)"; else echo "FAIL 2) 게시글 목록      GET  /api/posts  -> $$code"; fail=1; fi; \
-	body=$$(curl -s --max-time 130 -X POST $$base/api/chat -H 'Content-Type: application/json; charset=UTF-8' -d '{"message":"안녕"}'); \
-	if echo "$$body" | grep -q '"answer"'; then echo "OK   3) AI 채팅          POST /api/chat   -> answer 수신 (BE -> vLLM)"; \
-	else echo "FAIL 3) AI 채팅          POST /api/chat   -> $$(echo "$$body" | head -c 200)"; fail=1; fi; \
-	exit $$fail
-
-test-ai:
-	@$(KUBECTL) wait --for=condition=available deploy/$(RELEASE)-backend deploy/$(RELEASE)-frontend -n $(NAMESPACE) --timeout=120s
-	@$(KUBECTL) port-forward -n $(NAMESPACE) svc/$(RELEASE)-frontend $(TEST_PORT):80 >/dev/null 2>&1 & \
-	PF=$$!; trap 'kill $$PF 2>/dev/null' EXIT; \
-	base=http://localhost:$(TEST_PORT); fail=0; \
-	for i in $$(seq 1 30); do curl -s -o /dev/null $$base/ && break; sleep 1; done; \
-	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/explain \
-		-H 'Content-Type: application/json; charset=UTF-8' \
-		-d '{"lessonId":"lesson-01","question":"EC2와 S3의 역할은 무엇인가요?","options":["EC2는 컴퓨팅, S3는 데이터 저장을 담당한다.","EC2는 데이터 저장, S3는 컴퓨팅을 담당한다."],"correct":0,"explanation":"EC2는 컴퓨팅 서비스이고 S3는 객체 스토리지 서비스입니다.","selected":0,"reason":"EC2는 프로그램을 실행하고 S3는 파일을 저장하기 때문입니다."}'); \
-	if echo "$$body" | grep -q '"verdict"'; then echo "OK   1) AI 답안 평가      POST /api/chat/ai/explain -> verdict 수신 (BE -> vLLM)"; \
-	else echo "FAIL 1) AI 답안 평가      POST /api/chat/ai/explain -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
-	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/hint \
-		-H 'Content-Type: application/json; charset=UTF-8' \
-		-d '{"lessonId":"canary","nodes":[{"id":"router","purpose":"사용자 요청 분배"},{"id":"new-model","purpose":"새 모델 응답 생성"}],"edges":[],"settings":{},"ruleCheck":{"success":false,"issues":["라우터와 새 모델 사이의 연결이 없습니다."],"first_failure":"새 모델로 요청이 전달되지 않습니다."}}'); \
-	if echo "$$body" | grep -q '"hint"'; then echo "OK   2) AI 실습 힌트      POST /api/chat/ai/hint -> hint 수신 (BE -> vLLM)"; \
-	else echo "FAIL 2) AI 실습 힌트      POST /api/chat/ai/hint -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
-	body=$$(curl -s --max-time 130 -X POST $$base/api/chat/ai/chat \
-		-H 'Content-Type: application/json; charset=UTF-8' \
-		-d '{"question":"Shadow 배포와 Canary 배포는 무엇이 다른가요?","lessonId":"canary"}'); \
-	if echo "$$body" | grep -q '"answer"' && echo "$$body" | grep -q '"source"'; then echo "OK   3) AI 강의 질문      POST /api/chat/ai/chat -> answer/source 수신 (BE -> BM25 -> vLLM)"; \
-	else echo "FAIL 3) AI 강의 질문      POST /api/chat/ai/chat -> $$(echo "$$body" | head -c 300)"; fail=1; fi; \
-	exit $$fail
-
+ifeq ($(ENV),local)
+	curl -fsS http://127.0.0.1:8080/$(NS)/health
+else
+	curl -fsS http://$(ALB)/$(NS)/health
+endif
+rollback:
+	helm rollback app -n $(NS)
 clean:
-	-$(HELM) uninstall $(RELEASE) -n $(NAMESPACE)
+	helm uninstall app -n $(NS)
+
+.PHONY: build load push lint deploy test rollback clean

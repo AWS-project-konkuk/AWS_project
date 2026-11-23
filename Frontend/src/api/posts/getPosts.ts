@@ -1,4 +1,4 @@
-import { parsePlayground, type PlaygroundData } from '../../playground/model';
+import { readWorkflow } from '../../playground/workflow';
 import { api } from '../client';
 import { isPostId, type PageResponse, type Post, type PostSummary } from './posts';
 
@@ -13,17 +13,10 @@ function isPostSummary(post: PostSummary) {
   );
 }
 
-export function readWorkflow(value: unknown): PlaygroundData {
-  if (value && typeof value === 'object' && 'workflow' in value) value = value.workflow;
-  try {
-    return parsePlayground(JSON.stringify(value));
-  } catch {
-    throw new Error('이 워크플로우의 Playground 형식을 읽을 수 없습니다.');
-  }
-}
+export { readWorkflow };
 
-export async function getPostWorkflow(id: string) {
-  const { data } = await api.get<unknown>('/posts/' + id + '/workflow');
+export async function getPostWorkflow(id: string, signal: AbortSignal) {
+  const { data } = await api.get<unknown>('/posts/' + id + '/workflow', { signal });
   return readWorkflow(data);
 }
 

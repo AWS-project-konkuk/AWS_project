@@ -1,9 +1,6 @@
 ingress:
   enabled: false
-  className: ""
-  host: ""
-  path: /
-  pathType: Prefix
+  className: nginx
   annotations: {}
 
 backend:
@@ -13,9 +10,9 @@ backend:
     pullPolicy: IfNotPresent
   port: 8080
   replicas: 1
-  secretName: backend-secret
+  # 비밀값(.env)을 담은 Secret 이름. 배포 전에 kubectl create secret 으로 만든다
+  existingSecret: backend-secret
   vllm:
-    baseUrl: ""
     model: ""
   cors:
     allowedOrigins: ""

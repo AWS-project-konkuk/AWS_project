@@ -15,13 +15,6 @@ import {
   serializeLearning,
   learningKey,
 } from '../src/learning/blockProgress';
-import {
-  runPipeline,
-  runPlayground,
-  templatePlayground,
-  templates,
-} from '../src/playground/pipeline';
-import { examplePlayground, validatePlayground, parsePlayground } from '../src/playground/model';
 import type { LabState } from '../src/curriculum/types';
 const lab = (id: string) => createNodeLab(lessonById[id]);
 const result = (id: string, changes: Record<string, string | number | boolean> = {}) =>
@@ -139,39 +132,6 @@ describe('교육용 계산의 핵심 조건', () => {
   });
 });
 describe('종합 실행·피드백·저장', () => {
-  it('평가용 데이터 연결이 필요하며 평가 미달 시 후속 단계를 차단한다', () => {
-    const data = examplePlayground();
-    expect(runPipeline(data).stages.every((s) => s.status === 'success')).toBe(true);
-    data.resources.find((r) => r.config.service === 'evaluation')!.config.settings.threshold = 0.9;
-    expect(runPipeline(data).stages.map((s) => s.status)).toEqual([
-      'success',
-      'success',
-      'success',
-      'failed',
-      'blocked',
-      'blocked',
-      'blocked',
-    ]);
-    data.edges = data.edges.filter((e) => !(e.source === 'preprocess' && e.target === 'evaluate'));
-    expect(runPipeline(data).issues.length).toBeGreaterThan(0);
-  });
-  it('개선 피드백은 실행 순환과 구분하고 잘못된 피드백은 거절한다', () => {
-    const data = examplePlayground();
-    expect(validatePlayground(data)).toEqual([]);
-    expect(parsePlayground(JSON.stringify(data))).toEqual(data);
-    data.edges.find((e) => e.relation === 'feedback')!.relation = undefined;
-    expect(validatePlayground(data).some((i) => i.message.includes('순환'))).toBe(true);
-    data.edges.find((e) => e.source === 'preprocess')!.relation = 'feedback';
-    expect(validatePlayground(data).some((i) => i.message.includes('피드백'))).toBe(true);
-  });
-  it('분야별 템플릿이 유효하고 GPU 전략 변경을 실행에 반영한다', () => {
-    for (const t of templates) expect(validatePlayground(templatePlayground(t.id))).toEqual([]);
-    const data = templatePlayground('parallel');
-    const gpu = data.resources.find((r) => r.config.service === 'gpu')!;
-    expect(runPlayground(data).headline).toContain('부족');
-    gpu.config.settings.strategy = 'tensor';
-    expect(runPlayground(data).headline).not.toContain('부족');
-  });
   it('새 저장 버전으로 복원하며 변경된 목표를 재검사한다', () => {
     const data = emptyLearning();
     data.lessons['cpu-gpu'] = observed(lab('cpu-gpu'));

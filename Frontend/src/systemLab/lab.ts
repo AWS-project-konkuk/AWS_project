@@ -153,6 +153,11 @@ export interface LabConfig {
   /** 실습 완료에 필요한 실행 관찰. 실행이 남긴 태그로 기록한다. */
   requiredObservations: readonly string[];
   observationLabels: Record<string, string>;
+  /**
+   * 시작·도착 노드 없이 연결된 노드를 모두 실행하는 자유 구성 실습(플레이그라운드).
+   * 연결이 하나라도 있는 노드가 실행 대상이며, 모두 성공해야 성공이다.
+   */
+  freeform?: boolean;
 }
 
 export const defaultSettings = (
