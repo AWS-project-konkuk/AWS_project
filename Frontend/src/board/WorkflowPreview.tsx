@@ -29,9 +29,14 @@ export function WorkflowPreview({
           }
         />
       ) : (
-        <span className="px-3 text-center text-xs text-ui-muted">
-          표시할 워크플로우가 없습니다.
-        </span>
+        <div className="flex flex-col items-center gap-1 px-3">
+          <img
+            src="images/board-empty.svg"
+            alt=""
+            className={(detailed ? 'w-48' : 'w-28') + ' max-w-full'}
+          />
+          <span className="text-center text-xs text-ui-muted">워크플로우 없이 작성된 글이에요.</span>
+        </div>
       )}
     </div>
   );
