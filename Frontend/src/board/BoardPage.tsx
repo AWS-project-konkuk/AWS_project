@@ -4,6 +4,7 @@ import { ArrowLeft, ClipboardCopy, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { readWorkflow } from '../api/posts/getPosts';
+import { copyText } from '../clipboard';
 import { deletePost } from '../api/posts/postPosts';
 import { isPostId, postError, type Post, type PostSummary } from '../api/posts/posts';
 import { ErrorPage } from '../components/ErrorPage';
@@ -162,12 +163,11 @@ function PostDetails({ post }: { post: Post }) {
               <Button
                 size="small"
                 onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(post.id);
-                    setCopyStatus('워크플로우 ID를 복사했습니다.');
-                  } catch {
-                    setCopyStatus('복사할 수 없습니다. ID ' + post.id);
-                  }
+                  setCopyStatus(
+                    (await copyText(post.id))
+                      ? '워크플로우 ID를 복사했습니다.'
+                      : '복사하지 못했습니다. 아래 ID를 직접 복사해 주세요: ' + post.id,
+                  );
                 }}
               >
                 <ClipboardCopy size={14} /> 워크플로우 ID 복사

@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Copy } from 'lucide-react';
+import { copyText } from '../clipboard';
 import styles from './LessonLayout.module.css';
 
 const languageLabels: Record<string, string> = {
@@ -24,12 +25,11 @@ export function LessonCodeBlock({
   const label = Object.hasOwn(languageLabels, language) ? languageLabels[language] : language;
 
   async function copyCode() {
-    try {
-      await navigator.clipboard.writeText(codeRef.current?.textContent ?? '');
-      setCopyStatus('코드를 복사했습니다.');
-    } catch {
-      setCopyStatus('복사하지 못했습니다. 코드를 선택해 복사하세요.');
-    }
+    setCopyStatus(
+      (await copyText(codeRef.current?.textContent ?? ''))
+        ? '코드를 복사했습니다.'
+        : '복사하지 못했습니다. 코드를 선택해 복사하세요.',
+    );
   }
 
   return (
