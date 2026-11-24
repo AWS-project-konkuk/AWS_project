@@ -1,8 +1,6 @@
 import { AxiosError } from 'axios';
 import { describe, expect, it } from 'vitest';
 import { postError } from '../src/api/posts/posts';
-import type { Graph } from '../src/systemLab/lab';
-import { workflowShortfall } from '../src/playground/workflow';
 
 const fail = (status: number, data: unknown) =>
   new AxiosError('x', undefined, undefined, undefined, {
@@ -27,15 +25,4 @@ describe('postError', () => {
       '입력한 내용을 확인해 주세요.',
     );
   });
-});
-
-describe('workflowShortfall', () => {
-  const graph = (entities: number, connections: number) =>
-    ({ entities: Array(entities).fill({}), connections: Array(connections).fill({}) }) as Graph;
-  it('부족한 항목과 개수를 알려준다', () => {
-    const message = workflowShortfall(graph(1, 0));
-    expect(message).toContain('엔티티가 1개');
-    expect(message).toContain('연결이 0개');
-  });
-  it('조건을 채우면 null', () => expect(workflowShortfall(graph(2, 1))).toBeNull());
 });

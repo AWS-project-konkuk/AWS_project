@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
 import { Textarea } from '../components/ui/textarea';
 import { usePlaygroundLibrary } from '../playground/library';
-import { hasNodes, toWorkflow, workflowShortfall } from '../playground/workflow';
+import { hasNodes, toWorkflow } from '../playground/workflow';
 import { playgroundLab } from '../systemLab/labs';
 import { labStore } from '../systemLab/store';
 import { postListKey, postQuery } from './boardQuery';
@@ -42,14 +42,12 @@ export function PostForm({ post }: { post?: Post }) {
         throw new Error('필수 항목을 입력해 주세요.');
       }
       const savedItem = library.find((item) => 'saved:' + item.id === attachment);
-      const attached = attachment === 'current' ? saved.graph : savedItem ? savedItem.graph : null;
-      if (attached) {
-        const shortfall = workflowShortfall(attached);
-        if (shortfall) throw new Error(shortfall);
-      }
-      const workflow = attached ? toWorkflow(attached) : (post?.workflow ?? null);
-      if (!workflow)
-        throw new Error('워크플로우를 첨부해 주세요. 워크플로우가 없는 글은 등록할 수 없습니다.');
+      const workflow =
+        attachment === 'current'
+          ? toWorkflow(saved.graph)
+          : savedItem
+            ? toWorkflow(savedItem.graph)
+            : (post?.workflow ?? null);
       if (post) {
         await updatePost(post.id, { title, body: body || undefined, password, workflow });
         return post.id;
@@ -106,7 +104,7 @@ export function PostForm({ post }: { post?: Post }) {
       <label>
         워크플로우
         <NativeSelect value={attachment} onChange={(event) => setAttachment(event.target.value)}>
-          <option value="keep">{post ? '현재 첨부 유지' : '워크플로우 선택'}</option>
+          <option value="keep">{post ? '현재 첨부 유지' : '첨부하지 않음'}</option>
           <option value="current" disabled={!attachable}>
             지금 작업 중인 Playground
           </option>
