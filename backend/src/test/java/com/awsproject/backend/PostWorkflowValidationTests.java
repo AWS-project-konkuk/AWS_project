@@ -75,6 +75,31 @@ class PostWorkflowValidationTests {
     }
 
     @Test
+    void acceptsRootEntityWithEmptyParent() throws Exception {
+        // The frontend's root entity has an empty string as its parent.
+        when(postService.createPost(any(), any(), any(), any(), any()))
+                .thenReturn(new Post("author", "hashed", "title", "body"));
+
+        mvc.perform(post("/api/posts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createBody(workflowWithParents("", "root"))))
+                .andExpect(status().isCreated());
+
+        verify(postService).createPost(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void rejectsNonRootEntityWithEmptyParent() throws Exception {
+        mvc.perform(post("/api/posts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createBody(workflowWithParents("", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verify(postService, never()).createPost(any(), any(), any(), any(), any());
+    }
+
+    @Test
     void rejectsLegacyOrMalformedWorkflowBeforeSaving() throws Exception {
         String invalidWorkflow = """
             {"version": 1, "graph": {"nodes": [], "edges": []}}
@@ -123,6 +148,29 @@ class PostWorkflowValidationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(createBody("null")))
                 .andExpect(status().isCreated());
+    }
+
+    private static String workflowWithParents(String rootParent, String datasetParent) {
+        return """
+            {
+              "version": 2,
+              "graph": {
+                "entities": [
+                  {
+                    "id": "root", "name": "Root", "type": "system", "kind": "root",
+                    "parent": "%s", "position": {"x": 0, "y": 0}, "width": 800, "height": 600
+                  },
+                  {
+                    "id": "dataset-1", "name": "Dataset", "type": "resource", "kind": "dataset",
+                    "parent": "%s", "position": {"x": 100, "y": 100},
+                    "ports": [{"id": "out", "direction": "out", "material": "data", "multiple": false}],
+                    "version": "v1", "replicas": 1
+                  }
+                ],
+                "connections": []
+              }
+            }
+            """.formatted(rootParent, datasetParent);
     }
 
     private String createBody(String workflow) {

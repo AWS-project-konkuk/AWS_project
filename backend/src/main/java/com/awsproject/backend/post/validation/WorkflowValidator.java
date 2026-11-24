@@ -59,8 +59,13 @@ public class WorkflowValidator implements ConstraintValidator<ValidWorkflow, Jso
                 || !hasText(entity, "id", MAX_ID_LENGTH)
                 || !hasText(entity, "name", MAX_NAME_LENGTH)
                 || !hasText(entity, "type", 20)
-                || !hasText(entity, "kind", MAX_ID_LENGTH)
-                || !hasText(entity, "parent", MAX_ID_LENGTH)) {
+                || !hasText(entity, "kind", MAX_ID_LENGTH)) {
+            return false;
+        }
+        // The frontend's root entity has no parent and sends an empty string.
+        // Every other entity must name its parent.
+        boolean root = "root".equals(entity.get("kind").asText());
+        if (root ? !isRootParent(entity.get("parent")) : !hasText(entity, "parent", MAX_ID_LENGTH)) {
             return false;
         }
 
@@ -145,6 +150,10 @@ public class WorkflowValidator implements ConstraintValidator<ValidWorkflow, Jso
             }
         }
         return true;
+    }
+
+    private boolean isRootParent(JsonNode parent) {
+        return parent != null && parent.isTextual() && parent.asText().length() <= MAX_ID_LENGTH;
     }
 
     private boolean hasText(JsonNode object, String field, int maxLength) {
