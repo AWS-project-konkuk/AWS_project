@@ -217,7 +217,11 @@ class PostWorkflowValidationTests {
                     "version": "v1", "replicas": 1
                   }
                 ],
-                "connections": []
+                "connections": [{
+                  "id": "dataset-to-root",
+                  "from": {"node": "dataset-1", "port": "out"},
+                  "to": {"node": "root", "port": "in"}
+                }]
               }
             }
             """.formatted(rootParent, datasetParent);
