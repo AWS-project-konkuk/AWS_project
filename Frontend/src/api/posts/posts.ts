@@ -32,11 +32,25 @@ export interface PostDraft {
 export const isPostId = (value: string) =>
   /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
 
+/** 서버가 내려준 `{ code, message }` 오류 본문을 읽는다. 형식이 다르면 null. */
+function serverError(data: unknown): { code: string; message: string } | null {
+  if (!data || typeof data !== 'object') return null;
+  const { code, message } = data as { code?: unknown; message?: unknown };
+  return typeof code === 'string' && typeof message === 'string' ? { code, message } : null;
+}
+
 export function postError(error: unknown): string {
   if (!isAxiosError(error)) return error instanceof Error ? error.message : '요청에 실패했습니다.';
+  const server = serverError(error.response?.data);
   switch (error.response?.status) {
     case 400:
+      if (server?.message.startsWith('workflow:'))
+        return '첨부한 워크플로우의 형식이 올바르지 않습니다. Playground에서 다시 저장한 뒤 첨부해 주세요.';
       return '입력한 내용을 확인해 주세요.';
+    case 422:
+      return server?.code === 'WORKFLOW_REQUIREMENTS_NOT_MET'
+        ? server.message
+        : '입력한 내용을 처리할 수 없습니다. 내용을 확인해 주세요.';
     case 401:
     case 403:
       return '비밀번호가 맞는지 확인해 주세요.';
