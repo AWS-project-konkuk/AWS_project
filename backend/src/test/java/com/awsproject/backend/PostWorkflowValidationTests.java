@@ -53,7 +53,13 @@ class PostWorkflowValidationTests {
                 "replicas": 1
               }
             ],
-            "connections": []
+            "connections": [
+              {
+                "id": "dataset-to-root",
+                "from": {"node": "dataset-1", "port": "out"},
+                "to": {"node": "root", "port": "in"}
+              }
+            ]
           }
         }
         """;
@@ -140,14 +146,58 @@ class PostWorkflowValidationTests {
     }
 
     @Test
-    void allowsNullWhenNoWorkflowIsAttached() throws Exception {
-        when(postService.createPost(any(), any(), any(), any(), any()))
-                .thenReturn(new Post("author", "hashed", "title", "body"));
-
+    void rejectsNullWorkflowWithRequirementsStatus() throws Exception {
         mvc.perform(post("/api/posts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(createBody("null")))
-                .andExpect(status().isCreated());
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("WORKFLOW_REQUIREMENTS_NOT_MET"));
+
+        verify(postService, never()).createPost(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void rejectsTooFewEntitiesWithRequirementsStatus() throws Exception {
+        String workflow = """
+            {
+              "version": 2,
+              "graph": {
+                "entities": [{
+                  "id": "root",
+                  "name": "Root",
+                  "type": "system",
+                  "kind": "root",
+                  "parent": "root",
+                  "position": {"x": 0, "y": 0},
+                  "width": 800,
+                  "height": 600
+                }],
+                "connections": []
+              }
+            }
+            """;
+
+        mvc.perform(post("/api/posts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createBody(workflow)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("WORKFLOW_REQUIREMENTS_NOT_MET"));
+    }
+
+    @Test
+    void rejectsTooFewConnectionsWithRequirementsStatus() throws Exception {
+        int connectionsField = VALID_WORKFLOW.indexOf("\"connections\"");
+        int connectionsStart = VALID_WORKFLOW.indexOf('[', connectionsField);
+        int connectionsEnd = VALID_WORKFLOW.indexOf(']', connectionsStart);
+        String workflow = VALID_WORKFLOW.substring(0, connectionsStart)
+                + "[]"
+                + VALID_WORKFLOW.substring(connectionsEnd + 1);
+
+        mvc.perform(post("/api/posts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createBody(workflow)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("WORKFLOW_REQUIREMENTS_NOT_MET"));
     }
 
     private static String workflowWithParents(String rootParent, String datasetParent) {
@@ -167,7 +217,11 @@ class PostWorkflowValidationTests {
                     "version": "v1", "replicas": 1
                   }
                 ],
-                "connections": []
+                "connections": [{
+                  "id": "dataset-to-root",
+                  "from": {"node": "dataset-1", "port": "out"},
+                  "to": {"node": "root", "port": "in"}
+                }]
               }
             }
             """.formatted(rootParent, datasetParent);

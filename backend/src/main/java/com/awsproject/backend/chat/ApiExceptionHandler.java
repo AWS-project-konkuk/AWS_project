@@ -17,6 +17,23 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> validationError(MethodArgumentNotValidException ex) {
+        boolean hasInvalidWorkflowFormat = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .anyMatch(error -> "ValidWorkflow".equals(error.getCode()));
+        boolean hasInvalidWorkflowRequirements = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .anyMatch(error -> "ValidWorkflowRequirements".equals(error.getCode()));
+
+        if (!hasInvalidWorkflowFormat && hasInvalidWorkflowRequirements) {
+            return ResponseEntity.unprocessableEntity().contentType(JSON_UTF8)
+                    .body(new ApiError(
+                            "WORKFLOW_REQUIREMENTS_NOT_MET",
+                            "워크플로우에는 엔티티가 2개 이상, 연결이 1개 이상 필요합니다."
+                    ));
+        }
+
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
